@@ -1,10 +1,10 @@
 
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Eye, Save, RotateCcw, Upload, Settings, CaseUpper, CaseLower, BookOpenCheck, PanelLeft, PanelRight, Loader2 } from 'lucide-react';
+import { Eye, Save, RotateCcw, Upload, Settings, CaseUpper, CaseLower, BookOpenCheck, PanelLeft, PanelRight, Loader2, Database } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import {
   Table,
@@ -88,6 +88,12 @@ type TemplateSettings = {
   };
 };
 
+type SavedTemplateData = {
+  name: string;
+  schoolName: string;
+  settings: TemplateSettings;
+}
+
 const initialSettings: TemplateSettings = {
   studentInfo: {
     fontSize: 10,
@@ -138,6 +144,9 @@ export default function TemplatesPage() {
   // --- Data Fetching ---
   const settingsRef = useMemoFirebase(() => (firestore ? doc(firestore, 'schoolSettings', 'current') : null), [firestore]);
   const { data: schoolSettings, isLoading: settingsLoading } = useDoc<SchoolSettingsData>(settingsRef);
+  
+  const templateRef = useMemoFirebase(() => (firestore ? doc(firestore, 'resultTemplates', 'main-template') : null), [firestore]);
+  const { data: savedTemplateData, isLoading: templateLoading } = useDoc<SavedTemplateData>(templateRef);
 
   const classroomsQuery = useMemoFirebase(
     () => (firestore ? collection(firestore, 'classrooms') : null),
@@ -155,6 +164,16 @@ export default function TemplatesPage() {
   const { data: classrooms, isLoading: classroomsLoading } = useCollection<Classroom>(classroomsQuery);
   const { data: allSubjects, isLoading: subjectsLoading } = useCollection<Subject>(subjectsQuery);
   const { data: classroomSubjects, isLoading: classroomSubjectsLoading } = useCollection<ClassroomSubject>(classroomSubjectsQuery);
+
+  // --- Load Saved Template on Mount ---
+  useEffect(() => {
+    if (savedTemplateData) {
+      setTemplateName(savedTemplateData.name || 'New Result Template');
+      setSchoolName(savedTemplateData.schoolName || 'JustVision Kiddies School');
+      setSettings(savedTemplateData.settings || initialSettings);
+    }
+  }, [savedTemplateData]);
+
 
   // --- Data Processing ---
   const subjectsMap = useMemo(
@@ -216,7 +235,34 @@ export default function TemplatesPage() {
     }));
   };
 
-  const resetSettings = () => setSettings(initialSettings);
+  const resetSettings = () => {
+    setSettings(initialSettings);
+    setTemplateName('New Result Template');
+    setSchoolName('JustVision Kiddies School');
+    toast({
+        title: 'Settings Reset',
+        description: 'Template has been reset to the default configuration.',
+    });
+  }
+
+  const loadSavedTemplate = () => {
+    if (savedTemplateData) {
+      setTemplateName(savedTemplateData.name || 'New Result Template');
+      setSchoolName(savedTemplateData.schoolName || 'JustVision Kiddies School');
+      setSettings(savedTemplateData.settings || initialSettings);
+      toast({
+        title: 'Template Loaded',
+        description: 'Your saved template has been loaded into the editor.',
+      });
+    } else {
+      toast({
+        variant: 'destructive',
+        title: 'No Saved Template',
+        description: 'Could not find a saved template to load.',
+      });
+    }
+  };
+
 
   const handleSaveTemplate = () => {
     if (!firestore) return;
@@ -226,10 +272,8 @@ export default function TemplatesPage() {
       name: templateName,
       schoolName: schoolName,
       settings: settings,
-      // In a real app, you might want to save the logo URL too
     };
 
-    const templateRef = doc(firestore, 'resultTemplates', 'main-template');
     setDocumentNonBlocking(templateRef, templateData, { merge: true });
 
     // Simulate save time and show feedback
@@ -350,9 +394,13 @@ export default function TemplatesPage() {
                     </Select>
                 </div>
                 <div className="flex gap-2">
+                <Button variant="outline" onClick={loadSavedTemplate} disabled={templateLoading}>
+                    {templateLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Database className="mr-2 h-4 w-4" />}
+                    View Saved Template
+                </Button>
                 <Button variant="outline" onClick={resetSettings}>
                     <RotateCcw className="mr-2 h-4 w-4" />
-                    Reset
+                    Reset to Default
                 </Button>
                 <Button variant="outline" onClick={() => window.print()}>
                     <Eye className="mr-2 h-4 w-4" />
@@ -401,7 +449,7 @@ export default function TemplatesPage() {
                                         onClick={(e) => handleElementClick(e, 'schoolName')}
                                     >
                                         <div>
-                                            <h1 className="font-headline text-xl font-bold text-foreground">{schoolName}</h1>
+                                            <h1 className="font-headline text-xl font-bold text-foreground">{templateLoading ? <Skeleton className="h-6 w-48"/> : schoolName}</h1>
                                             <p className="text-sm text-foreground">Katampe 2 Mpape Abuja</p>
                                             <p className="text-sm font-semibold text-foreground">Motto: Exceeding Great</p>
                                         </div>
@@ -468,29 +516,29 @@ export default function TemplatesPage() {
                                     </TableHeader>
                                     <TableBody>
                                     {subjectsLoading ? (
-                                        <TableRow><TableCell colSpan={7} className="text-center border border-black p-1 text-xs">Loading subjects...</TableCell></TableRow>
+                                        <TableRow><TableCell colSpan={7} className="text-center border-b border-black p-1 text-xs">Loading subjects...</TableCell></TableRow>
                                     ) : displayedSubjects.length > 0 ? (
                                         displayedSubjects.map(subject => (
                                         <TableRow key={subject.id}>
-                                            <TableCell className="border border-black p-1 text-xs">{subject.name}</TableCell>
-                                            <TableCell className="text-center border border-black p-1 text-xs">--</TableCell>
-                                            <TableCell className="text-center border border-black p-1 text-xs">--</TableCell>
-                                            <TableCell className="text-center border border-black p-1 text-xs">--</TableCell>
-                                            <TableCell className="text-center border border-black p-1 text-xs">--</TableCell>
-                                            <TableCell className="text-center border border-black p-1 text-xs">--</TableCell>
-                                            <TableCell className="border border-black p-1 text-xs">--</TableCell>
+                                            <TableCell className="border-b border-r border-black p-1 text-xs">{subject.name}</TableCell>
+                                            <TableCell className="text-center border-b border-r border-black p-1 text-xs">--</TableCell>
+                                            <TableCell className="text-center border-b border-r border-black p-1 text-xs">--</TableCell>
+                                            <TableCell className="text-center border-b border-r border-black p-1 text-xs">--</TableCell>
+                                            <TableCell className="text-center border-b border-r border-black p-1 text-xs">--</TableCell>
+                                            <TableCell className="text-center border-b border-r border-black p-1 text-xs">--</TableCell>
+                                            <TableCell className="border-b border-black p-1 text-xs">--</TableCell>
                                         </TableRow>
                                         ))
                                     ) : (
                                         Array.from({ length: 12 }).map((_, index) => (
                                             <TableRow key={`placeholder-${index}`}>
-                                                <TableCell className="border border-black p-1 text-xs">Subject Name</TableCell>
-                                                <TableCell className="text-center border border-black p-1 text-xs">--</TableCell>
-                                                <TableCell className="text-center border border-black p-1 text-xs">--</TableCell>
-                                                <TableCell className="text-center border border-black p-1 text-xs">--</TableCell>
-                                                <TableCell className="text-center border border-black p-1 text-xs">--</TableCell>
-                                                <TableCell className="text-center border border-black p-1 text-xs">--</TableCell>
-                                                <TableCell className="border border-black p-1 text-xs">--</TableCell>
+                                                <TableCell className="border-b border-r border-black p-1 text-xs">Subject Name</TableCell>
+                                                <TableCell className="text-center border-b border-r border-black p-1 text-xs">--</TableCell>
+                                                <TableCell className="text-center border-b border-r border-black p-1 text-xs">--</TableCell>
+                                                <TableCell className="text-center border-b border-r border-black p-1 text-xs">--</TableCell>
+                                                <TableCell className="text-center border-b border-r border-black p-1 text-xs">--</TableCell>
+                                                <TableCell className="text-center border-b border-r border-black p-1 text-xs">--</TableCell>
+                                                <TableCell className="border-b border-black p-1 text-xs">--</TableCell>
                                             </TableRow>
                                         ))
                                     )}
@@ -636,6 +684,8 @@ export default function TemplatesPage() {
     </div>
   );
 }
+    
+
     
 
     
