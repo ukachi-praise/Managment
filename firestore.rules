@@ -53,5 +53,13 @@ service cloud.firestore {
       // Teachers can create/update results for their assigned class.
       allow write: if isAssignedTeacher(request.resource.data.classroomId);
     }
+
+    match /sessions/{sessionId} {
+      allow read, write: if isAdmin();
+    }
+    
+    match /schoolSettings/{settingsId} {
+      allow read, write: if isAdmin();
+    }
   }
 }

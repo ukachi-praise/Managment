@@ -185,6 +185,18 @@
             "newValue": { "type": "object" }
         },
         "required": ["timestamp", "userId", "action", "entity", "entityId"]
+    },
+    "SchoolSettings": {
+      "title": "SchoolSettings",
+      "type": "object",
+      "description": "Global settings for the school, like current term and session.",
+      "properties": {
+        "currentSessionId": { "type": "string" },
+        "currentTermId": { "type": "string" },
+        "daysSchoolOpened": { "type": "number" },
+        "nextTermResumptionDate": { "type": "string", "format": "date" }
+      },
+      "required": ["currentSessionId", "currentTermId"]
     }
   },
   "auth": {
@@ -207,7 +219,8 @@
       { "path": "/nextTermInfo/{infoId}", "definition": { "schema": { "$ref": "#/backend/entities/NextTermInfo" } } },
       { "path": "/resultTemplates/{templateId}", "definition": { "schema": { "$ref": "#/backend/entities/ResultTemplate" } } },
       { "path": "/auditLogs/{logId}", "definition": { "schema": { "$ref": "#/backend/entities/AuditLog" } } },
-      { "path": "/roles_admin/{userId}", "definition": { "schema": { "$ref": "#/backend/entities/User" } } }
+      { "path": "/roles_admin/{userId}", "definition": { "schema": { "$ref": "#/backend/entities/User" } } },
+      { "path": "/schoolSettings/{settingsId}", "definition": { "schema": { "$ref": "#/backend/entities/SchoolSettings" } } }
     ]
   }
 }
