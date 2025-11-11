@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -32,8 +32,7 @@ import { PlusCircle, Edit, Trash2 } from 'lucide-react';
 import {
   useCollection,
   useFirestore,
-  useAuth,
-  addDocumentNonBlocking,
+  setDocumentNonBlocking,
 } from '@/firebase';
 import { useMemoFirebase } from '@/firebase/provider';
 import { collection, query, doc } from 'firebase/firestore';
@@ -47,7 +46,6 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { createUserWithEmailAndPassword } from 'firebase/auth';
 
 type User = {
   id: string;
@@ -63,9 +61,9 @@ type Classroom = {
 
 export default function StaffPage() {
   const [open, setOpen] = useState(false);
+  const [editingUser, setEditingUser] = useState<User | null>(null);
   const [selectedRole, setSelectedRole] = useState('Teacher');
   const firestore = useFirestore();
-  const auth = useAuth();
   const { toast } = useToast();
 
   // --- Data Fetching ---
@@ -91,87 +89,75 @@ export default function StaffPage() {
       }, {} as Record<string, string>) || {},
     [classrooms]
   );
+  
+  useEffect(() => {
+    if (editingUser) {
+        setSelectedRole(editingUser.role);
+    }
+  }, [editingUser]);
 
-  const handleAddStaff = async (event: React.FormEvent<HTMLFormElement>) => {
+
+  const handleOpenEditDialog = (user: User) => {
+    setEditingUser(user);
+    setOpen(true);
+  };
+
+  const handleCloseDialog = () => {
+    setEditingUser(null);
+    setOpen(false);
+  };
+
+  const handleUpdateStaff = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!firestore || !auth) return;
+    if (!firestore || !editingUser) return;
 
     const formData = new FormData(event.currentTarget);
-    const email = formData.get('email') as string;
-    const password = formData.get('password') as string;
     const role = formData.get('role') as 'Admin' | 'Teacher';
     const assignedClassroomId = formData.get('assignedClassroomId') as string | undefined;
 
-    if (!email || !password || !role) {
-        toast({ variant: 'destructive', title: 'Missing fields', description: 'Please fill in all required fields.' });
-        return;
+    const userDocRef = doc(firestore, 'users', editingUser.id);
+    
+    const updatedData = {
+        role,
+        assignedClassroomId: role === 'Teacher' ? assignedClassroomId : undefined,
+    };
+    
+    setDocumentNonBlocking(userDocRef, updatedData, { merge: true });
+    
+    // Also update the classroom with the teacherId if it has changed
+    if (role === 'Teacher' && assignedClassroomId) {
+        const classroomDocRef = doc(firestore, 'classrooms', assignedClassroomId);
+        setDocumentNonBlocking(classroomDocRef, { teacherId: editingUser.id }, { merge: true });
     }
 
-    try {
-        // 1. Create user in Firebase Auth
-        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-        const user = userCredential.user;
-
-        // 2. Add user document to Firestore
-        const userDocData: Omit<User, 'id'> = {
-            email,
-            role,
-            assignedClassroomId: role === 'Teacher' ? assignedClassroomId : undefined,
-        };
-        
-        await addDocumentNonBlocking(collection(firestore, 'users'), userDocData);
-
-        // 3. If teacher, update classroom with teacherId
-        if (role === 'Teacher' && assignedClassroomId) {
-            // This is a bit tricky with non-blocking. A better approach might be a cloud function.
-            // For now, we assume this will mostly succeed.
-            // setDocumentNonBlocking(doc(firestore, 'classrooms', assignedClassroomId), { teacherId: user.uid }, { merge: true });
-        }
-
-        toast({ title: 'Staff Added', description: `${email} has been added.` });
-        setOpen(false);
-        event.currentTarget.reset();
-
-    } catch(error: any) {
-        console.error("Error adding staff:", error);
-        toast({
-            variant: 'destructive',
-            title: 'Error',
-            description: error.message || 'Failed to add new staff member.',
-        });
-    }
+    toast({ title: 'Staff Updated', description: `${editingUser.email} has been updated.` });
+    handleCloseDialog();
   };
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold tracking-tight">Staff Management</h1>
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <PlusCircle className="mr-2 h-4 w-4" />
-              Add Staff
-            </Button>
-          </DialogTrigger>
+        {/* The "Add Staff" button is removed to focus on editing existing staff */}
+      </div>
+
+      {/* Edit Staff Dialog */}
+      <Dialog open={open} onOpenChange={setOpen}>
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
-              <DialogTitle>Add New Staff Member</DialogTitle>
+              <DialogTitle>Edit Staff Member</DialogTitle>
               <DialogDescription>
-                Create a new user account and assign them a role.
+                Update the role and classroom assignment for {editingUser?.email}.
               </DialogDescription>
             </DialogHeader>
-            <form onSubmit={handleAddStaff} className="grid gap-4 py-4">
+            <form onSubmit={handleUpdateStaff} className="grid gap-4 py-4">
               <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input id="email" name="email" type="email" placeholder="staff@example.com" required />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
-                <Input id="password" name="password" type="password" placeholder="••••••••" required />
+                <Label>Email</Label>
+                <Input value={editingUser?.email} disabled />
               </div>
                <div className="space-y-2">
                 <Label htmlFor="role">Role</Label>
-                <Select name="role" required defaultValue={selectedRole} onValueChange={setSelectedRole}>
+                <Select name="role" required defaultValue={editingUser?.role} onValueChange={setSelectedRole}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
                         <SelectItem value="Teacher">Teacher</SelectItem>
@@ -182,9 +168,10 @@ export default function StaffPage() {
               {selectedRole === 'Teacher' && (
                 <div className="space-y-2">
                     <Label htmlFor="assignedClassroomId">Assign to Classroom</Label>
-                     <Select name="assignedClassroomId">
-                        <SelectTrigger><SelectValue placeholder="Select a class (optional)" /></SelectTrigger>
+                     <Select name="assignedClassroomId" defaultValue={editingUser?.assignedClassroomId}>
+                        <SelectTrigger><SelectValue placeholder="Select a class" /></SelectTrigger>
                         <SelectContent>
+                             <SelectItem value="unassigned">Unassign</SelectItem>
                             {classroomsLoading ? (
                                 <SelectItem value="loading" disabled>Loading...</SelectItem>
                             ) : (
@@ -195,12 +182,12 @@ export default function StaffPage() {
                 </div>
               )}
               <DialogFooter className="mt-4">
-                <Button type="submit">Create Staff</Button>
+                <Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
+                <Button type="submit">Save Changes</Button>
               </DialogFooter>
             </form>
           </DialogContent>
         </Dialog>
-      </div>
 
       <Card>
         <CardHeader>
@@ -239,9 +226,9 @@ export default function StaffPage() {
                   <TableRow key={user.id}>
                     <TableCell className="font-medium">{user.email}</TableCell>
                     <TableCell><Badge variant={user.role === 'Admin' ? 'default' : 'secondary'}>{user.role}</Badge></TableCell>
-                    <TableCell>{user.role === 'Teacher' && user.assignedClassroomId ? classroomMap[user.assignedClassroomId] : 'N/A'}</TableCell>
+                    <TableCell>{user.role === 'Teacher' && user.assignedClassroomId ? classroomMap[user.assignedClassroomId] || 'N/A' : 'N/A'}</TableCell>
                     <TableCell className="text-right">
-                      <Button variant="ghost" size="icon">
+                      <Button variant="ghost" size="icon" onClick={() => handleOpenEditDialog(user)}>
                         <Edit className="h-4 w-4" />
                       </Button>
                       <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
