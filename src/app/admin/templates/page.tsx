@@ -374,7 +374,7 @@ export default function TemplatesPage() {
                                         onClick={(e) => handleElementClick(e, 'schoolName')}
                                     >
                                         <div>
-                                            <h1 className="font-headline text-2xl font-bold">{schoolName}</h1>
+                                            <h1 className="font-headline text-xl font-bold">{schoolName}</h1>
                                             <p className="text-sm">Katampe 2 Mpape Abuja</p>
                                             <p className="text-sm font-semibold">Motto: Exceeding Great</p>
                                         </div>
@@ -431,11 +431,11 @@ export default function TemplatesPage() {
                                     <TableHeader>
                                     <TableRow>
                                         <TableHead className="border border-black p-1 h-auto text-xs">Subject</TableHead>
-                                        <TableHead className="text-center border border-black p-1 h-auto text-xs"><div>CA1</div><div>(10)</div></TableHead>
-                                        <TableHead className="text-center border border-black p-1 h-auto text-xs"><div>CA2</div><div>(10)</div></TableHead>
-                                        <TableHead className="text-center border border-black p-1 h-auto text-xs"><div>CA3</div><div>(10)</div></TableHead>
-                                        <TableHead className="text-center border border-black p-1 h-auto text-xs"><div>Exam</div><div>(70)</div></TableHead>
-                                        <TableHead className="text-center border border-black p-1 h-auto text-xs"><div>Total</div><div>(100)</div></TableHead>
+                                        <TableHead className="text-center border border-black p-1 h-auto text-[10px]"><div>CA1</div><div>(10)</div></TableHead>
+                                        <TableHead className="text-center border border-black p-1 h-auto text-[10px]"><div>CA2</div><div>(10)</div></TableHead>
+                                        <TableHead className="text-center border border-black p-1 h-auto text-[10px]"><div>CA3</div><div>(10)</div></TableHead>
+                                        <TableHead className="text-center border border-black p-1 h-auto text-[10px]"><div>Exam</div><div>(70)</div></TableHead>
+                                        <TableHead className="text-center border border-black p-1 h-auto text-[10px]"><div>Total</div><div>(100)</div></TableHead>
                                         <TableHead className="border border-black p-1 h-auto text-xs">Remark</TableHead>
                                     </TableRow>
                                     </TableHeader>
@@ -503,24 +503,24 @@ export default function TemplatesPage() {
                                         <div>
                                             <Table>
                                                 <TableBody>
-                                                    <TableRow><TableCell className="font-medium p-1 h-auto text-[10px] border-b-0 border-black">Punctuality</TableCell><TableCell className="text-right p-1 h-auto text-[10px] border-b-0 border-black">5</TableCell></TableRow>
-                                                    <TableRow><TableCell className="font-medium p-1 h-auto text-[10px] border-b-0 border-black">Neatness</TableCell><TableCell className="text-right p-1 h-auto text-[10px] border-b-0 border-black">4</TableCell></TableRow>
+                                                    <TableRow><TableCell className="font-medium p-1 h-auto text-[10px] border border-black">Punctuality</TableCell><TableCell className="text-right p-1 h-auto text-[10px] border border-black">5</TableCell></TableRow>
+                                                    <TableRow><TableCell className="font-medium p-1 h-auto text-[10px] border border-black">Neatness</TableCell><TableCell className="text-right p-1 h-auto text-[10px] border border-black">4</TableCell></TableRow>
                                                 </TableBody>
                                             </Table>
                                         </div>
                                         <div>
                                         <Table>
                                             <TableBody>
-                                                <TableRow><TableCell className="font-medium p-1 h-auto text-[10px] border-b-0 border-black">Honesty</TableCell><TableCell className="text-right p-1 h-auto text-[10px] border-b-0 border-black">5</TableCell></TableRow>
-                                                <TableRow><TableCell className="font-medium p-1 h-auto text-[10px] border-b-0 border-black">Communication</TableCell><TableCell className="text-right p-1 h-auto text-[10px] border-b-0 border-black">5</TableCell></TableRow>
+                                                <TableRow><TableCell className="font-medium p-1 h-auto text-[10px] border border-black">Honesty</TableCell><TableCell className="text-right p-1 h-auto text-[10px] border border-black">5</TableCell></TableRow>
+                                                <TableRow><TableCell className="font-medium p-1 h-auto text-[10px] border border-black">Communication</TableCell><TableCell className="text-right p-1 h-auto text-[10px] border border-black">5</TableCell></TableRow>
                                             </TableBody>
                                         </Table>
                                         </div>
                                         <div>
                                         <Table>
                                             <TableBody>
-                                                <TableRow><TableCell className="font-medium p-1 h-auto text-[10px] border-b-0 border-black">Attentiveness</TableCell><TableCell className="text-right p-1 h-auto text-[10px] border-b-0 border-black">4</TableCell></TableRow>
-                                                <TableRow><TableCell className="font-medium p-1 h-auto text-[10px] border-b-0 border-black">Self Control</TableCell><TableCell className="text-right p-1 h-auto text-[10px] border-b-0 border-black">5</TableCell></TableRow>
+                                                <TableRow><TableCell className="font-medium p-1 h-auto text-[10px] border border-black">Attentiveness</TableCell><TableCell className="text-right p-1 h-auto text-[10px] border border-black">4</TableCell></TableRow>
+                                                <TableRow><TableCell className="font-medium p-1 h-auto text-[10px] border border-black">Self Control</TableCell><TableCell className="text-right p-1 h-auto text-[10px] border border-black">5</TableCell></TableRow>
                                             </TableBody>
                                         </Table>
                                         </div>
@@ -535,17 +535,17 @@ export default function TemplatesPage() {
                                             <Table>
                                                 <TableHeader>
                                                     <TableRow>
-                                                        <TableHead className="p-1 h-auto text-[10px] border-black">Score</TableHead>
-                                                        <TableHead className="p-1 h-auto text-[10px] border-black">Grade</TableHead>
-                                                        <TableHead className="p-1 h-auto text-[10px] border-black">Remark</TableHead>
+                                                        <TableHead className="p-1 h-auto text-[10px] border border-black">Score</TableHead>
+                                                        <TableHead className="p-1 h-auto text-[10px] border border-black">Grade</TableHead>
+                                                        <TableHead className="p-1 h-auto text-[10px] border border-black">Remark</TableHead>
                                                     </TableRow>
                                                 </TableHeader>
                                                 <TableBody>
-                                                    <TableRow><TableCell className="p-1 h-auto text-[10px] border-black">80 – 100</TableCell><TableCell className="p-1 h-auto text-[10px] border-black">A</TableCell><TableCell className="p-1 h-auto text-[10px] border-black">Excellent</TableCell></TableRow>
-                                                    <TableRow><TableCell className="p-1 h-auto text-[10px] border-black">70 – 79</TableCell><TableCell className="p-1 h-auto text-[10px] border-black">B</TableCell><TableCell className="p-1 h-auto text-[10px] border-black">Very Good</TableCell></TableRow>
-                                                    <TableRow><TableCell className="p-1 h-auto text-[10px] border-black">60 – 69</TableCell><TableCell className="p-1 h-auto text-[10px] border-black">C</TableCell><TableCell className="p-1 h-auto text-[10px] border-black">Good</TableCell></TableRow>
-                                                    <TableRow><TableCell className="p-1 h-auto text-[10px] border-black">50 – 59</TableCell><TableCell className="p-1 h-auto text-[10px] border-black">D</TableCell><TableCell className="p-1 h-auto text-[10px] border-black">Fair</TableCell></TableRow>
-                                                    <TableRow><TableCell className="p-1 h-auto text-[10px] border-black">0 – 49</TableCell><TableCell className="p-1 h-auto text-[10px] border-black">F</TableCell><TableCell className="p-1 h-auto text-[10px] border-black">Fail</TableCell></TableRow>
+                                                    <TableRow><TableCell className="p-1 h-auto text-[10px] border border-black">80 – 100</TableCell><TableCell className="p-1 h-auto text-[10px] border border-black">A</TableCell><TableCell className="p-1 h-auto text-[10px] border border-black">Excellent</TableCell></TableRow>
+                                                    <TableRow><TableCell className="p-1 h-auto text-[10px] border border-black">70 – 79</TableCell><TableCell className="p-1 h-auto text-[10px] border border-black">B</TableCell><TableCell className="p-1 h-auto text-[10px] border border-black">Very Good</TableCell></TableRow>
+                                                    <TableRow><TableCell className="p-1 h-auto text-[10px] border border-black">60 – 69</TableCell><TableCell className="p-1 h-auto text-[10px] border border-black">C</TableCell><TableCell className="p-1 h-auto text-[10px] border border-black">Good</TableCell></TableRow>
+                                                    <TableRow><TableCell className="p-1 h-auto text-[10px] border border-black">50 – 59</TableCell><TableCell className="p-1 h-auto text-[10px] border border-black">D</TableCell><TableCell className="p-1 h-auto text-[10px] border border-black">Fair</TableCell></TableRow>
+                                                    <TableRow><TableCell className="p-1 h-auto text-[10px] border border-black">0 – 49</TableCell><TableCell className="p-1 h-auto text-[10px] border border-black">F</TableCell><TableCell className="p-1 h-auto text-[10px] border border-black">Fail</TableCell></TableRow>
                                                 </TableBody>
                                             </Table>
                                         </div>
@@ -554,16 +554,16 @@ export default function TemplatesPage() {
                                             <Table>
                                                 <TableHeader>
                                                     <TableRow>
-                                                        <TableHead className="p-1 h-auto text-[10px] border-black">Score</TableHead>
-                                                        <TableHead className="p-1 h-auto text-[10px] border-black">Remark</TableHead>
+                                                        <TableHead className="p-1 h-auto text-[10px] border border-black">Score</TableHead>
+                                                        <TableHead className="p-1 h-auto text-[10px] border border-black">Remark</TableHead>
                                                     </TableRow>
                                                 </TableHeader>
                                                 <TableBody>
-                                                    <TableRow><TableCell className="p-1 h-auto text-[10px] border-black">5</TableCell><TableCell className="p-1 h-auto text-[10px] border-black">Excellent</TableCell></TableRow>
-                                                    <TableRow><TableCell className="p-1 h-auto text-[10px] border-black">4</TableCell><TableCell className="p-1 h-auto text-[10px] border-black">Very Good</TableCell></TableRow>
-                                                    <TableRow><TableCell className="p-1 h-auto text-[10px] border-black">3</TableCell><TableCell className="p-1 h-auto text-[10px] border-black">Good</TableCell></TableRow>
-                                                    <TableRow><TableCell className="p-1 h-auto text-[10px] border-black">2</TableCell><TableCell className="p-1 h-auto text-[10px] border-black">Fair</TableCell></TableRow>
-                                                    <TableRow><TableCell className="p-1 h-auto text-[10px] border-black">1</TableCell><TableCell className="p-1 h-auto text-[10px] border-black">Poor</TableCell></TableRow>
+                                                    <TableRow><TableCell className="p-1 h-auto text-[10px] border border-black">5</TableCell><TableCell className="p-1 h-auto text-[10px] border border-black">Excellent</TableCell></TableRow>
+                                                    <TableRow><TableCell className="p-1 h-auto text-[10px] border border-black">4</TableCell><TableCell className="p-1 h-auto text-[10px] border border-black">Very Good</TableCell></TableRow>
+                                                    <TableRow><TableCell className="p-1 h-auto text-[10px] border border-black">3</TableCell><TableCell className="p-1 h-auto text-[10px] border border-black">Good</TableCell></TableRow>
+                                                    <TableRow><TableCell className="p-1 h-auto text-[10px] border border-black">2</TableCell><TableCell className="p-1 h-auto text-[10px] border border-black">Fair</TableCell></TableRow>
+                                                    <TableRow><TableCell className="p-1 h-auto text-[10px] border border-black">1</TableCell><TableCell className="p-1 h-auto text-[10px] border border-black">Poor</TableCell></TableRow>
                                                 </TableBody>
                                             </Table>
                                         </div>
