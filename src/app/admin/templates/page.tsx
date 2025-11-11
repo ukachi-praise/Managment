@@ -1,5 +1,6 @@
 
 
+
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -535,9 +536,9 @@ export default function TemplatesPage() {
                                             <Table>
                                                 <TableHeader>
                                                     <TableRow>
-                                                        <TableHead className="p-1 h-auto text-[10px] border border-black">Score</TableHead>
-                                                        <TableHead className="p-1 h-auto text-[10px] border border-black">Grade</TableHead>
-                                                        <TableHead className="p-1 h-auto text-[10px] border border-black">Remark</TableHead>
+                                                        <TableHead className="p-1 h-auto text-[10px] border border-black text-foreground">Score</TableHead>
+                                                        <TableHead className="p-1 h-auto text-[10px] border border-black text-foreground">Grade</TableHead>
+                                                        <TableHead className="p-1 h-auto text-[10px] border border-black text-foreground">Remark</TableHead>
                                                     </TableRow>
                                                 </TableHeader>
                                                 <TableBody>
@@ -554,8 +555,8 @@ export default function TemplatesPage() {
                                             <Table>
                                                 <TableHeader>
                                                     <TableRow>
-                                                        <TableHead className="p-1 h-auto text-[10px] border border-black">Score</TableHead>
-                                                        <TableHead className="p-1 h-auto text-[10px] border border-black">Remark</TableHead>
+                                                        <TableHead className="p-1 h-auto text-[10px] border border-black text-foreground">Score</TableHead>
+                                                        <TableHead className="p-1 h-auto text-[10px] border border-black text-foreground">Remark</TableHead>
                                                     </TableRow>
                                                 </TableHeader>
                                                 <TableBody>
