@@ -342,24 +342,32 @@ export default function TemplatesPage() {
                         <Table>
                             <TableHeader>
                             <TableRow>
-                                <TableHead>Subject</TableHead>
-                                <TableHead className="text-center"><div>CA1</div><div>(10)</div></TableHead>
-                                <TableHead className="text-center"><div>CA2</div><div>(10)</div></TableHead>
-                                <TableHead className="text-center"><div>CA3</div><div>(10)</div></TableHead>
-                                <TableHead className="text-center"><div>Exam</div><div>(70)</div></TableHead>
-                                <TableHead className="text-center"><div>Total</div><div>(100)</div></TableHead>
-                                <TableHead>Remark</TableHead>
+                                <TableHead className="border">Subject</TableHead>
+                                <TableHead className="text-center border"><div>CA1</div><div>(10)</div></TableHead>
+                                <TableHead className="text-center border"><div>CA2</div><div>(10)</div></TableHead>
+                                <TableHead className="text-center border"><div>CA3</div><div>(10)</div></TableHead>
+                                <TableHead className="text-center border"><div>Exam</div><div>(70)</div></TableHead>
+                                <TableHead className="text-center border"><div>Total</div><div>(100)</div></TableHead>
+                                <TableHead className="border">Remark</TableHead>
                             </TableRow>
                             </TableHeader>
                             <TableBody>
                             {subjectsLoading ? (
-                                <TableRow><TableCell colSpan={7} className="text-center">Loading subjects...</TableCell></TableRow>
+                                <TableRow><TableCell colSpan={7} className="text-center border">Loading subjects...</TableCell></TableRow>
                             ) : displayedSubjects.length > 0 ? (
                                 displayedSubjects.map(subject => (
-                                <TableRow key={subject.id}><TableCell>{subject.name}</TableCell><TableCell className="text-center">--</TableCell><TableCell className="text-center">--</TableCell><TableCell className="text-center">--</TableCell><TableCell className="text-center">--</TableCell><TableCell className="text-center">--</TableCell><TableCell>--</TableCell></TableRow>
+                                <TableRow key={subject.id}>
+                                    <TableCell className="border">{subject.name}</TableCell>
+                                    <TableCell className="text-center border">--</TableCell>
+                                    <TableCell className="text-center border">--</TableCell>
+                                    <TableCell className="text-center border">--</TableCell>
+                                    <TableCell className="text-center border">--</TableCell>
+                                    <TableCell className="text-center border">--</TableCell>
+                                    <TableCell className="border">--</TableCell>
+                                </TableRow>
                                 ))
                             ) : (
-                                <TableRow><TableCell colSpan={7} className="text-center h-24">{selectedClassId ? 'No subjects assigned to this class.' : 'Select a class to see subjects.'}</TableCell></TableRow>
+                                <TableRow><TableCell colSpan={7} className="text-center h-24 border">{selectedClassId ? 'No subjects assigned to this class.' : 'Select a class to see subjects.'}</TableCell></TableRow>
                             )}
                             </TableBody>
                         </Table>
