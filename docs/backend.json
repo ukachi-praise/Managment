@@ -13,7 +13,7 @@
         "role": { "type": "string", "enum": ["Admin", "Teacher"], "description": "User's role in the system." },
         "assignedClassroomId": { "type": "string", "description": "For teachers, the ID of the classroom they are assigned to." }
       },
-      "required": ["id", "username", "role"]
+      "required": ["id", "username", "role", "email", "password"]
     },
     "Classroom": {
       "title": "Classroom",

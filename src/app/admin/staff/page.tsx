@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -28,11 +29,13 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { PlusCircle, Edit, Trash2 } from 'lucide-react';
+import { PlusCircle, Edit, Trash2, Loader2 } from 'lucide-react';
 import {
   useCollection,
   useFirestore,
   setDocumentNonBlocking,
+  useAuth,
+  initiateEmailSignUp,
 } from '@/firebase';
 import { useMemoFirebase } from '@/firebase/provider';
 import { collection, query, doc } from 'firebase/firestore';
@@ -46,6 +49,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
+import { createUserWithEmailAndPassword } from 'firebase/auth';
 
 type User = {
   id: string;
@@ -60,10 +64,14 @@ type Classroom = {
 };
 
 export default function StaffPage() {
-  const [open, setOpen] = useState(false);
+  const [addDialogOpen, setAddDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [selectedRole, setSelectedRole] = useState('Teacher');
+  const [isCreatingUser, setIsCreatingUser] = useState(false);
+
   const firestore = useFirestore();
+  const auth = useAuth();
   const { toast } = useToast();
 
   // --- Data Fetching ---
@@ -99,13 +107,51 @@ export default function StaffPage() {
 
   const handleOpenEditDialog = (user: User) => {
     setEditingUser(user);
-    setOpen(true);
+    setEditDialogOpen(true);
   };
 
-  const handleCloseDialog = () => {
+  const handleCloseEditDialog = () => {
     setEditingUser(null);
-    setOpen(false);
+    setEditDialogOpen(false);
   };
+  
+  const handleAddStaff = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setIsCreatingUser(true);
+    if (!firestore || !auth) {
+        toast({ variant: 'destructive', title: 'Firebase not initialized.' });
+        setIsCreatingUser(false);
+        return;
+    }
+
+    const formData = new FormData(event.currentTarget);
+    const email = formData.get('email') as string;
+    const password = formData.get('password') as string;
+    const role = formData.get('role') as 'Admin' | 'Teacher';
+    const assignedClassroomId = formData.get('assignedClassroomId') as string | undefined;
+
+    try {
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+
+      const userDocRef = doc(firestore, 'users', user.uid);
+      await setDocumentNonBlocking(userDocRef, {
+          email,
+          role,
+          assignedClassroomId: role === 'Teacher' ? assignedClassroomId : undefined,
+      }, {merge: false});
+
+      toast({ title: 'Staff Added', description: `${email} has been created and can now log in.` });
+      setAddDialogOpen(false);
+      event.currentTarget.reset();
+
+    } catch (error: any) {
+        toast({ variant: 'destructive', title: 'Error Creating Staff', description: error.message });
+    } finally {
+        setIsCreatingUser(false);
+    }
+  };
+
 
   const handleUpdateStaff = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -131,18 +177,74 @@ export default function StaffPage() {
     }
 
     toast({ title: 'Staff Updated', description: `${editingUser.email} has been updated.` });
-    handleCloseDialog();
+    handleCloseEditDialog();
   };
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold tracking-tight">Staff Management</h1>
-        {/* The "Add Staff" button is removed to focus on editing existing staff */}
+        <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
+            <DialogTrigger asChild>
+                <Button>
+                    <PlusCircle className="mr-2 h-4 w-4" />
+                    Add Staff
+                </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                    <DialogTitle>Add New Staff</DialogTitle>
+                    <DialogDescription>Create a new user and assign them a role.</DialogDescription>
+                </DialogHeader>
+                <form onSubmit={handleAddStaff} className="grid gap-4 py-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="email">Email</Label>
+                        <Input name="email" type="email" placeholder="staff@example.com" required />
+                    </div>
+                     <div className="space-y-2">
+                        <Label htmlFor="password">Temporary Password</Label>
+                        <Input name="password" type="password" required />
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="role">Role</Label>
+                        <Select name="role" required defaultValue="Teacher" onValueChange={setSelectedRole}>
+                            <SelectTrigger><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="Teacher">Teacher</SelectItem>
+                                <SelectItem value="Admin">Admin</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    {selectedRole === 'Teacher' && (
+                        <div className="space-y-2">
+                            <Label htmlFor="assignedClassroomId">Assign to Classroom</Label>
+                            <Select name="assignedClassroomId">
+                                <SelectTrigger><SelectValue placeholder="Select a class" /></SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="unassigned">Unassign</SelectItem>
+                                    {classroomsLoading ? (
+                                        <SelectItem value="loading" disabled>Loading...</SelectItem>
+                                    ) : (
+                                        classrooms?.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)
+                                    )}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    )}
+                    <DialogFooter className="mt-4">
+                        <Button type="button" variant="outline" onClick={() => setAddDialogOpen(false)}>Cancel</Button>
+                        <Button type="submit" disabled={isCreatingUser}>
+                            {isCreatingUser && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            Create User
+                        </Button>
+                    </DialogFooter>
+                </form>
+            </DialogContent>
+        </Dialog>
       </div>
 
       {/* Edit Staff Dialog */}
-      <Dialog open={open} onOpenChange={setOpen}>
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
               <DialogTitle>Edit Staff Member</DialogTitle>
@@ -182,7 +284,7 @@ export default function StaffPage() {
                 </div>
               )}
               <DialogFooter className="mt-4">
-                <Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
+                <Button type="button" variant="outline" onClick={handleCloseEditDialog}>Cancel</Button>
                 <Button type="submit">Save Changes</Button>
               </DialogFooter>
             </form>
