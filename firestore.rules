@@ -2,19 +2,30 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Users collection stores roles
+    function isAdmin() {
+      return request.auth.uid == 'GOpbb9SsavhpATk1p0KNmPGGQ0S2' || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    // Users can read/write their own user document
     match /users/{userId} {
       allow read, write: if request.auth.uid == userId;
     }
 
-    // Subjects collection only accessible by admins
-    match /subjects/{subjectId} {
-      allow read, write: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    // Admin-only collections
+    match /subjects/{doc=**} {
+      allow read, write: if isAdmin();
     }
-
-    // Classrooms collection only accessible by admins
-    match /classrooms/{classroomId} {
-      allow read, write: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    match /classrooms/{doc=**} {
+      allow read, write: if isAdmin();
+    }
+    match /students/{doc=**} {
+       allow read, write: if isAdmin();
+    }
+    match /enrollments/{doc=**} {
+       allow read, write: if isAdmin();
+    }
+    match /classroomSubjects/{doc=**} {
+       allow read, write: if isAdmin();
     }
   }
 }
