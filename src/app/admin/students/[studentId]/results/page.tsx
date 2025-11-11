@@ -4,7 +4,7 @@
 import { useParams, notFound } from 'next/navigation';
 import { ResultSheet } from '@/components/results/result-sheet';
 import { Button } from '@/components/ui/button';
-import { Download } from 'lucide-react';
+import { Download, Loader2 } from 'lucide-react';
 import { useDoc, useCollection, useFirestore } from '@/firebase';
 import { useMemoFirebase } from '@/firebase/provider';
 import { doc, collection, query, where } from 'firebase/firestore';
@@ -63,7 +63,7 @@ export default function StudentResultsPage() {
         </div>
         <div className="flex gap-2">
           <Button onClick={handleDownload} variant="outline" disabled={isLoading}>
-            <Download className="mr-2 h-4 w-4" /> 
+            {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" /> }
             {isLoading ? 'Loading...' : 'Download Result'}
           </Button>
         </div>

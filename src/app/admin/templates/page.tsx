@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -362,6 +361,8 @@ export default function TemplatesPage() {
     </div>
   )
 
+  const isLoading = settingsLoading || templateLoading || classroomsLoading || subjectsLoading || classroomSubjectsLoading;
+
   return (
     <div className="h-full flex flex-col bg-muted print:bg-white no-print" onClick={() => setSelectedElement(null)}>
         {/* Main Content */}
@@ -517,7 +518,7 @@ export default function TemplatesPage() {
                                     </TableRow>
                                     </TableHeader>
                                     <TableBody>
-                                    {subjectsLoading ? (
+                                    {isLoading ? (
                                         <TableRow><TableCell colSpan={7} className="text-center border-b border-black p-1 text-xs">Loading subjects...</TableCell></TableRow>
                                     ) : displayedSubjects.length > 0 ? (
                                         displayedSubjects.map(subject => (
@@ -686,8 +687,6 @@ export default function TemplatesPage() {
     </div>
   );
 }
-    
-
     
 
     
