@@ -47,14 +47,19 @@ type Result = {
   exam: number | null;
 };
 
+type StudentResults = {
+    studentName: string;
+    scores: Record<string, { total: number; grade: string }>; // subjectId -> score
+};
+
+
 export function ResultViewTable() {
   const firestore = useFirestore();
 
   const [selectedClass, setSelectedClass] = useState<string | null>(null);
-  const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
-  const [results, setResults] = useState<Record<string, Result>>({}); // studentId -> Result
+  const [studentResults, setStudentResults] = useState<StudentResults[]>([]);
   const [isFetchingResults, setIsFetchingResults] = useState(false);
-  const [initialFetchDone, setInitialFetchDone] = useState(false);
+  
 
   // --- Data Fetching ---
   const classroomsQuery = useMemoFirebase(
@@ -84,7 +89,7 @@ export function ResultViewTable() {
   const assignedSubjects = useMemo(() => {
     if (!classSubjects || !allSubjects) return [];
     const subjectIds = new Set(classSubjects.map(cs => cs.subjectId));
-    return allSubjects.filter(s => subjectIds.has(s.id));
+    return allSubjects.filter(s => subjectIds.has(s.id)).sort((a,b) => a.name.localeCompare(b.name));
   }, [classSubjects, allSubjects]);
 
   const enrollmentsQuery = useMemoFirebase(
@@ -108,62 +113,62 @@ export function ResultViewTable() {
   const studentsInClass = useMemo(() => {
       if (!enrollments || !allStudents) return [];
       const studentIds = new Set(enrollments.map(e => e.studentId));
-      return allStudents.filter(s => studentIds.has(s.id));
+      return allStudents.filter(s => studentIds.has(s.id)).sort((a,b) => a.name.localeCompare(b.name));
   }, [enrollments, allStudents]);
 
-  // --- Fetch existing results when class and subject are selected ---
+  // --- Fetch existing results when class is selected ---
   useEffect(() => {
-    if (!selectedClass || !selectedSubject) {
-      setResults({});
-      setInitialFetchDone(false);
+    if (!selectedClass) {
+      setStudentResults([]);
       return;
     };
     
     const fetchResults = async () => {
+        if (studentsInClass.length === 0) {
+            setStudentResults([]);
+            return;
+        }
         setIsFetchingResults(true);
         const resultsQuery = query(
             collection(firestore, 'results'),
             where('classroomId', '==', selectedClass),
-            where('subjectId', '==', selectedSubject)
             // would also filter by termId and sessionId
         );
 
         const querySnapshot = await getDocs(resultsQuery);
-        const fetchedResults: Record<string, Result> = {};
-        querySnapshot.forEach((doc) => {
-            const data = doc.data() as Result;
-            fetchedResults[data.studentId] = { ...data, id: doc.id };
-        });
+        const allResultDocs = querySnapshot.docs.map(doc => ({ ...doc.data() as Result, id: doc.id }));
 
-        // Pre-fill results for students who don't have any yet
-        studentsInClass.forEach(student => {
-          if (!fetchedResults[student.id]) {
-            fetchedResults[student.id] = {
-              studentId: student.id,
-              subjectId: selectedSubject,
-              classroomId: selectedClass,
-              ca1: null, ca2: null, ca3: null, exam: null
-            };
-          }
+        const processedResults = studentsInClass.map(student => {
+            const studentScores: Record<string, { total: number, grade: string }> = {};
+
+            assignedSubjects.forEach(subject => {
+                const result = allResultDocs.find(r => r.studentId === student.id && r.subjectId === subject.id);
+                if (result) {
+                    const total = (result.ca1 || 0) + (result.ca2 || 0) + (result.ca3 || 0) + (result.exam || 0);
+                    const { grade } = calculateGrade(total);
+                    studentScores[subject.id] = { total, grade };
+                } else {
+                    studentScores[subject.id] = { total: 0, grade: 'N/A' };
+                }
+            });
+
+            return { studentName: student.name, scores: studentScores };
         });
         
-        setResults(fetchedResults);
+        setStudentResults(processedResults);
         setIsFetchingResults(false);
-        setInitialFetchDone(true);
     };
 
     fetchResults();
-  }, [selectedClass, selectedSubject, studentsInClass, firestore]);
+  }, [selectedClass, studentsInClass, assignedSubjects, firestore]);
 
   const handleClassChange = (classId: string) => {
     setSelectedClass(classId);
-    setSelectedSubject(null);
-    setResults({});
-    setInitialFetchDone(false);
+    setStudentResults([]);
   }
   
   const isLoading = classroomsLoading || allSubjectsLoading;
-  const isDisplayingData = selectedClass && selectedSubject;
+  const isDisplayingData = selectedClass;
 
   if (isLoading) {
     return <Card><CardHeader><CardTitle>Loading Data...</CardTitle></CardHeader><CardContent><Loader2 className="animate-spin" /></CardContent></Card>
@@ -186,18 +191,6 @@ export function ResultViewTable() {
               ))}
             </SelectContent>
           </Select>
-          <Select onValueChange={setSelectedSubject} value={selectedSubject || ''} disabled={!selectedClass || classSubjectsLoading}>
-            <SelectTrigger>
-              <SelectValue placeholder={classSubjectsLoading ? "Loading..." : "Select a Subject"} />
-            </SelectTrigger>
-            <SelectContent>
-              {assignedSubjects.map((s) => (
-                <SelectItem key={s.id} value={s.id}>
-                  {s.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
         </div>
       </CardHeader>
       <CardContent>
@@ -207,38 +200,36 @@ export function ResultViewTable() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="w-[250px]">Student Name</TableHead>
-                    <TableHead>CA1 (10)</TableHead>
-                    <TableHead>CA2 (10)</TableHead>
-                    <TableHead>CA3 (10)</TableHead>
-                    <TableHead>Exam (70)</TableHead>
-                    <TableHead>Total (100)</TableHead>
-                    <TableHead>Grade</TableHead>
-                    <TableHead>Remark</TableHead>
+                    <TableHead className="w-[250px] font-bold sticky left-0 bg-background z-10">Student Name</TableHead>
+                    {classSubjectsLoading ? (
+                        <TableHead>Loading Subjects...</TableHead>
+                    ) : (
+                        assignedSubjects.map(subject => (
+                            <TableHead key={subject.id} className="text-center">{subject.name}</TableHead>
+                        ))
+                    )}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {isFetchingResults || enrollmentsLoading || allStudentsLoading ? (
-                     <TableRow><TableCell colSpan={8} className="text-center"><Loader2 className="inline-block animate-spin mr-2" /> Loading scores...</TableCell></TableRow>
-                  ) : (
-                    studentsInClass.map((student) => {
-                      const result = results[student.id] || { ca1: 0, ca2: 0, ca3: 0, exam: 0 };
-                      const total = (result.ca1 || 0) + (result.ca2 || 0) + (result.ca3 || 0) + (result.exam || 0);
-                      const { grade: finalGrade, remark } = calculateGrade(total);
-
-                      return (
-                        <TableRow key={student.id}>
-                          <TableCell className="font-medium">{student.name}</TableCell>
-                          <TableCell>{result.ca1 || '--'}</TableCell>
-                          <TableCell>{result.ca2 || '--'}</TableCell>
-                          <TableCell>{result.ca3 || '--'}</TableCell>
-                          <TableCell>{result.exam || '--'}</TableCell>
-                          <TableCell>{total}</TableCell>
-                          <TableCell>{finalGrade}</TableCell>
-                          <TableCell>{remark}</TableCell>
+                     <TableRow><TableCell colSpan={assignedSubjects.length + 1} className="text-center"><Loader2 className="inline-block animate-spin mr-2" /> Loading scores...</TableCell></TableRow>
+                  ) : studentResults.length > 0 ? (
+                    studentResults.map((studentResult) => (
+                        <TableRow key={studentResult.studentName}>
+                          <TableCell className="font-medium sticky left-0 bg-background z-10">{studentResult.studentName}</TableCell>
+                          {assignedSubjects.map(subject => (
+                              <TableCell key={subject.id} className="text-center">
+                                  {studentResult.scores[subject.id]?.total ?? '--'}
+                              </TableCell>
+                          ))}
                         </TableRow>
-                      );
-                    })
+                    ))
+                  ) : (
+                    <TableRow>
+                        <TableCell colSpan={assignedSubjects.length + 1} className="text-center h-24">
+                           No students or results found for this class.
+                        </TableCell>
+                    </TableRow>
                   )}
                 </TableBody>
               </Table>
@@ -246,7 +237,7 @@ export function ResultViewTable() {
           </>
         ) : (
           <div className="text-center text-muted-foreground py-12">
-            Please select a class and subject to view student scores.
+            Please select a class to view student scores.
           </div>
         )}
       </CardContent>

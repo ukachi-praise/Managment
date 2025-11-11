@@ -10,7 +10,7 @@ export default function ResultsPage() {
           View Student Results
         </h1>
         <p className="text-muted-foreground">
-          Select a class and subject to view student scores.
+          Select a class to view all student scores for that class.
         </p>
       </div>
 
