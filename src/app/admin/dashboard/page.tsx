@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -7,7 +8,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Users, Presentation, BookCopy } from 'lucide-react';
-import { useCollection } from '@/firebase';
+import { useCollection, useUser } from '@/firebase';
 import { useMemoFirebase, useFirestore } from '@/firebase/provider';
 import { collection, query } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -38,22 +39,23 @@ function StatCard({ title, value, icon: Icon, note, isLoading }: { title: string
 
 export default function AdminDashboard() {
   const firestore = useFirestore();
+  const { user } = useUser();
 
   const studentsQuery = useMemoFirebase(
-    () => (firestore ? query(collection(firestore, 'students')) : null),
-    [firestore]
+    () => (firestore && user ? query(collection(firestore, 'students')) : null),
+    [firestore, user]
   );
   const classroomsQuery = useMemoFirebase(
-    () => (firestore ? query(collection(firestore, 'classrooms')) : null),
-    [firestore]
+    () => (firestore && user ? query(collection(firestore, 'classrooms')) : null),
+    [firestore, user]
   );
   const subjectsQuery = useMemoFirebase(
-    () => (firestore ? query(collection(firestore, 'subjects')) : null),
-    [firestore]
+    () => (firestore && user ? query(collection(firestore, 'subjects')) : null),
+    [firestore, user]
   );
   const usersQuery = useMemoFirebase(
-    () => (firestore ? query(collection(firestore, 'users')) : null),
-    [firestore]
+    () => (firestore && user ? query(collection(firestore, 'users')) : null),
+    [firestore, user]
   );
 
   const { data: students, isLoading: studentsLoading } = useCollection(studentsQuery);

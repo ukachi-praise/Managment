@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useParams } from 'next/navigation';
@@ -22,6 +23,7 @@ import {
   useFirestore,
   useCollection,
   useDoc,
+  useUser,
 } from '@/firebase';
 import { useMemoFirebase } from '@/firebase/provider';
 import { collection, query, where, doc } from 'firebase/firestore';
@@ -38,6 +40,7 @@ export default function TeacherClassPage() {
   const params = useParams();
   const classroomId = params.classroomId as string;
   const firestore = useFirestore();
+  const { user } = useUser();
 
   // --- Data Fetching ---
   const classroomRef = useMemoFirebase(
@@ -59,8 +62,8 @@ export default function TeacherClassPage() {
   const { data: enrollments, isLoading: enrollmentsLoading } = useCollection<Enrollment>(enrollmentsQuery);
 
   const allStudentsQuery = useMemoFirebase(
-    () => (firestore ? collection(firestore, 'students') : null),
-    [firestore]
+    () => (firestore && user ? collection(firestore, 'students') : null),
+    [firestore, user]
   );
   const { data: allStudents, isLoading: allStudentsLoading } = useCollection<Student>(allStudentsQuery);
   

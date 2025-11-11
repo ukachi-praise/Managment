@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -23,6 +24,7 @@ import { Loader2, Download } from 'lucide-react';
 import {
   useFirestore,
   useCollection,
+  useUser,
 } from '@/firebase';
 import { useMemoFirebase } from '@/firebase/provider';
 import {
@@ -42,6 +44,7 @@ type Enrollment = { id: string; studentId: string; classroomId: string };
 export function ResultViewTable() {
   const firestore = useFirestore();
   const { toast } = useToast();
+  const { user } = useUser();
 
   const [selectedClass, setSelectedClass] = useState<string | null>(null);
   const [isZipping, setIsZipping] = useState(false);
@@ -66,8 +69,8 @@ export function ResultViewTable() {
   const { data: enrollments, isLoading: enrollmentsLoading } = useCollection<Enrollment>(enrollmentsQuery);
 
   const allStudentsQuery = useMemoFirebase(
-    () => (firestore ? collection(firestore, 'students') : null),
-    [firestore]
+    () => (firestore && user ? collection(firestore, 'students') : null),
+    [firestore, user]
   );
   const { data: allStudents, isLoading: allStudentsLoading } = useCollection<Student>(allStudentsQuery);
   
