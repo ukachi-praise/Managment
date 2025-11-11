@@ -14,7 +14,8 @@ service cloud.firestore {
       return request.auth != null;
     }
     function isAdmin() {
-      return exists(/databases/$(database)/documents/roles_admin/$(request.auth.uid));
+      // Grant admin if the UID is the hardcoded admin UID OR if they have a role document.
+      return request.auth.uid == 'GOpbb9SsavhpATk1p0KNmPGGQ0S2' || exists(/databases/$(database)/documents/roles_admin/$(request.auth.uid));
     }
     function isTeacher() {
       return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Teacher';
