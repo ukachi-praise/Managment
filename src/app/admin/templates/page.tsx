@@ -223,18 +223,18 @@ export default function TemplatesPage() {
       )
     }
 
-    const currentSettings = settings[selectedElement];
+    const currentSettings = settings[selectedElement as keyof TemplateSettings];
 
     return (
         <div className="p-4">
             <h3 className="font-semibold text-lg mb-4 capitalize">{selectedElement.replace(/([A-Z])/g, ' $1')} Settings</h3>
              <div className="space-y-4">
-                {'fontSize' in currentSettings && (
+                {currentSettings && 'fontSize' in currentSettings && (
                     <div className="space-y-2">
                         <Label>Font Size: {currentSettings.fontSize}px</Label>
                         <Slider 
                             value={[currentSettings.fontSize]}
-                            onValueChange={(value) => handleSettingsChange(selectedElement, 'fontSize', value[0])}
+                            onValueChange={(value) => handleSettingsChange(selectedElement as keyof TemplateSettings, 'fontSize', value[0])}
                             min={8}
                             max={24}
                             step={1}
