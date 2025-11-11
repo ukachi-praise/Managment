@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -409,7 +410,17 @@ export default function TemplatesPage() {
                                     </TableRow>
                                     ))
                                 ) : (
-                                    <TableRow><TableCell colSpan={7} className="text-center h-24 border">{selectedClassId ? 'No subjects assigned to this class.' : 'Select a class to see subjects.'}</TableCell></TableRow>
+                                    Array.from({ length: 12 }).map((_, index) => (
+                                        <TableRow key={`placeholder-${index}`}>
+                                            <TableCell className="border">Subject Name</TableCell>
+                                            <TableCell className="text-center border">--</TableCell>
+                                            <TableCell className="text-center border">--</TableCell>
+                                            <TableCell className="text-center border">--</TableCell>
+                                            <TableCell className="text-center border">--</TableCell>
+                                            <TableCell className="text-center border">--</TableCell>
+                                            <TableCell className="border">--</TableCell>
+                                        </TableRow>
+                                    ))
                                 )}
                                 </TableBody>
                             </Table>
