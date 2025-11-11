@@ -310,13 +310,26 @@ export default function TemplatesPage() {
                         onClick={(e) => handleElementClick(e, 'studentInfo')}
                         style={{ fontSize: `${settings.studentInfo.fontSize}px` }}
                     >
-                        <div className="grid grid-cols-2 gap-x-8 gap-y-1">
-                            <div className="flex"><p className="w-28 font-semibold">Student Name:</p><p>John Doe</p></div>
-                            <div className="flex"><p className="w-28 font-semibold">Admission No:</p><p>JKS-00123</p></div>
-                            <div className="flex"><p className="w-28 font-semibold">Class:</p><p>{selectedClassroom?.name || 'Primary 5'}</p></div>
-                            <div className="flex"><p className="w-28 font-semibold">Attendance:</p><p>60/65 Days</p></div>
-                            <div className="flex col-span-2"><p className="w-28 font-semibold">Class Teacher:</p><p>Mrs. Ada</p></div>
-                        </div>
+                        <table className="w-full">
+                            <tbody>
+                                <tr>
+                                    <td className="font-semibold pr-2">Student Name:</td>
+                                    <td>John Doe</td>
+                                    <td className="font-semibold px-2">Admission No:</td>
+                                    <td>JKS-00123</td>
+                                </tr>
+                                <tr>
+                                    <td className="font-semibold pr-2">Class:</td>
+                                    <td>{selectedClassroom?.name || 'Primary 5'}</td>
+                                    <td className="font-semibold px-2">Attendance:</td>
+                                    <td>60/65 Days</td>
+                                </tr>
+                                <tr>
+                                    <td className="font-semibold pr-2">Class Teacher:</td>
+                                    <td colSpan={3}>Mrs. Ada</td>
+                                </tr>
+                            </tbody>
+                        </table>
                     </div>
                 )}
                 
