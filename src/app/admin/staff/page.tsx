@@ -176,13 +176,13 @@ export default function StaffPage() {
     
     setDocumentNonBlocking(userDocRef, updatedData, { merge: true });
     
-    // Also update the classroom with the teacherId if it has changed
+    // Also update the classroom with the teacherId and teacherName if it has changed
     if (role === 'Teacher' && assignedClassroomId && assignedClassroomId !== 'unassigned') {
         const classroomDocRef = doc(firestore, 'classrooms', assignedClassroomId);
-        setDocumentNonBlocking(classroomDocRef, { teacherId: editingUser.id }, { merge: true });
+        setDocumentNonBlocking(classroomDocRef, { teacherId: editingUser.id, teacherName: name }, { merge: true });
     }
 
-    toast({ title: 'Staff Updated', description: `${editingUser.email} has been updated.` });
+    toast({ title: 'Staff Updated', description: `${editingUser.name} has been updated.` });
     handleCloseEditDialog();
     setIsSubmitting(false);
   };
@@ -197,7 +197,7 @@ export default function StaffPage() {
         toast({
             variant: 'destructive',
             title: 'Staff Removed',
-            description: `${user.email} has been removed from the staff list.`,
+            description: `${user.name} has been removed from the staff list.`,
         });
     };
 
@@ -334,6 +334,7 @@ export default function StaffPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>Name</TableHead>
+                <TableHead>Email</TableHead>
                 <TableHead>Role</TableHead>
                 <TableHead>Assigned Class</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
@@ -344,6 +345,7 @@ export default function StaffPage() {
                 Array.from({ length: 3 }).map((_, i) => (
                   <TableRow key={i}>
                     <TableCell><Skeleton className="h-5 w-40" /></TableCell>
+                    <TableCell><Skeleton className="h-5 w-48" /></TableCell>
                     <TableCell><Skeleton className="h-5 w-20" /></TableCell>
                     <TableCell><Skeleton className="h-5 w-24" /></TableCell>
                     <TableCell className="text-right">
@@ -358,6 +360,7 @@ export default function StaffPage() {
                 users.map((user) => (
                   <TableRow key={user.id}>
                     <TableCell className="font-medium">{user.name}</TableCell>
+                    <TableCell>{user.email}</TableCell>
                     <TableCell><Badge variant={user.role === 'Admin' ? 'default' : 'secondary'}>{user.role}</Badge></TableCell>
                     <TableCell>{user.role === 'Teacher' && user.assignedClassroomId ? classroomMap[user.assignedClassroomId] || 'N/A' : 'N/A'}</TableCell>
                     <TableCell className="text-right">
@@ -372,7 +375,7 @@ export default function StaffPage() {
                 ))
               ) : (
                  <TableRow>
-                    <TableCell colSpan={4} className="text-center h-24">No staff found.</TableCell>
+                    <TableCell colSpan={5} className="text-center h-24">No staff found.</TableCell>
                  </TableRow>
               )}
             </TableBody>

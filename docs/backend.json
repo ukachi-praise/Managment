@@ -21,7 +21,8 @@
       "properties": {
         "id": { "type": "string", "description": "Unique identifier for the classroom." },
         "name": { "type": "string", "description": "Name of the classroom (e.g., 'Creche', 'Primary 5')." },
-        "teacherId": { "type": "string", "description": "Reference to the assigned teacher." }
+        "teacherId": { "type": "string", "description": "Reference to the assigned teacher." },
+        "teacherName": { "type": "string", "description": "Denormalized name of the assigned teacher." }
       },
       "required": ["id", "name"]
     },

@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -37,7 +38,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 type Classroom = {
   id: string;
   name: string;
-  teacher?: string;
+  teacherName?: string;
 };
 
 export default function ClassroomsPage() {
@@ -58,7 +59,6 @@ export default function ClassroomsPage() {
     const formData = new FormData(event.currentTarget);
     const newClassroom = {
       name: formData.get('name') as string,
-      teacher: formData.get('teacher') as string,
     };
     
     addDocumentNonBlocking(collection(firestore, 'classrooms'), newClassroom);
@@ -95,17 +95,6 @@ export default function ClassroomsPage() {
                   placeholder="e.g. Primary 3"
                   className="col-span-3"
                   required
-                />
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="teacher" className="text-right">
-                  Teacher
-                </Label>
-                <Input
-                  id="teacher"
-                  name="teacher"
-                  placeholder="e.g. Mrs. Jane Doe"
-                  className="col-span-3"
                 />
               </div>
               <DialogFooter>
@@ -150,7 +139,7 @@ export default function ClassroomsPage() {
                 classrooms.map((classroom) => (
                   <TableRow key={classroom.id}>
                     <TableCell className="font-medium">{classroom.name}</TableCell>
-                    <TableCell>{classroom.teacher || 'N/A'}</TableCell>
+                    <TableCell>{classroom.teacherName || 'N/A'}</TableCell>
                     <TableCell className="text-right">
                       <Button variant="ghost" size="icon">
                         <Edit className="h-4 w-4" />
