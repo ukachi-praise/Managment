@@ -70,3 +70,21 @@ export const grades: Grade[] = [
   { studentId: 'st4', subjectId: 's3', ca1: 9, ca2: 10, ca3: 9, exam: 62 },
   { studentId: 'st4', subjectId: 's4', ca1: 9, ca2: 8, ca3: 8, exam: 58 },
 ];
+
+export const headTeacherRemarks: string[] = [
+    "Excellent Performance",
+    "Very Good Effort",
+    "Good Performance",
+    "Satisfactory Progress",
+    "Needs Improvement",
+    "Requires More Attention",
+    "Outstanding Achievement",
+    "Consistent Performer",
+    "Shows Great Potential",
+    "Attention Required in Some Areas",
+    "Exceptional Improvement",
+    "Can Do Better",
+    "Excellent Conduct and Discipline",
+    "Very Good Conduct",
+    "Needs to Improve Behaviour",
+];

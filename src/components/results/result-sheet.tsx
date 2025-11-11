@@ -8,6 +8,13 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Printer, Download } from 'lucide-react';
@@ -18,12 +25,15 @@ import {
   classrooms,
   subjects,
   grades,
+  headTeacherRemarks
 } from '@/lib/data';
 import { calculateGrade } from '@/lib/utils';
 import { Logo } from '../shared/logo';
 import { Separator } from '../ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import { useState } from 'react';
+import { Textarea } from '../ui/textarea';
+import { Label } from '../ui/label';
 
 type ResultEntry = {
   subject: Subject;
@@ -36,6 +46,8 @@ type ResultEntry = {
 export function ResultSheet({ student }: { student: Student }) {
   const { toast } = useToast();
   const [isZipping, setIsZipping] = useState(false);
+  const [teacherRemark, setTeacherRemark] = useState("A brilliant student with a promising future. Keep it up.");
+  const [headTeacherRemark, setHeadTeacherRemark] = useState("Excellent Performance");
   const classroom = classrooms.find((c) => c.id === student.classId);
   const studentGrades = grades.filter((g) => g.studentId === student.id);
 
@@ -79,6 +91,30 @@ export function ResultSheet({ student }: { student: Student }) {
           </Button>
         </div>
       </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 no-print">
+          <div className='space-y-2'>
+            <Label>Teacher's Remark</Label>
+            <Textarea value={teacherRemark} onChange={(e) => setTeacherRemark(e.target.value)} />
+          </div>
+          <div className='space-y-2'>
+            <Label>Head Teacher's Remark</Label>
+             <Select value={headTeacherRemark} onValueChange={setHeadTeacherRemark}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a remark" />
+                </SelectTrigger>
+                <SelectContent>
+                  {headTeacherRemarks.map((remark, index) => (
+                    <SelectItem key={index} value={remark}>
+                      {remark}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+          </div>
+      </div>
+
+
       <div className="print-area rounded-lg border bg-card text-card-foreground shadow-sm p-8">
         <header className="mb-8">
           <div className="flex items-center justify-between">
@@ -152,7 +188,11 @@ export function ResultSheet({ student }: { student: Student }) {
             </div>
             <div>
                 <h3 className="font-semibold text-lg">Teacher's Remarks:</h3>
-                <p className="text-sm text-muted-foreground border p-2 rounded-md min-h-[50px]">A brilliant student with a promising future. Keep it up.</p>
+                <p className="text-sm text-muted-foreground border p-2 rounded-md min-h-[50px]">{teacherRemark}</p>
+            </div>
+             <div>
+                <h3 className="font-semibold text-lg">Head Teacher's Remarks:</h3>
+                <p className="text-sm text-muted-foreground border p-2 rounded-md min-h-[50px]">{headTeacherRemark}</p>
             </div>
             <div className="flex justify-between items-end pt-12">
               <div className="text-center">
