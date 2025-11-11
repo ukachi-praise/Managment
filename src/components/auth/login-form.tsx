@@ -52,6 +52,7 @@ export function LoginForm() {
     }
     if (user) {
       const checkRole = async () => {
+        if (!firestore) return;
         // Temporary: Hardcoded admin check
         if (user.uid === ADMIN_UID) {
           toast({
@@ -106,6 +107,7 @@ export function LoginForm() {
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
+    if (!auth) return;
     try {
         await signInWithEmailAndPassword(auth, values.email, values.password);
         // onAuthStateChanged will handle the redirect
@@ -152,7 +154,7 @@ export function LoginForm() {
                 <FormLabel>Password</FormLabel>
                 <Link
                   href="/forgot-password"
-                  className="text-sm text-primary-foreground/80 hover:underline"
+                  className="text-sm text-muted-foreground hover:underline"
                 >
                   Forgot password?
                 </Link>
@@ -164,7 +166,7 @@ export function LoginForm() {
             </FormItem>
           )}
         />
-        <Button variant="secondary" type="submit" className="w-full" disabled={isLoading}>
+        <Button type="submit" className="w-full" disabled={isLoading}>
           {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           Sign In
         </Button>
