@@ -28,6 +28,8 @@ const formSchema = z.object({
   password: z.string().min(1, { message: 'Password is required.' }),
 });
 
+const ADMIN_UID = 'GOpbb9SsavhpATk1p0KNmPGGQ0S2';
+
 export function LoginForm() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
@@ -50,6 +52,16 @@ export function LoginForm() {
     }
     if (user) {
       const checkRole = async () => {
+        // Temporary: Hardcoded admin check
+        if (user.uid === ADMIN_UID) {
+          toast({
+            title: 'Admin Login',
+            description: 'Redirecting to admin login...',
+          });
+          router.push('/admin/login');
+          return;
+        }
+
         const adminRoleRef = doc(firestore, 'roles_admin', user.uid);
         const adminDoc = await getDoc(adminRoleRef);
         if (adminDoc.exists()) {
@@ -123,5 +135,3 @@ export function LoginForm() {
     </Form>
   );
 }
-
-    
