@@ -4,9 +4,7 @@
 import { notFound } from 'next/navigation';
 import { ResultSheet } from '@/components/results/result-sheet';
 import { Button } from '@/components/ui/button';
-import { Printer, Download } from 'lucide-react';
-import { useState } from 'react';
-import { useToast } from '@/hooks/use-toast';
+import { Printer } from 'lucide-react';
 
 
 export default function StudentResultsPage({
@@ -15,9 +13,6 @@ export default function StudentResultsPage({
   params: { studentId: string };
 }) {
 
-  const { toast } = useToast();
-  const [isZipping, setIsZipping] = useState(false);
-
   if (!params.studentId) {
     notFound();
   }
@@ -25,22 +20,6 @@ export default function StudentResultsPage({
   const handlePrint = () => {
     window.print();
   };
-
-  const handleBulkDownload = () => {
-    setIsZipping(true);
-    toast({
-      title: 'Generating ZIP...',
-      description: 'Preparing bulk PDF export for the class. This may take a moment.',
-    });
-    setTimeout(() => {
-      setIsZipping(false);
-      toast({
-        title: 'Download Ready!',
-        description: 'The ZIP archive has been successfully generated.',
-      });
-    }, 2500);
-  };
-
 
   return (
     <div className="space-y-6">
@@ -54,10 +33,6 @@ export default function StudentResultsPage({
         <div className="flex gap-2">
           <Button onClick={handlePrint} variant="outline">
             <Printer className="mr-2 h-4 w-4" /> Print Result
-          </Button>
-          <Button onClick={handleBulkDownload} disabled={isZipping}>
-            <Download className="mr-2 h-4 w-4" />
-            {isZipping ? 'Packaging...' : 'Download Class ZIP'}
           </Button>
         </div>
       </div>
