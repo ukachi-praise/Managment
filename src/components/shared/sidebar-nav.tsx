@@ -10,6 +10,7 @@ import {
   Users,
   Presentation,
   BookCopy,
+  MessageSquareQuote,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -17,10 +18,6 @@ import {
   SidebarHeader,
   SidebarMenu,
   SidebarMenuItem,
-  SidebarMenuButton,
-  SidebarFooter,
-  SidebarGroup,
-  SidebarGroupLabel,
 } from '@/components/ui/sidebar';
 import { Logo } from './logo';
 import { Button } from '../ui/button';
@@ -36,6 +33,7 @@ const adminNavItems: NavItem[] = [
   { href: '/admin/students', label: 'Students', icon: Users },
   { href: '/admin/classrooms', label: 'Classrooms', icon: Presentation },
   { href: '/admin/subjects', label: 'Subjects', icon: BookCopy },
+  { href: '/admin/remarks', label: 'Remarks', icon: MessageSquareQuote },
   { href: '/admin/results', label: 'Results', icon: ClipboardList },
   { href: '/admin/settings', label: 'Settings', icon: Settings },
 ];
@@ -60,7 +58,7 @@ export function SidebarNav({ role }: { role: 'admin' | 'teacher' }) {
             <SidebarMenuItem key={item.href}>
               <Button
                 asChild
-                variant={pathname === item.href ? 'secondary' : 'ghost'}
+                variant={pathname.startsWith(item.href) ? 'secondary' : 'ghost'}
                 className="w-full justify-start"
               >
                 <Link href={item.href}>
@@ -72,9 +70,6 @@ export function SidebarNav({ role }: { role: 'admin' | 'teacher' }) {
           ))}
         </SidebarMenu>
       </SidebarContent>
-      <SidebarFooter>
-        {/* Placeholder for footer content if needed */}
-      </SidebarFooter>
     </Sidebar>
   );
 }
