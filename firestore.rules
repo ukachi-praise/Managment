@@ -20,7 +20,7 @@ service cloud.firestore {
 
     // Admins can read the whole collection, users can read/write their own document
     match /users/{userId} {
-      allow read, write: if request.auth.uid == userId;
+      allow read, write: if request.auth.uid == userId || isAdmin();
       allow list, get: if isAdmin();
     }
 
