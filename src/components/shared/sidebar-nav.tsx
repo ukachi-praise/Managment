@@ -11,6 +11,7 @@ import {
   Presentation,
   BookCopy,
   MessageSquareQuote,
+  LayoutTemplate,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -35,6 +36,7 @@ const adminNavItems: NavItem[] = [
   { href: '/admin/subjects', label: 'Subjects', icon: BookCopy },
   { href: '/admin/remarks', label: 'Remarks', icon: MessageSquareQuote },
   { href: '/admin/results', label: 'Results', icon: ClipboardList },
+  { href: '/admin/templates', label: 'Templates', icon: LayoutTemplate },
   { href: '/admin/settings', label: 'Settings', icon: Settings },
 ];
 
