@@ -1,23 +1,56 @@
 
 'use client';
 
-import { notFound, useParams } from 'next/navigation';
+import { useParams, notFound } from 'next/navigation';
 import { ResultSheet } from '@/components/results/result-sheet';
 import { Button } from '@/components/ui/button';
-import { Printer } from 'lucide-react';
+import { Download } from 'lucide-react';
+import { useDoc, useCollection, useFirestore } from '@/firebase';
+import { useMemoFirebase } from '@/firebase/provider';
+import { doc, collection, query, where } from 'firebase/firestore';
+import { useMemo } from 'react';
+import { Skeleton } from '@/components/ui/skeleton';
 
 
 export default function StudentResultsPage() {
   const params = useParams();
   const studentId = params.studentId as string;
+  const firestore = useFirestore();
+
+  // --- Data Fetching ---
+  const studentRef = useMemoFirebase(
+    () => (firestore && studentId ? doc(firestore, 'students', studentId) : null),
+    [firestore, studentId]
+  );
+  const { data: student, isLoading: studentLoading } = useDoc(studentRef);
+
+  const enrollmentsQuery = useMemoFirebase(
+    () => (studentId ? query(collection(firestore, 'enrollments'), where('studentId', '==', studentId)) : null),
+    [firestore, studentId]
+  );
+  const { data: enrollments, isLoading: enrollmentsLoading } = useCollection(enrollmentsQuery);
+  const classroomId = useMemo(() => enrollments?.[0]?.classroomId, [enrollments]);
+
+  const classroomRef = useMemoFirebase(
+    () => (firestore && classroomId ? doc(firestore, 'classrooms', classroomId) : null),
+    [firestore, classroomId]
+  );
+  const { data: classroom, isLoading: classroomLoading } = useDoc(classroomRef);
 
   if (!studentId) {
     notFound();
   }
 
-  const handlePrint = () => {
+  const handleDownload = () => {
+    if (!student || !classroom) return;
+
+    const originalTitle = document.title;
+    document.title = `${student.name} - ${classroom.name} - Report`;
     window.print();
+    document.title = originalTitle;
   };
+  
+  const isLoading = studentLoading || enrollmentsLoading || classroomLoading;
 
   return (
     <div className="space-y-6">
@@ -29,13 +62,24 @@ export default function StudentResultsPage() {
             </p>
         </div>
         <div className="flex gap-2">
-          <Button onClick={handlePrint} variant="outline">
-            <Printer className="mr-2 h-4 w-4" /> Print Result
+          <Button onClick={handleDownload} variant="outline" disabled={isLoading}>
+            <Download className="mr-2 h-4 w-4" /> 
+            {isLoading ? 'Loading...' : 'Download Result'}
           </Button>
         </div>
       </div>
-
-      <ResultSheet studentId={studentId} />
+      
+      {isLoading ? (
+        <div className="relative mx-auto aspect-[210/297] w-full max-w-[210mm] bg-white p-6 shadow-lg">
+          <Skeleton className="h-full w-full" />
+        </div>
+      ) : student && classroom ? (
+        <ResultSheet student={student} classroom={classroom} />
+      ) : (
+        <div className="text-center text-muted-foreground py-12">
+            Could not load student or classroom data.
+        </div>
+      )}
 
     </div>
   );

@@ -34,7 +34,6 @@ import { Separator } from '@/components/ui/separator';
 type StudentData = { id: string; name: string; admissionNumber: string };
 type Subject = { id: string; name: string };
 type Classroom = { id: string; name: string; teacherName?: string; };
-type Enrollment = { studentId: string; classroomId: string };
 type Result = { subjectId: string; ca1: number; ca2: number; ca3: number; exam: number; daysAttended: number; sessionId: string; termId: string; };
 type SchoolSettingsData = { currentSession: string; currentTermId: string; daysSchoolOpened: number; nextTermResumptionDate: Timestamp | Date | string; };
 type TemplateSettings = { studentInfo: { fontSize: number; visible: boolean; }; header: { visible: boolean; }; subjectsTable: { visible: boolean; }; summary: { visible: boolean; }; softSkills: { visible: boolean; }; gradingKey: { visible: boolean; }; remarks: { visible: boolean; }; signatures: { visible: boolean; }; };
@@ -55,9 +54,16 @@ const StudentInfoDetail = ({ label, value, isLoading = false }: { label: string,
     </div>
 );
 
+interface ResultSheetProps {
+  student: StudentData;
+  classroom: Classroom;
+}
+
 // --- MAIN COMPONENT ---
-export function ResultSheet({ studentId }: { studentId: string }) {
+export function ResultSheet({ student, classroom }: ResultSheetProps) {
   const firestore = useFirestore();
+  const studentId = student.id;
+  const classroomId = classroom.id;
 
   // --- DATA FETCHING ---
   const settingsRef = useMemoFirebase(() => (firestore ? doc(firestore, 'schoolSettings', 'current') : null), [firestore]);
@@ -65,16 +71,6 @@ export function ResultSheet({ studentId }: { studentId: string }) {
   
   const templateRef = useMemoFirebase(() => (firestore ? doc(firestore, 'resultTemplates', 'main-template') : null), [firestore]);
   const { data: savedTemplateData, isLoading: templateLoading } = useDoc<SavedTemplateData>(templateRef);
-
-  const studentRef = useMemoFirebase(() => (firestore ? doc(firestore, 'students', studentId) : null), [firestore, studentId]);
-  const { data: student, isLoading: studentLoading } = useDoc<StudentData>(studentRef);
-
-  const enrollmentsQuery = useMemoFirebase(() => (firestore ? query(collection(firestore, 'enrollments'), where('studentId', '==', studentId)) : null), [firestore, studentId]);
-  const { data: enrollments, isLoading: enrollmentsLoading } = useCollection<Enrollment>(enrollmentsQuery);
-  const classroomId = enrollments?.[0]?.classroomId;
-
-  const classroomRef = useMemoFirebase(() => (firestore && classroomId ? doc(firestore, 'classrooms', classroomId) : null), [firestore, classroomId]);
-  const { data: classroom, isLoading: classroomLoading } = useDoc<Classroom>(classroomRef);
 
   const classroomSubjectsQuery = useMemoFirebase(() => (classroomId ? query(collection(firestore, 'classroomSubjects'), where('classroomId', '==', classroomId)) : null), [firestore, classroomId]);
   const { data: classroomSubjects, isLoading: classroomSubjectsLoading } = useCollection(classroomSubjectsQuery);
@@ -143,7 +139,7 @@ export function ResultSheet({ studentId }: { studentId: string }) {
     return format(date, 'PPP');
   }, [schoolSettings]);
 
-  const isLoading = studentLoading || enrollmentsLoading || classroomLoading || resultsLoading || subjectsLoading || settingsLoading || classroomSubjectsLoading || templateLoading;
+  const isLoading = resultsLoading || subjectsLoading || settingsLoading || classroomSubjectsLoading || templateLoading;
 
   if (isLoading) {
     return (
@@ -287,4 +283,3 @@ export function ResultSheet({ studentId }: { studentId: string }) {
   );
 }
 
-    
