@@ -82,22 +82,44 @@ export function ResultViewTable() {
     setSelectedClass(classId);
   }
 
-  const handleBulkDownload = () => {
-    if (!selectedClass) return;
+  const handleBulkDownload = async () => {
+    if (!studentsInClass || studentsInClass.length === 0) return;
     setIsZipping(true);
     toast({
-      title: 'Generating ZIP...',
-      description: 'Preparing bulk PDF export for the class. This may take a moment.',
+      title: 'Initiating Bulk Export...',
+      description: `Preparing to export ${studentsInClass.length} report(s). Please allow pop-ups for this site.`,
     });
-    // In a real app, this would trigger a serverless function.
-    // We simulate the delay here.
-    setTimeout(() => {
-      setIsZipping(false);
-      toast({
-        title: 'Download Ready!',
-        description: 'The ZIP archive has been successfully generated.',
-      });
-    }, 2500);
+
+    const openAndPrint = (student: Student, classroomName: string) => {
+      return new Promise<void>((resolve) => {
+          const reportWindow = window.open(`/results/${student.id}`, '_blank');
+          if (reportWindow) {
+              reportWindow.onload = () => {
+                  setTimeout(() => {
+                    reportWindow.document.title = `${student.name} - ${classroomName} - Report`;
+                    reportWindow.print();
+                    resolve();
+                  }, 2000); // Wait for content to render
+              };
+          } else {
+              toast({ variant: "destructive", title: "Pop-up blocked", description: "Could not open a new window to print."})
+              resolve(); // Resolve to continue the loop
+          }
+      })
+    };
+    
+    const selectedClassroomName = classrooms?.find(c => c.id === selectedClass)?.name || 'report';
+
+    for (const student of studentsInClass) {
+        await openAndPrint(student, selectedClassroomName);
+        await new Promise(resolve => setTimeout(resolve, 500)); // Stagger windows
+    }
+
+    setIsZipping(false);
+    toast({
+      title: 'Bulk Export Complete',
+      description: 'All student report cards have been opened for printing/saving.',
+    });
   };
   
   const isLoading = classroomsLoading;
@@ -132,7 +154,7 @@ export function ResultViewTable() {
               ) : (
                 <Download className="mr-2 h-4 w-4" />
               )}
-              {isZipping ? 'Packaging...' : 'Download Class ZIP'}
+              {isZipping ? 'Exporting...' : 'Export All as PDF'}
             </Button>
            )}
         </div>
