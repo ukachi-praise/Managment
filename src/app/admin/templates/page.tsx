@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -251,8 +252,8 @@ export default function TemplatesPage() {
   }
 
   const StudentInfoDetail = ({ label, value }: { label: string, value: string | React.ReactNode }) => (
-    <div className="flex text-xs whitespace-nowrap">
-        <span className="font-semibold w-[70px] shrink-0">{label}:</span>
+    <div className="flex text-xs">
+        <span className="font-semibold w-[80px] shrink-0">{label}:</span>
         <span className="flex-1 border-b border-dotted border-gray-400">{value}</span>
     </div>
   )
@@ -363,18 +364,24 @@ export default function TemplatesPage() {
                             <div
                                 className={cn('editable-region mb-4 p-2 border', {'outline-blue-500 outline-dashed outline-2 outline-offset-2': selectedElement === 'studentInfo'})}
                                 onClick={(e) => handleElementClick(e, 'studentInfo')}
-                                style={{ fontSize: `${settings.studentInfo.fontSize}px` }}
+                                style={{ fontSize: `10px` }}
                             >
-                                <div className="grid grid-cols-3 gap-x-8 gap-y-1">
-                                    <StudentInfoDetail label="Student Name" value="John Doe" />
-                                    <StudentInfoDetail label="Admission No" value="JKS-00123" />
-                                    <StudentInfoDetail label="Class" value={selectedClassroom?.name || 'Primary 5'} />
-                                    <StudentInfoDetail label="Term" value="First" />
-                                    <StudentInfoDetail label="Session" value="2023/2024" />
-                                    <StudentInfoDetail label="Days Attended" value="60" />
-                                    <StudentInfoDetail label="School Open" value="65" />
-                                    <StudentInfoDetail label="Resumption" value="April 25, 2024" />
-                                    <div />
+                                <div className="flex flex-col gap-1">
+                                    <div className="flex gap-4">
+                                        <div className="w-1/3"><StudentInfoDetail label="Student Name" value="John Doe" /></div>
+                                        <div className="w-1/3"><StudentInfoDetail label="Admission No" value="JKS-00123" /></div>
+                                        <div className="w-1/3"><StudentInfoDetail label="Class" value={selectedClassroom?.name || 'Primary 5'} /></div>
+                                    </div>
+                                    <div className="flex gap-4">
+                                        <div className="w-1/3"><StudentInfoDetail label="Term" value="First" /></div>
+                                        <div className="w-1/3"><StudentInfoDetail label="Session" value="2023/2024" /></div>
+                                        <div className="w-1/3"><StudentInfoDetail label="Days Attended" value="60" /></div>
+                                    </div>
+                                    <div className="flex gap-4">
+                                        <div className="w-1/3"><StudentInfoDetail label="School Open" value="65" /></div>
+                                        <div className="w-1/3"><StudentInfoDetail label="Resumption" value="April 25, 2024" /></div>
+                                        <div className="w-1/3"></div>
+                                    </div>
                                 </div>
                             </div>
                         )}
@@ -572,4 +579,5 @@ export default function TemplatesPage() {
     
 
     
+
 
