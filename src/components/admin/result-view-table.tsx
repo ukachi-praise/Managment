@@ -18,8 +18,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Loader2, Eye } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import {
   useFirestore,
   useCollection,
@@ -112,30 +111,25 @@ export function ResultViewTable() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="w-[350px]">Student Name</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
+                    <TableHead>Student Name</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {isFetchingStudents ? (
-                     <TableRow><TableCell colSpan={2} className="text-center"><Loader2 className="inline-block animate-spin mr-2" /> Loading students...</TableCell></TableRow>
+                     <TableRow><TableCell colSpan={1} className="text-center"><Loader2 className="inline-block animate-spin mr-2" /> Loading students...</TableCell></TableRow>
                   ) : studentsInClass.length > 0 ? (
                     studentsInClass.map((student) => (
                         <TableRow key={student.id}>
-                          <TableCell className="font-medium">{student.name}</TableCell>
-                          <TableCell className="text-right">
-                            <Button asChild variant="outline" size="sm">
-                              <Link href={`/admin/students/${student.id}/results`}>
-                                <Eye className="mr-2 h-4 w-4" />
-                                View Report
-                              </Link>
-                            </Button>
+                          <TableCell className="font-medium">
+                            <Link href={`/admin/students/${student.id}/results`} className="hover:underline">
+                              {student.name}
+                            </Link>
                           </TableCell>
                         </TableRow>
                     ))
                   ) : (
                     <TableRow>
-                        <TableCell colSpan={2} className="text-center h-24">
+                        <TableCell colSpan={1} className="text-center h-24">
                            No students found for this class.
                         </TableCell>
                     </TableRow>
