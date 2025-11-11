@@ -1,211 +1,95 @@
+
 /**
- * @fileoverview Firestore Security Rules for the JustVision Kiddies School Database & Result Management System.
+ * @fileoverview Firestore Security Rules for JustVision Kiddies School.
  *
- * Core Philosophy:
- * This ruleset enforces a role-based access control model with an emphasis on authorization independence
- * and secure data access. Key principles include admin-only management of core data, and ownership-based
- * access for user-specific data. Data validation is relaxed in this prototype to facilitate rapid development.
- *
- * Data Structure:
- * - /users/{userId}: Stores user profiles. Access is restricted to the owner (the user themselves) and admins.
- * - /classrooms/{classroomId}: Stores classroom data. Accessible only to admins.
- * - /subjects/{subjectId}: Stores subject data. Accessible only to admins.
- * - /classroomSubjects/{classroomSubjectId}: Manages the assignment of subjects to classrooms. Accessible only to admins.
- * - /students/{studentId}: Stores student data. Accessible only to admins.
- * - /results/{resultId}: Stores student results, with denormalized classroomId for efficient classroom-based access control. Access is limited to admins.
- * - /resultTemplates/{resultTemplateId}: Stores result templates. Accessible only to admins.
- * - /roles_admin/{userId}: Indicates admin status for a user. The existence of a document at this path grants admin privileges.
- *
- * Key Security Decisions:
- * - Admin Role: Admin privileges are determined by the existence of a document in the `/roles_admin/{userId}` collection.
- * - No User Listing: Listing of all users is explicitly disallowed.
- * - Denormalization: The `results` collection denormalizes the `classroomId` to allow rules to validate access based on the classroom without additional reads.
- * - Strict Write Control:  All write operations (create, update, delete) are carefully controlled through role-based checks.
+ * This ruleset enforces a role-based access control model. Admins have broad
+ * access, while Teachers have access limited to their assigned classroom.
  */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    /**
-     * @description Secure access to user profiles. Users can only read and write their own profile. Admins can read and write any profile.
-     * @path /users/{userId}
-     * @allow (read, write) User with ID 'user_abc' can read/write their own profile.
-     * @allow (read, write) Admin user with ID 'admin_abc' can read/write any profile.
-     * @deny (read, write) User with ID 'user_def' cannot read/write profile of 'user_abc'.
-     * @principle Enforces user ownership for profile access and admin override.
-     */
-    match /users/{userId} {
-      function isSignedIn() {
-        return request.auth != null;
-      }
-
-      function isOwner(userId) {
-        return isSignedIn() && request.auth.uid == userId;
-      }
-
-      function isAdmin() {
-        return exists(/databases/$(database)/documents/roles_admin/$(request.auth.uid));
-      }
-
-      allow get: if isSignedIn() && (isOwner(userId) || isAdmin());
-      allow list: if false; // Listing users is not permitted.
-      allow create: if isOwner(userId);
-      allow update: if isSignedIn() && (isOwner(userId) && request.resource.data.id == resource.data.id || isAdmin());
-      allow delete: if isSignedIn() && (isOwner(userId) || isAdmin());
+    // Helper Functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    function isAdmin() {
+      return exists(/databases/$(database)/documents/roles_admin/$(request.auth.uid));
+    }
+    function isTeacher() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Teacher';
+    }
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+    function teacherClassroomId() {
+        return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.assignedClassroomId;
+    }
+    function isTeacherForClassroom(classroomId) {
+        return isTeacher() && teacherClassroomId() == classroomId;
     }
 
-    /**
-     * @description Secure access to classroom data. Only admins can read, write, and manage classrooms.
-     * @path /classrooms/{classroomId}
-     * @allow (read, write) Admin user with ID 'admin_abc' can manage classrooms.
-     * @deny (read, write) Non-admin users cannot manage classrooms.
-     * @principle Admin-only access for managing classroom data.
-     */
-    match /classrooms/{classroomId} {
-      function isSignedIn() {
-        return request.auth != null;
-      }
-
-      function isAdmin() {
-        return exists(/databases/$(database)/documents/roles_admin/$(request.auth.uid));
-      }
-
-      allow get, list: if isSignedIn() && isAdmin();
-      allow create: if isSignedIn() && isAdmin();
-      allow update: if isSignedIn() && isAdmin();
-      allow delete: if isSignedIn() && isAdmin();
-    }
-
-    /**
-     * @description Secure access to subject data. Only admins can read, write, and manage subjects.
-     * @path /subjects/{subjectId}
-     * @allow (read, write) Admin user with ID 'admin_abc' can manage subjects.
-     * @deny (read, write) Non-admin users cannot manage subjects.
-     * @principle Admin-only access for managing subject data.
-     */
-    match /subjects/{subjectId} {
-      function isSignedIn() {
-        return request.auth != null;
-      }
-
-      function isAdmin() {
-        return exists(/databases/$(database)/documents/roles_admin/$(request.auth.uid));
-      }
-
-      allow get, list: if isSignedIn() && isAdmin();
-      allow create: if isSignedIn() && isAdmin();
-      allow update: if isSignedIn() && isAdmin();
-      allow delete: if isSignedIn() && isAdmin();
-    }
-
-    /**
-     * @description Secure access to classroomSubject data. Only admins can read, write, and manage classroomSubjects.
-     * @path /classroomSubjects/{classroomSubjectId}
-     * @allow (read, write) Admin user with ID 'admin_abc' can manage classroomSubjects.
-     * @deny (read, write) Non-admin users cannot manage classroomSubjects.
-     * @principle Admin-only access for managing classroomSubject assignments.
-     */
-    match /classroomSubjects/{classroomSubjectId} {
-      function isSignedIn() {
-        return request.auth != null;
-      }
-
-      function isAdmin() {
-        return exists(/databases/$(database)/documents/roles_admin/$(request.auth.uid));
-      }
-
-      allow get, list: if isSignedIn() && isAdmin();
-      allow create: if isSignedIn() && isAdmin();
-      allow update: if isSignedIn() && isAdmin();
-      allow delete: if isSignedIn() && isAdmin();
-    }
-
-    /**
-     * @description Secure access to student data. Only admins can read, write, and manage students.
-     * @path /students/{studentId}
-     * @allow (read, write) Admin user with ID 'admin_abc' can manage students.
-     * @deny (read, write) Non-admin users cannot manage students.
-     * @principle Admin-only access for managing student data.
-     */
-    match /students/{studentId} {
-      function isSignedIn() {
-        return request.auth != null;
-      }
-
-      function isAdmin() {
-        return exists(/databases/$(database)/documents/roles_admin/$(request.auth.uid));
-      }
-
-      allow get, list: if isSignedIn() && isAdmin();
-      allow create: if isSignedIn() && isAdmin();
-      allow update: if isSignedIn() && isAdmin();
-      allow delete: if isSignedIn() && isAdmin();
-    }
-
-    /**
-     * @description Secure access to result data. Only admins can read, write, and manage results.
-     * @path /results/{resultId}
-     * @allow (read, write) Admin user with ID 'admin_abc' can manage results.
-     * @deny (read, write) Non-admin users cannot manage results.
-     * @principle Admin-only access for managing result data.
-     */
-    match /results/{resultId} {
-      function isSignedIn() {
-        return request.auth != null;
-      }
-
-      function isAdmin() {
-        return exists(/databases/$(database)/documents/roles_admin/$(request.auth.uid));
-      }
-
-      allow get, list: if isSignedIn() && isAdmin();
-      allow create: if isSignedIn() && isAdmin();
-      allow update: if isSignedIn() && isAdmin();
-      allow delete: if isSignedIn() && isAdmin();
-    }
-
-    /**
-     * @description Secure access to resultTemplate data. Only admins can read, write, and manage resultTemplates.
-     * @path /resultTemplates/{resultTemplateId}
-     * @allow (read, write) Admin user with ID 'admin_abc' can manage resultTemplates.
-     * @deny (read, write) Non-admin users cannot manage resultTemplates.
-     * @principle Admin-only access for managing resultTemplate data.
-     */
-    match /resultTemplates/{resultTemplateId} {
-      function isSignedIn() {
-        return request.auth != null;
-      }
-
-      function isAdmin() {
-        return exists(/databases/$(database)/documents/roles_admin/$(request.auth.uid));
-      }
-
-      allow get, list: if isSignedIn() && isAdmin();
-      allow create: if isSignedIn() && isAdmin();
-      allow update: if isSignedIn() && isAdmin();
-      allow delete: if isSignedIn() && isAdmin();
-    }
-
-    /**
-     * @description Secure access to admin roles. Only admins can create and delete admin roles.
-     * @path /roles_admin/{userId}
-     * @allow (create, delete) Existing admin user can grant/revoke admin role to another user.
-     * @deny (create, delete) Non-admin users cannot grant/revoke admin roles.
-     * @principle Admin-only access for managing admin roles.
-     */
+    // Admin role mapping. Read-only for admins to check status.
     match /roles_admin/{userId} {
-       function isSignedIn() {
-        return request.auth != null;
-      }
+      allow get: if isAdmin();
+      allow list, create, update, delete: if false; // Managed via backend functions
+    }
 
-      function isAdmin() {
-        return exists(/databases/$(database)/documents/roles_admin/$(request.auth.uid));
-      }
+    // User profiles
+    match /users/{userId} {
+      allow get: if isOwner(userId) || isAdmin();
+      allow list: if isAdmin();
+      allow create: if isOwner(userId); // Users create their own profile on signup
+      allow update: if isOwner(userId) || isAdmin();
+      allow delete: if isAdmin();
+    }
 
-      allow get, list: if false;
-      allow create: if isSignedIn() && isAdmin();
-      allow update: if false;
-      allow delete: if isSignedIn() && isAdmin();
+    // Core data managed by Admins
+    match /{collection}/{docId} where collection in ['classrooms', 'subjects', 'classroomSubjects', 'sessions', 'nextTermInfo', 'resultTemplates', 'headTeacherRemarks', 'auditLogs'] {
+      allow read, write: if isAdmin();
+    }
+    
+    // Terms are nested under sessions
+    match /sessions/{sessionId}/terms/{termId} {
+        allow read, write: if isAdmin();
+    }
+
+    // Students can be managed by Admins
+    match /students/{studentId} {
+      allow read, write: if isAdmin();
+    }
+
+    // Enrollments can be managed by Admins
+    match /enrollments/{enrollmentId} {
+        allow read, write: if isAdmin();
+    }
+    
+    // Results can be read by admins or the teacher of the class.
+    // Writes are restricted to the assigned teacher.
+    match /results/{resultId} {
+      allow get: if isAdmin() || isTeacherForClassroom(resource.data.classroomId);
+      // Teachers can list results for their own class
+      allow list: if isAdmin() || (isTeacher() && request.query.where[0][2] == teacherClassroomId());
+      allow write: if isTeacherForClassroom(request.resource.data.classroomId);
+      allow delete: if isAdmin();
+    }
+    
+    // Result summaries follow same rules as results
+    match /resultSummaries/{summaryId} {
+        allow get: if isAdmin() || isTeacherForClassroom(resource.data.classroomId);
+        allow list: if isAdmin() || (isTeacher() && request.query.where[0][2] == teacherClassroomId());
+        allow write: if isTeacherForClassroom(request.resource.data.classroomId);
+        allow delete: if isAdmin();
+    }
+
+    // Soft skill results follow same rules as results
+    match /softSkillResults/{softSkillResultId} {
+        allow get: if isAdmin() || isTeacherForClassroom(resource.data.classroomId);
+        allow list: if isAdmin() || (isTeacher() && request.query.where[0][2] == teacherClassroomId());
+        allow write: if isTeacherForClassroom(request.resource.data.classroomId);
+        allow delete: if isAdmin();
     }
   }
 }
+
+    

@@ -1,358 +1,210 @@
+
 {
   "entities": {
     "User": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "User",
       "type": "object",
       "description": "Represents a user in the system (Admin or Teacher).",
       "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the user."
-        },
-        "username": {
-          "type": "string",
-          "description": "User's username for login."
-        },
-        "role": {
-          "type": "string",
-          "description": "User's role in the system (e.g., Admin, Teacher)."
-        }
+        "id": { "type": "string", "description": "Unique identifier for the user." },
+        "username": { "type": "string", "description": "User's username for login." },
+        "role": { "type": "string", "enum": ["Admin", "Teacher"], "description": "User's role in the system." },
+        "assignedClassroomId": { "type": "string", "description": "For teachers, the ID of the classroom they are assigned to." }
       },
-      "required": [
-        "id",
-        "username",
-        "role"
-      ]
+      "required": ["id", "username", "role"]
     },
     "Classroom": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Classroom",
       "type": "object",
       "description": "Represents a classroom.",
       "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the classroom."
-        },
-        "name": {
-          "type": "string",
-          "description": "Name of the classroom (e.g., 'Class 1', 'Class 2')."
-        }
+        "id": { "type": "string", "description": "Unique identifier for the classroom." },
+        "name": { "type": "string", "description": "Name of the classroom (e.g., 'Creche', 'Primary 5')." },
+        "teacherId": { "type": "string", "description": "Reference to the assigned teacher." }
       },
-      "required": [
-        "id",
-        "name"
-      ]
+      "required": ["id", "name"]
     },
     "Subject": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Subject",
       "type": "object",
-      "description": "Represents a subject.",
+      "description": "Represents an academic subject.",
       "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the subject."
-        },
-        "name": {
-          "type": "string",
-          "description": "Name of the subject (e.g., 'Mathematics', 'English')."
-        }
+        "id": { "type": "string", "description": "Unique identifier for the subject." },
+        "name": { "type": "string", "description": "Name of the subject (e.g., 'Mathematics')." }
       },
-      "required": [
-        "id",
-        "name"
-      ]
+      "required": ["id", "name"]
     },
     "ClassroomSubject": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "ClassroomSubject",
       "type": "object",
       "description": "Represents the assignment of a subject to a classroom.",
       "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the classroom subject."
-        },
-        "classroomId": {
-          "type": "string",
-          "description": "Reference to Classroom. (Relationship: Classroom 1:N ClassroomSubject)"
-        },
-        "subjectId": {
-          "type": "string",
-          "description": "Reference to Subject. (Relationship: Subject 1:N ClassroomSubject)"
-        }
+        "classroomId": { "type": "string" },
+        "subjectId": { "type": "string" }
       },
-      "required": [
-        "id",
-        "classroomId",
-        "subjectId"
-      ]
+      "required": ["classroomId", "subjectId"]
     },
     "Student": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Student",
       "type": "object",
       "description": "Represents a student.",
       "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the student."
-        },
-        "classroomId": {
-          "type": "string",
-          "description": "Reference to Classroom. (Relationship: Classroom 1:N Student)"
-        },
-        "name": {
-          "type": "string",
-          "description": "Name of the student."
-        }
+        "id": { "type": "string", "description": "Unique identifier for the student." },
+        "name": { "type": "string", "description": "Name of the student." },
+        "isDeleted": {"type": "boolean", "description": "Flag for soft-deleting a student."}
       },
-      "required": [
-        "id",
-        "classroomId",
-        "name"
-      ]
+      "required": ["id", "name"]
+    },
+    "Enrollment": {
+        "title": "Enrollment",
+        "type": "object",
+        "description": "Links a student to a classroom for a specific academic session.",
+        "properties": {
+            "studentId": { "type": "string" },
+            "classroomId": { "type": "string" },
+            "sessionId": { "type": "string" }
+        },
+        "required": ["studentId", "classroomId", "sessionId"]
+    },
+    "AcademicSession": {
+        "title": "AcademicSession",
+        "type": "object",
+        "description": "Represents an academic session, e.g., 2025/2026.",
+        "properties": {
+            "id": { "type": "string" },
+            "name": { "type": "string", "description": "Format: YYYY/YYYY" }
+        },
+        "required": ["id", "name"]
+    },
+    "Term": {
+        "title": "Term",
+        "type": "object",
+        "description": "Represents a term within an academic session (1st, 2nd, 3rd).",
+        "properties": {
+            "id": { "type": "string" },
+            "sessionId": { "type": "string" },
+            "name": { "type": "string", "enum": ["1st", "2nd", "3rd"] }
+        },
+        "required": ["id", "sessionId", "name"]
     },
     "Result": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Result",
       "type": "object",
-      "description": "Represents a student's result for a specific subject.",
+      "description": "Represents a student's academic scores for a specific subject in a term.",
       "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the result."
-        },
-        "studentId": {
-          "type": "string",
-          "description": "Reference to Student. (Relationship: Student 1:N Result)"
-        },
-        "classroomId": {
-          "type": "string",
-          "description": "Reference to Classroom. (Relationship: Classroom 1:N Result)"
-        },
-        "subjectId": {
-          "type": "string",
-          "description": "Reference to Subject. (Relationship: Subject 1:N Result)"
-        },
-        "ca1": {
-          "type": "number",
-          "description": "CA1 score."
-        },
-        "ca2": {
-          "type": "number",
-          "description": "CA2 score."
-        },
-        "ca3": {
-          "type": "number",
-          "description": "CA3 score."
-        },
-        "exam": {
-          "type": "number",
-          "description": "Exam score."
-        },
-        "total": {
-          "type": "number",
-          "description": "The Total Score"
-        },
-        "grade": {
-          "type": "string",
-          "description": "The Grade."
-        },
-        "remarks": {
-          "type": "string",
-          "description": "Remarks on the result"
-        },
-        "softSkills": {
-          "type": "string",
-          "description": "Soft Skills Remarks"
-        }
+        "studentId": { "type": "string" },
+        "subjectId": { "type": "string" },
+        "termId": { "type": "string" },
+        "sessionId": { "type": "string" },
+        "classroomId": { "type": "string", "description": "Denormalized for security rules."},
+        "ca1": { "type": "number" }, "ca2": { "type": "number" }, "ca3": { "type": "number" }, "exam": { "type": "number" },
+        "total": { "type": "number" }, "grade": { "type": "string" }, "remark": { "type": "string" },
+        "daysSchoolOpened": { "type": "number" },
+        "daysAttended": { "type": "number" },
+        "attendancePercentage": { "type": "number" }
       },
-      "required": [
-        "id",
-        "studentId",
-        "classroomId",
-        "subjectId",
-        "ca1",
-        "ca2",
-        "ca3",
-        "exam",
-        "total",
-        "grade",
-        "remarks",
-        "softSkills"
-      ]
+      "required": ["studentId", "subjectId", "termId", "sessionId", "classroomId"]
+    },
+    "SoftSkillResult": {
+      "title": "SoftSkillResult",
+      "type": "object",
+      "description": "Represents a student's score for a specific soft skill.",
+      "properties": {
+          "studentId": { "type": "string" },
+          "termId": { "type": "string" },
+          "skillName": { "type": "string" },
+          "score": { "type": "number" },
+          "remark": { "type": "string" }
+      },
+      "required": ["studentId", "termId", "skillName", "score", "remark"]
+    },
+    "HeadTeacherRemark": {
+        "title": "HeadTeacherRemark",
+        "type": "object",
+        "description": "A predefined remark that a Head Teacher can use.",
+        "properties": {
+            "id": { "type": "string" },
+            "remark": { "type": "string" }
+        },
+        "required": ["id", "remark"]
+    },
+    "ResultSummary": {
+        "title": "ResultSummary",
+        "type": "object",
+        "description": "Contains overall summary information for a student's term report.",
+        "properties": {
+            "studentId": { "type": "string" },
+            "termId": { "type": "string" },
+            "overallAverage": { "type": "number" },
+            "overallGrade": { "type": "string" },
+            "headTeacherRemark": { "type": "string" },
+            "nextTermResumptionDate": { "type": "string", "format": "date" },
+            "nextTermFees": { "type": "number" }
+        },
+        "required": ["studentId", "termId"]
+    },
+    "NextTermInfo": {
+        "title": "NextTermInfo",
+        "type": "object",
+        "description": "Information about the next term for a specific class.",
+        "properties": {
+            "classroomId": { "type": "string" },
+            "termId": { "type": "string" },
+            "resumptionDate": { "type": "string", "format": "date" },
+            "fees": { "type": "number" }
+        },
+        "required": ["classroomId", "termId", "resumptionDate", "fees"]
     },
     "ResultTemplate": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "ResultTemplate",
       "type": "object",
       "description": "Represents a template for generating results.",
       "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the result template."
-        },
-        "name": {
-          "type": "string",
-          "description": "Name of the result template."
-        },
-        "templateData": {
-          "type": "string",
-          "description": "JSON data representing the template structure."
-        },
-        "fileStorageLocation": {
-          "type": "string",
-          "description": "Path to the file storage location of the template (e.g., cloud storage URL)."
-        }
+        "id": { "type": "string" }, "name": { "type": "string" },
+        "templateData": { "type": "string", "description": "JSON data representing the template structure." },
+        "logoUrl": { "type": "string", "description": "URL to the logo image in cloud storage."}
       },
-      "required": [
-        "id",
-        "name",
-        "templateData",
-        "fileStorageLocation"
-      ]
+      "required": ["id", "name", "templateData"]
+    },
+    "AuditLog": {
+        "title": "AuditLog",
+        "type": "object",
+        "description": "Logs changes made to important data like results.",
+        "properties": {
+            "timestamp": { "type": "string", "format": "date-time" },
+            "userId": { "type": "string" },
+            "action": { "type": "string" },
+            "entity": { "type": "string" },
+            "entityId": { "type": "string" },
+            "oldValue": { "type": "object" },
+            "newValue": { "type": "object" }
+        },
+        "required": ["timestamp", "userId", "action", "entity", "entityId"]
     }
   },
   "auth": {
-    "providers": [
-      "password",
-      "anonymous"
-    ]
+    "providers": ["password", "anonymous"]
   },
   "firestore": {
     "structure": [
-      {
-        "path": "/users/{userId}",
-        "definition": {
-          "entityName": "User",
-          "schema": {
-            "$ref": "#/backend/entities/User"
-          },
-          "description": "Stores user data (Admin or Teacher).",
-          "params": [
-            {
-              "name": "userId",
-              "description": "The unique identifier of the user."
-            }
-          ]
-        }
-      },
-      {
-        "path": "/classrooms/{classroomId}",
-        "definition": {
-          "entityName": "Classroom",
-          "schema": {
-            "$ref": "#/backend/entities/Classroom"
-          },
-          "description": "Stores classroom data.",
-          "params": [
-            {
-              "name": "classroomId",
-              "description": "The unique identifier of the classroom."
-            }
-          ]
-        }
-      },
-      {
-        "path": "/subjects/{subjectId}",
-        "definition": {
-          "entityName": "Subject",
-          "schema": {
-            "$ref": "#/backend/entities/Subject"
-          },
-          "description": "Stores subject data.",
-          "params": [
-            {
-              "name": "subjectId",
-              "description": "The unique identifier of the subject."
-            }
-          ]
-        }
-      },
-      {
-        "path": "/classroomSubjects/{classroomSubjectId}",
-        "definition": {
-          "entityName": "ClassroomSubject",
-          "schema": {
-            "$ref": "#/backend/entities/ClassroomSubject"
-          },
-          "description": "Stores the assignment of a subject to a classroom.",
-          "params": [
-            {
-              "name": "classroomSubjectId",
-              "description": "The unique identifier of the classroom subject assignment."
-            }
-          ]
-        }
-      },
-      {
-        "path": "/students/{studentId}",
-        "definition": {
-          "entityName": "Student",
-          "schema": {
-            "$ref": "#/backend/entities/Student"
-          },
-          "description": "Stores student data.",
-          "params": [
-            {
-              "name": "studentId",
-              "description": "The unique identifier of the student."
-            }
-          ]
-        }
-      },
-      {
-        "path": "/results/{resultId}",
-        "definition": {
-          "entityName": "Result",
-          "schema": {
-            "$ref": "#/backend/entities/Result"
-          },
-          "description": "Stores student results. Includes denormalized 'classroomId' for authorization independence.",
-          "params": [
-            {
-              "name": "resultId",
-              "description": "The unique identifier of the result."
-            }
-          ]
-        }
-      },
-      {
-        "path": "/resultTemplates/{resultTemplateId}",
-        "definition": {
-          "entityName": "ResultTemplate",
-          "schema": {
-            "$ref": "#/backend/entities/ResultTemplate"
-          },
-          "description": "Stores result templates.",
-          "params": [
-            {
-              "name": "resultTemplateId",
-              "description": "The unique identifier of the result template."
-            }
-          ]
-        }
-      },
-      {
-        "path": "/roles_admin/{userId}",
-        "definition": {
-          "entityName": "User",
-          "schema": {
-            "$ref": "#/backend/entities/User"
-          },
-          "description": "Stores admin roles. Existence of document grants admin access.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "The unique identifier of the admin user."
-            }
-          ]
-        }
-      }
-    ],
-    "reasoning": "The Firestore data structure is designed to support the JustVision Kiddies School Database & Result Management System. It prioritizes authorization independence and clear security rules. \n\n*   **Users Collection:** Stores user data with roles (Admin, Teacher).  Admin role can also be managed using existence check on /roles_admin/{uid}. This enables a global admin check without retrieving the user document.\n*   **Classrooms, Subjects, ClassroomSubjects Collections:** Basic collections for managing classrooms, subjects, and their relationships. Since they don't have specific authorization needs beyond admin control, they are kept as simple collections.\n*   **Students Collection:** Stores student data, with a reference to the classroom. This facilitates listing students by classroom.\n*   **Results Collection:** Stores student results, including references to Student, Classroom, and Subject, and denormalizes the student's classroom ID to ensure Authorization Independence. This also helps with querying results by classroom.\n\n**Authorization Independence:**\n\n*   The `Result` collection denormalizes the `classroomId`, enabling security rules to validate access based on the classroom without needing to perform a `get()` on the `Student` document.\n\n**QAPs (Rules Are Not Filters):**\n\n*   The structure supports secure listing through path-based ownership and segregation:\n    *   Admins can list all documents in all collections.\n    *   Teachers can be granted permission to list documents in specific classrooms. Security rules on the `results` collection can ensure that they can only access results for classrooms they are authorized to manage. This prevents filtering within the rules themselves."
+      { "path": "/users/{userId}", "definition": { "schema": { "$ref": "#/backend/entities/User" } } },
+      { "path": "/classrooms/{classroomId}", "definition": { "schema": { "$ref": "#/backend/entities/Classroom" } } },
+      { "path": "/subjects/{subjectId}", "definition": { "schema": { "$ref": "#/backend/entities/Subject" } } },
+      { "path": "/classroomSubjects/{classroomSubjectId}", "definition": { "schema": { "$ref": "#/backend/entities/ClassroomSubject" } } },
+      { "path": "/students/{studentId}", "definition": { "schema": { "$ref": "#/backend/entities/Student" } } },
+      { "path": "/enrollments/{enrollmentId}", "definition": { "schema": { "$ref": "#/backend/entities/Enrollment" } } },
+      { "path": "/sessions/{sessionId}", "definition": { "schema": { "$ref": "#/backend/entities/AcademicSession" } } },
+      { "path": "/sessions/{sessionId}/terms/{termId}", "definition": { "schema": { "$ref": "#/backend/entities/Term" } } },
+      { "path": "/results/{resultId}", "definition": { "schema": { "$ref": "#/backend/entities/Result" } } },
+      { "path": "/softSkillResults/{softSkillResultId}", "definition": { "schema": { "$ref": "#/backend/entities/SoftSkillResult" } } },
+      { "path": "/headTeacherRemarks/{remarkId}", "definition": { "schema": { "$ref": "#/backend/entities/HeadTeacherRemark" } } },
+      { "path": "/resultSummaries/{summaryId}", "definition": { "schema": { "$ref": "#/backend/entities/ResultSummary" } } },
+      { "path": "/nextTermInfo/{infoId}", "definition": { "schema": { "$ref": "#/backend/entities/NextTermInfo" } } },
+      { "path": "/resultTemplates/{templateId}", "definition": { "schema": { "$ref": "#/backend/entities/ResultTemplate" } } },
+      { "path": "/auditLogs/{logId}", "definition": { "schema": { "$ref": "#/backend/entities/AuditLog" } } },
+      { "path": "/roles_admin/{userId}", "definition": { "schema": { "$ref": "#/backend/entities/User" } } }
+    ]
   }
 }
+
+    
