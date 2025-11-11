@@ -288,5 +288,3 @@ export function ResultSheet({ student, classroom }: ResultSheetProps) {
     </div>
   );
 }
-
-    
