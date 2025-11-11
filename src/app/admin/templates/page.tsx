@@ -101,8 +101,8 @@ export default function TemplatesPage() {
         classTeacher: true,
         subjectsTable: true,
         softSkills: true,
-        overallAverage: false,
-        overallGrade: false,
+        overallAverage: true,
+        overallGrade: true,
         teacherRemark: true,
         headTeacherRemark: true,
         nextTermResumption: false,
@@ -307,6 +307,24 @@ export default function TemplatesPage() {
                             </TableBody>
                         </Table>
                     }
+                    {(visibleFields.overallAverage || visibleFields.overallGrade) && (
+                        <div className="mt-4 flex justify-end">
+                            <div className="w-1/3 rounded-md border p-2 text-sm">
+                                {visibleFields.overallAverage && (
+                                    <div className="flex justify-between">
+                                        <span className="font-semibold">Overall Average:</span>
+                                        <span>75.5%</span>
+                                    </div>
+                                )}
+                                {visibleFields.overallGrade && (
+                                    <div className="flex justify-between">
+                                        <span className="font-semibold">Overall Grade:</span>
+                                        <span>B</span>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
                 </main>
                  <footer className="mt-8 space-y-4 text-xs">
                     {visibleFields.softSkills && 
@@ -423,3 +441,5 @@ export default function TemplatesPage() {
     </div>
   );
 }
+
+    
