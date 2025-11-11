@@ -165,7 +165,7 @@ export function ResultSheet({ student, classroom }: ResultSheetProps) {
                 <div className="flex items-start justify-between">
                     <div className="flex items-center gap-4">
                         <div className="relative h-16 w-16"><Image src="/Logo.jpg" alt="School Logo" layout="fill" objectFit="contain" /></div>
-                        <div>
+                        <div className="text-black">
                             <h1 className="font-headline text-xl font-bold text-black">{schoolName}</h1>
                             <p className="text-sm text-black">Katampe 2 Mpape Abuja</p>
                             <p className="text-sm font-semibold text-black">Motto: Exceeding Great</p>
@@ -252,9 +252,9 @@ export function ResultSheet({ student, classroom }: ResultSheetProps) {
                     <h3 className="font-bold text-black">Soft Skills Assessment</h3>
                     <div className="grid grid-cols-3 gap-x-4">
                       {/* Placeholder data, replace with actual data */}
-                      <div><Table><TableBody><TableRow><TableCell className="font-medium p-1 h-auto text-[10px] border border-black">Punctuality</TableCell><TableCell className="text-right p-1 h-auto text-[10px] border border-black">5</TableCell></TableRow><TableRow><TableCell className="font-medium p-1 h-auto text-[10px] border border-black">Neatness</TableCell><TableCell className="text-right p-1 h-auto text-[10px] border border-black">4</TableCell></TableRow></TableBody></Table></div>
-                      <div><Table><TableBody><TableRow><TableCell className="font-medium p-1 h-auto text-[10px] border border-black">Honesty</TableCell><TableCell className="text-right p-1 h-auto text-[10px] border border-black">5</TableCell></TableRow><TableRow><TableCell className="font-medium p-1 h-auto text-[10px] border border-black">Communication</TableCell><TableCell className="text-right p-1 h-auto text-[10px] border border-black">5</TableCell></TableRow></TableBody></Table></div>
-                      <div><Table><TableBody><TableRow><TableCell className="font-medium p-1 h-auto text-[10px] border border-black">Attentiveness</TableCell><TableCell className="text-right p-1 h-auto text-[10px] border border-black">4</TableCell></TableRow><TableRow><TableCell className="font-medium p-1 h-auto text-[10px] border border-black">Self Control</TableCell><TableCell className="text-right p-1 h-auto text-[10px] border border-black">5</TableCell></TableRow></TableBody></Table></div>
+                      <div><Table><TableBody><TableRow><TableCell className="font-medium p-1 h-auto text-[10px] border border-black text-black">Punctuality</TableCell><TableCell className="text-right p-1 h-auto text-[10px] border border-black">5</TableCell></TableRow><TableRow><TableCell className="font-medium p-1 h-auto text-[10px] border border-black text-black">Neatness</TableCell><TableCell className="text-right p-1 h-auto text-[10px] border border-black">4</TableCell></TableRow></TableBody></Table></div>
+                      <div><Table><TableBody><TableRow><TableCell className="font-medium p-1 h-auto text-[10px] border border-black text-black">Honesty</TableCell><TableCell className="text-right p-1 h-auto text-[10px] border border-black">5</TableCell></TableRow><TableRow><TableCell className="font-medium p-1 h-auto text-[10px] border border-black text-black">Communication</TableCell><TableCell className="text-right p-1 h-auto text-[10px] border border-black">5</TableCell></TableRow></TableBody></Table></div>
+                      <div><Table><TableBody><TableRow><TableCell className="font-medium p-1 h-auto text-[10px] border border-black text-black">Attentiveness</TableCell><TableCell className="text-right p-1 h-auto text-[10px] border border-black">4</TableCell></TableRow><TableRow><TableCell className="font-medium p-1 h-auto text-[10px] border border-black text-black">Self Control</TableCell><TableCell className="text-right p-1 h-auto text-[10px] border border-black">5</TableCell></TableRow></TableBody></Table></div>
                     </div>
                   </div>
                 )}
@@ -282,4 +282,3 @@ export function ResultSheet({ student, classroom }: ResultSheetProps) {
     </div>
   );
 }
-

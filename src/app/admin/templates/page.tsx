@@ -425,7 +425,7 @@ export default function TemplatesPage() {
             {/* Preview Area */}
             <main className="flex-1 p-4 sm:p-6 overflow-auto">
                  {/* A4 Preview Canvas */}
-                <div className="relative mx-auto aspect-[210/297] w-full max-w-[210mm] bg-white p-6 shadow-lg print:shadow-none print:m-0 print:p-0 print:max-w-none print:h-full">
+                <div className="relative mx-auto aspect-[210/297] w-full max-w-[210mm] bg-white p-6 shadow-lg print:shadow-none print:m-0 print:p-0 print:max-w-none print:h-full text-black">
                     <div className="absolute inset-0 z-0 flex items-center justify-center">
                         <Image
                             src="/Logo.jpg"
@@ -450,19 +450,19 @@ export default function TemplatesPage() {
                                         className={cn('editable-region text-left', {'outline-blue-500 outline-dashed outline-2 outline-offset-2': selectedElement === 'schoolName'})}
                                         onClick={(e) => handleElementClick(e, 'schoolName')}
                                     >
-                                        <div>
-                                            <h1 className="font-headline text-xl font-bold text-foreground">{templateLoading ? <Skeleton className="h-6 w-48"/> : schoolName}</h1>
-                                            <p className="text-sm text-foreground">Katampe 2 Mpape Abuja</p>
-                                            <p className="text-sm font-semibold text-foreground">Motto: Exceeding Great</p>
+                                        <div className="text-black">
+                                            <h1 className="font-headline text-xl font-bold text-black">{templateLoading ? <Skeleton className="h-6 w-48"/> : schoolName}</h1>
+                                            <p className="text-sm text-black">Katampe 2 Mpape Abuja</p>
+                                            <p className="text-sm font-semibold text-black">Motto: Exceeding Great</p>
                                         </div>
                                     </div>
                                 </div>
                                 <div className="text-right">
-                                <h2 className="font-bold text-base text-foreground">Student Report Card</h2>
+                                <h2 className="font-bold text-base text-black">Student Report Card</h2>
                                 {settingsLoading ? (
                                   <Skeleton className="h-4 w-28 mt-1" />
                                 ) : (
-                                  <p className="text-xs text-muted-foreground">
+                                  <p className="text-xs text-zinc-600">
                                     {schoolSettings?.currentTermId ? termNames[schoolSettings.currentTermId] : 'N/A'}, {schoolSettings?.currentSession}
                                   </p>
                                 )}
@@ -507,13 +507,13 @@ export default function TemplatesPage() {
                                 <Table>
                                     <TableHeader>
                                     <TableRow>
-                                        <TableHead className="border border-black p-1 h-auto text-xs text-foreground">Subject</TableHead>
-                                        <TableHead className="text-center border border-black p-1 h-auto text-[10px] text-foreground"><div>CA1</div><div>(10)</div></TableHead>
-                                        <TableHead className="text-center border border-black p-1 h-auto text-[10px] text-foreground"><div>CA2</div><div>(10)</div></TableHead>
-                                        <TableHead className="text-center border border-black p-1 h-auto text-[10px] text-foreground"><div>CA3</div><div>(10)</div></TableHead>
-                                        <TableHead className="text-center border border-black p-1 h-auto text-[10px] text-foreground"><div>Exam</div><div>(70)</div></TableHead>
-                                        <TableHead className="text-center border border-black p-1 h-auto text-[10px] text-foreground"><div>Total</div><div>(100)</div></TableHead>
-                                        <TableHead className="border border-black p-1 h-auto text-xs text-foreground">Remark</TableHead>
+                                        <TableHead className="border border-black p-1 h-auto text-xs text-black">Subject</TableHead>
+                                        <TableHead className="text-center border border-black p-1 h-auto text-[10px] text-black"><div>CA1</div><div>(10)</div></TableHead>
+                                        <TableHead className="text-center border border-black p-1 h-auto text-[10px] text-black"><div>CA2</div><div>(10)</div></TableHead>
+                                        <TableHead className="text-center border border-black p-1 h-auto text-[10px] text-black"><div>CA3</div><div>(10)</div></TableHead>
+                                        <TableHead className="text-center border border-black p-1 h-auto text-[10px] text-black"><div>Exam</div><div>(70)</div></TableHead>
+                                        <TableHead className="text-center border border-black p-1 h-auto text-[10px] text-black"><div>Total</div><div>(100)</div></TableHead>
+                                        <TableHead className="border border-black p-1 h-auto text-xs text-black">Remark</TableHead>
                                     </TableRow>
                                     </TableHeader>
                                     <TableBody>
@@ -555,14 +555,14 @@ export default function TemplatesPage() {
                             >
                                 <div className="w-1/2 rounded-md border border-black p-2 text-xs space-y-1">
                                     <div className="flex justify-between">
-                                        <span className="font-semibold text-foreground">
+                                        <span className="font-semibold text-black">
                                         Overall Average:
                                         </span>
-                                        <span className="text-foreground">75.5%</span>
+                                        <span className="text-black">75.5%</span>
                                     </div>
                                     <div className="flex justify-between">
-                                        <span className="font-semibold text-foreground">Overall Grade:</span>
-                                        <span className="text-foreground">B (Very Good)</span>
+                                        <span className="font-semibold text-black">Overall Grade:</span>
+                                        <span className="text-black">B (Very Good)</span>
                                     </div>
                                 </div>
                             </div>
@@ -575,29 +575,29 @@ export default function TemplatesPage() {
                             <section className='border border-black p-2 flex flex-col gap-2'>
                                 {settings.softSkills.visible && (
                                 <div className="space-y-1">
-                                    <h3 className="font-bold text-foreground">Soft Skills Assessment</h3>
+                                    <h3 className="font-bold text-black">Soft Skills Assessment</h3>
                                     <div className="grid grid-cols-3 gap-x-4">
                                         <div>
                                             <Table>
                                                 <TableBody>
-                                                    <TableRow><TableCell className="font-medium p-1 h-auto text-[10px] border border-black">Punctuality</TableCell><TableCell className="text-right p-1 h-auto text-[10px] border border-black">5</TableCell></TableRow>
-                                                    <TableRow><TableCell className="font-medium p-1 h-auto text-[10px] border border-black">Neatness</TableCell><TableCell className="text-right p-1 h-auto text-[10px] border border-black">4</TableCell></TableRow>
+                                                    <TableRow><TableCell className="font-medium p-1 h-auto text-[10px] border border-black text-black">Punctuality</TableCell><TableCell className="text-right p-1 h-auto text-[10px] border border-black">5</TableCell></TableRow>
+                                                    <TableRow><TableCell className="font-medium p-1 h-auto text-[10px] border border-black text-black">Neatness</TableCell><TableCell className="text-right p-1 h-auto text-[10px] border border-black">4</TableCell></TableRow>
                                                 </TableBody>
                                             </Table>
                                         </div>
                                         <div>
                                         <Table>
                                             <TableBody>
-                                                <TableRow><TableCell className="font-medium p-1 h-auto text-[10px] border border-black">Honesty</TableCell><TableCell className="text-right p-1 h-auto text-[10px] border border-black">5</TableCell></TableRow>
-                                                <TableRow><TableCell className="font-medium p-1 h-auto text-[10px] border border-black">Communication</TableCell><TableCell className="text-right p-1 h-auto text-[10px] border border-black">5</TableCell></TableRow>
+                                                <TableRow><TableCell className="font-medium p-1 h-auto text-[10px] border border-black text-black">Honesty</TableCell><TableCell className="text-right p-1 h-auto text-[10px] border border-black">5</TableCell></TableRow>
+                                                <TableRow><TableCell className="font-medium p-1 h-auto text-[10px] border border-black text-black">Communication</TableCell><TableCell className="text-right p-1 h-auto text-[10px] border border-black">5</TableCell></TableRow>
                                             </TableBody>
                                         </Table>
                                         </div>
                                         <div>
                                         <Table>
                                             <TableBody>
-                                                <TableRow><TableCell className="font-medium p-1 h-auto text-[10px] border border-black">Attentiveness</TableCell><TableCell className="text-right p-1 h-auto text-[10px] border border-black">4</TableCell></TableRow>
-                                                <TableRow><TableCell className="font-medium p-1 h-auto text-[10px] border border-black">Self Control</TableCell><TableCell className="text-right p-1 h-auto text-[10px] border border-black">5</TableCell></TableRow>
+                                                <TableRow><TableCell className="font-medium p-1 h-auto text-[10px] border border-black text-black">Attentiveness</TableCell><TableCell className="text-right p-1 h-auto text-[10px] border border-black">4</TableCell></TableRow>
+                                                <TableRow><TableCell className="font-medium p-1 h-auto text-[10px] border border-black text-black">Self Control</TableCell><TableCell className="text-right p-1 h-auto text-[10px] border border-black">5</TableCell></TableRow>
                                             </TableBody>
                                         </Table>
                                         </div>
@@ -608,13 +608,13 @@ export default function TemplatesPage() {
                                 {settings.gradingKey.visible && (
                                     <div className="grid grid-cols-2 gap-x-4 pt-2">
                                         <div className="space-y-1">
-                                            <h3 className="font-bold text-foreground">Grading Key</h3>
+                                            <h3 className="font-bold text-black">Grading Key</h3>
                                             <Table>
                                                 <TableHeader>
                                                     <TableRow>
-                                                        <TableHead className="p-1 h-auto text-[10px] border border-black text-foreground">Score</TableHead>
-                                                        <TableHead className="p-1 h-auto text-[10px] border border-black text-foreground">Grade</TableHead>
-                                                        <TableHead className="p-1 h-auto text-[10px] border border-black text-foreground">Remark</TableHead>
+                                                        <TableHead className="p-1 h-auto text-[10px] border border-black text-black">Score</TableHead>
+                                                        <TableHead className="p-1 h-auto text-[10px] border border-black text-black">Grade</TableHead>
+                                                        <TableHead className="p-1 h-auto text-[10px] border border-black text-black">Remark</TableHead>
                                                     </TableRow>
                                                 </TableHeader>
                                                 <TableBody>
@@ -627,12 +627,12 @@ export default function TemplatesPage() {
                                             </Table>
                                         </div>
                                         <div className="space-y-1">
-                                            <h3 className="font-bold text-foreground">Skill Score Rating</h3>
+                                            <h3 className="font-bold text-black">Skill Score Rating</h3>
                                             <Table>
                                                 <TableHeader>
                                                     <TableRow>
-                                                        <TableHead className="p-1 h-auto text-[10px] border border-black text-foreground">Score</TableHead>
-                                                        <TableHead className="p-1 h-auto text-[10px] border border-black text-foreground">Remark</TableHead>
+                                                        <TableHead className="p-1 h-auto text-[10px] border border-black text-black">Score</TableHead>
+                                                        <TableHead className="p-1 h-auto text-[10px] border border-black text-black">Remark</TableHead>
                                                     </TableRow>
                                                 </TableHeader>
                                                 <TableBody>
@@ -650,13 +650,13 @@ export default function TemplatesPage() {
                                 {settings.remarks.visible && (
                                 <div className="pt-2 space-y-2">
                                     <div>
-                                        <h3 className="font-bold text-foreground">Teacher's Remarks:</h3>
+                                        <h3 className="font-bold text-black">Teacher's Remarks:</h3>
                                         <p className="min-h-[25px] rounded-md border-b border-black p-1">
                                         A brilliant student...
                                         </p>
                                     </div>
                                     <div>
-                                        <h3 className="font-bold text-foreground">Head Teacher's Remarks:</h3>
+                                        <h3 className="font-bold text-black">Head Teacher's Remarks:</h3>
                                         <p className="min-h-[25px] rounded-md border-b border-black p-1">
                                         Excellent performance...
                                         </p>
