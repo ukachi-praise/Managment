@@ -252,7 +252,7 @@ export default function TemplatesPage() {
 
   const StudentInfoDetail = ({ label, value }: { label: string, value: string | React.ReactNode }) => (
     <div className="flex text-xs whitespace-nowrap">
-        <span className="font-semibold w-24 shrink-0">{label}:</span>
+        <span className="font-semibold w-[70px] shrink-0">{label}:</span>
         <span className="flex-1 border-b border-dotted border-gray-400">{value}</span>
     </div>
   )
@@ -371,9 +371,9 @@ export default function TemplatesPage() {
                                     <StudentInfoDetail label="Class" value={selectedClassroom?.name || 'Primary 5'} />
                                     <StudentInfoDetail label="Term" value="First" />
                                     <StudentInfoDetail label="Session" value="2023/2024" />
-                                    <StudentInfoDetail label="No of times school open" value="65" />
+                                    <StudentInfoDetail label="School Open" value="65" />
                                     <StudentInfoDetail label="Days Attended" value="60" />
-                                    <StudentInfoDetail label="Next term resumes" value="April 25, 2024" />
+                                    <StudentInfoDetail label="Resumption" value="April 25, 2024" />
                                 </div>
                             </div>
                         )}
