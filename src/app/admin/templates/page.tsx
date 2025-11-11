@@ -1,11 +1,10 @@
 
-
 'use client';
 
 import { useState, useMemo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Eye, Save, RotateCcw, Upload, Settings, CaseUpper, CaseLower, BookOpenCheck } from 'lucide-react';
+import { Eye, Save, RotateCcw, Upload, Settings, CaseUpper, CaseLower, BookOpenCheck, PanelLeft, PanelRight } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import {
   Table,
@@ -113,6 +112,7 @@ export default function TemplatesPage() {
   const [selectedClassId, setSelectedClassId] = useState<string | null>(null);
   const [settings, setSettings] = useState<TemplateSettings>(initialSettings);
   const [selectedElement, setSelectedElement] = useState<TemplateElement>(null);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
 
   const firestore = useFirestore();
 
@@ -250,13 +250,17 @@ export default function TemplatesPage() {
   return (
     <div className="h-full flex bg-muted print:bg-white no-print" onClick={() => setSelectedElement(null)}>
         {/* Settings Sidebar */}
-        <aside className="w-72 border-r bg-background flex-shrink-0">
-            {renderSettingsPanel()}
+        <aside className={cn("border-r bg-background flex-shrink-0 transition-all duration-300", sidebarOpen ? "w-72" : "w-0 overflow-hidden")}>
+            {sidebarOpen && renderSettingsPanel()}
         </aside>
 
         {/* Main Content */}
-        <main className="flex-1 p-4 sm:p-6 overflow-auto">
+        <main className="flex-1 p-4 sm:p-6 overflow-auto relative">
             <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
+                <div className="flex items-center gap-2">
+                 <Button variant="ghost" size="icon" onClick={() => setSidebarOpen(!sidebarOpen)}>
+                    {sidebarOpen ? <PanelLeft /> : <PanelRight />}
+                  </Button>
                 <div>
                 <h1 className="text-3xl font-bold tracking-tight">
                     Result Template Builder
@@ -264,6 +268,7 @@ export default function TemplatesPage() {
                 <p className="text-muted-foreground">
                     Design and manage result templates for different classes.
                 </p>
+                </div>
                 </div>
                 <div className="flex items-center gap-4">
                     <Input placeholder="Template Name" className="w-48" value={templateName} onChange={(e) => setTemplateName(e.target.value)} />
@@ -404,7 +409,7 @@ export default function TemplatesPage() {
                         className={cn('editable-region mt-4 flex justify-end', {'outline-blue-500 outline-dashed outline-2 outline-offset-2': selectedElement === 'summary'})}
                         onClick={(e) => handleElementClick(e, 'summary')}
                     >
-                        <div className="w-1/3 rounded-md border p-2 text-sm">
+                        <div className="w-1/3 rounded-md border p-2 text-sm space-y-1">
                             <div className="flex justify-between">
                                 <span className="font-semibold">
                                 Overall Average:
@@ -414,6 +419,10 @@ export default function TemplatesPage() {
                             <div className="flex justify-between">
                                 <span className="font-semibold">Overall Grade:</span>
                                 <span>B</span>
+                            </div>
+                            <div className="flex justify-between">
+                                <span className="font-semibold">Remark:</span>
+                                <span>Very Good</span>
                             </div>
                         </div>
                     </div>
