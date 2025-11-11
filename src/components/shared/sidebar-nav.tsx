@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useParams } from 'next/navigation';
 import {
   Book,
   ClipboardList,
@@ -24,11 +24,14 @@ import {
 } from '@/components/ui/sidebar';
 import { Logo } from './logo';
 import { Button } from '../ui/button';
+import { useUser } from '@/firebase';
+import { useMemo } from 'react';
 
 type NavItem = {
   href: string;
   label: string;
   icon: React.ElementType;
+  isDynamic?: boolean;
 };
 
 const adminNavItems: NavItem[] = [
@@ -45,13 +48,24 @@ const adminNavItems: NavItem[] = [
 ];
 
 const teacherNavItems: NavItem[] = [
-  { href: '/teacher/dashboard', label: 'Dashboard', icon: Home },
+  { href: '/teacher/class', label: 'My Class', icon: Presentation, isDynamic: true },
   { href: '/teacher/results', label: 'Enter Results', icon: Book },
 ];
 
 export function SidebarNav({ role }: { role: 'admin' | 'teacher' }) {
   const pathname = usePathname();
-  const navItems = role === 'admin' ? adminNavItems : teacherNavItems;
+  const params = useParams();
+  
+  const navItems = useMemo(() => {
+    if (role === 'teacher') {
+      const classroomId = params.classroomId;
+      return [
+        { href: `/teacher/class/${classroomId}`, label: 'My Class', icon: Presentation },
+        { href: '/teacher/results', label: 'Enter Results', icon: Book },
+      ];
+    }
+    return adminNavItems;
+  }, [role, params]);
 
   return (
     <Sidebar>

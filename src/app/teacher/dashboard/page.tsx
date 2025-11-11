@@ -1,55 +1,32 @@
-import { Button } from '@/components/ui/button';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
-import { Book, ChevronRight } from 'lucide-react';
-import Link from 'next/link';
+import { redirect } from 'next/navigation';
+import { getAuth } from 'firebase/auth';
+import { getFirestore, doc, getDoc } from 'firebase/firestore';
+import { initializeFirebase } from '@/firebase';
 
-export default function TeacherDashboard() {
-  return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Welcome, Teacher!</h1>
-        <p className="text-muted-foreground">
-          Here's a quick overview of your tasks.
-        </p>
-      </div>
-      <div className="grid gap-4 md:grid-cols-2">
-        <Card className="flex flex-col">
-          <CardHeader>
-            <CardTitle>Manage Results</CardTitle>
-            <CardDescription>
-              Input and update student scores for continuous assessments and
-              exams.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="flex-grow flex items-end">
-            <Button asChild className="w-full sm:w-auto">
-              <Link href="/teacher/results">
-                Go to Result Entry
-                <ChevronRight className="ml-2 h-4 w-4" />
-              </Link>
-            </Button>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle>My Classes</CardTitle>
-            <CardDescription>
-              View students and information for your assigned classes.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="text-muted-foreground">
-              Class list will be displayed here.
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-    </div>
-  );
+// This page is no longer the primary destination for teachers.
+// It will now act as a redirector to get the teacher to their assigned class.
+// We can't use `useUser` hook here as it's a server component.
+
+export default async function TeacherDashboard() {
+  // This is a server component, so we initialize a temporary client
+  // to fetch the user's class assignment.
+  // This is not ideal, but necessary for the redirect logic on the server.
+  const { auth, firestore } = initializeFirebase();
+
+  const user = auth.currentUser;
+
+  if (user) {
+    const userDocRef = doc(firestore, 'users', user.uid);
+    const userDoc = await getDoc(userDocRef);
+    if (userDoc.exists()) {
+      const userData = userDoc.data();
+      if (userData.assignedClassroomId) {
+        redirect(`/teacher/class/${userData.assignedClassroomId}`);
+      }
+    }
+  }
+  
+  // Fallback if user isn't found or has no class.
+  // A real app might show an error page.
+  redirect('/login');
 }

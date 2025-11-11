@@ -62,21 +62,40 @@ export function LoginForm() {
           return;
         }
 
-        const adminRoleRef = doc(firestore, 'roles_admin', user.uid);
-        const adminDoc = await getDoc(adminRoleRef);
-        if (adminDoc.exists()) {
-           toast({
-            title: 'Admin Login',
-            description: 'Redirecting to admin login...',
-          });
-          router.push('/admin/login');
+        const userDocRef = doc(firestore, 'users', user.uid);
+        const userDoc = await getDoc(userDocRef);
+
+        if (userDoc.exists()) {
+            const userData = userDoc.data();
+            if (userData.role === 'Admin') {
+                toast({
+                    title: 'Admin Login',
+                    description: 'Redirecting to admin dashboard...',
+                });
+                router.push('/admin/dashboard');
+            } else if (userData.role === 'Teacher') {
+                if (userData.assignedClassroomId) {
+                     toast({
+                        title: 'Login Successful',
+                        description: `Welcome, Teacher! Redirecting to your class...`,
+                    });
+                    router.push(`/teacher/class/${userData.assignedClassroomId}`);
+                } else {
+                    toast({
+                        variant: 'destructive',
+                        title: 'Login Failed',
+                        description: 'You have not been assigned to a classroom. Please contact an administrator.',
+                    });
+                    setIsLoading(false);
+                }
+            }
         } else {
-          // Assume teacher role
-          toast({
-            title: 'Login Successful',
-            description: `Welcome, Teacher! Redirecting...`,
-          });
-          router.push('/teacher/dashboard');
+           toast({
+                variant: 'destructive',
+                title: 'Login Failed',
+                description: 'Your user role is not configured. Please contact an administrator.',
+            });
+           setIsLoading(false);
         }
       };
       checkRole();
