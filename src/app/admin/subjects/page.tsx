@@ -84,7 +84,12 @@ export default function SubjectsPage() {
 
   const isLoading = subjectsLoading || classroomsLoading || classroomSubjectsLoading;
 
-  // --- Data Mapping ---
+  // --- Data Sorting and Mapping ---
+  const sortedClassrooms = useMemo(() => {
+    if (!classrooms) return [];
+    return [...classrooms].sort((a, b) => a.name.localeCompare(b.name));
+  }, [classrooms]);
+
   const subjectMap = useMemo(
     () => subjects?.reduce((acc, s) => ({ ...acc, [s.id]: s }), {} as Record<string, Subject>) || {},
     [subjects]
@@ -254,7 +259,7 @@ export default function SubjectsPage() {
             </div>
         ) : (
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {(classrooms || []).map(classroom => (
+            {sortedClassrooms.map(classroom => (
                 <Card key={classroom.id}>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
                         <CardTitle className="text-xl">{classroom.name}</CardTitle>
