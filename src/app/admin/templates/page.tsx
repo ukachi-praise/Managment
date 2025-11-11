@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -108,7 +109,7 @@ const initialSettings: TemplateSettings = {
 
 export default function TemplatesPage() {
   const [templateName, setTemplateName] = useState('New Result Template');
-  const [schoolName, setSchoolName] = useState('JustVision Kiddies');
+  const [schoolName, setSchoolName] = useState('JustVision Kiddies School');
   const [selectedClassId, setSelectedClassId] = useState<string | null>(null);
   const [settings, setSettings] = useState<TemplateSettings>(initialSettings);
   const [selectedElement, setSelectedElement] = useState<TemplateElement>(null);
@@ -303,20 +304,24 @@ export default function TemplatesPage() {
                         onClick={(e) => handleElementClick(e, 'header')}
                     >
                     <div className="flex items-start justify-between">
-                        <div 
-                            className={cn('flex items-center gap-2 text-lg font-bold editable-region', {'outline-blue-500 outline-dashed outline-2 outline-offset-2': selectedElement === 'schoolName'})}
-                            onClick={(e) => handleElementClick(e, 'schoolName')}
-                        >
+                        <div className="flex items-center gap-4">
                             <div className="flex h-16 w-16 items-center justify-center rounded-md border bg-gray-100">
                                 <Upload className="h-6 w-6 text-muted-foreground" />
                             </div>
-                            <div className="flex items-center gap-2 text-xl font-bold">
-                                <BookOpenCheck className="h-6 w-6 text-accent" />
-                                <span className="font-headline">{schoolName}</span>
+                            <div 
+                                className={cn('editable-region', {'outline-blue-500 outline-dashed outline-2 outline-offset-2': selectedElement === 'schoolName'})}
+                                onClick={(e) => handleElementClick(e, 'schoolName')}
+                            >
+                                <div className="flex items-center gap-2 text-2xl font-bold">
+                                    <BookOpenCheck className="h-7 w-7 text-accent" />
+                                    <h1 className="font-headline">{schoolName}</h1>
+                                </div>
+                                <p className="text-sm">Katampe 2 Mpape Abuja</p>
+                                <p className="text-sm font-semibold">Motto: Exceeding Great</p>
                             </div>
                         </div>
                         <div className="text-right">
-                        <h1 className="font-bold text-lg">Student Report Card</h1>
+                        <h2 className="font-bold text-lg">Student Report Card</h2>
                         <p className="text-xs text-muted-foreground">
                             First Term, 2023/2024
                         </p>
