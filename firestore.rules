@@ -61,5 +61,9 @@ service cloud.firestore {
     match /schoolSettings/{settingsId} {
       allow read, write: if isAdmin();
     }
+    
+    match /resultTemplates/{templateId} {
+      allow read, write: if isAdmin();
+    }
   }
 }
