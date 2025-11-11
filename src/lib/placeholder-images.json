@@ -53,6 +53,12 @@
       "description": "A hero image for the login page.",
       "imageUrl": "https://images.unsplash.com/photo-1668620589356-56ba14193005?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw3fHxjaGlsZHJlbiUyMGNsYXNzcm9vbXxlbnwwfHx8fDE3NjI4NTEyMjh8MA&ixlib=rb-4.1.0&q=80&w=1080",
       "imageHint": "children classroom"
+    },
+    {
+      "id": "10",
+      "description": "A placeholder for the school logo.",
+      "imageUrl": "https://images.unsplash.com/photo-1728206379417-29fac7328c2f?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxMHx8c2Nob29sJTIwbG9nb3xlbnwwfHx8fDE3NjI4NTk1Nzh8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "school logo"
     }
   ]
 }

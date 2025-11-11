@@ -29,6 +29,7 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 import { Slider } from '@/components/ui/slider';
+import Image from 'next/image';
 
 
 type Subject = {
@@ -310,9 +311,9 @@ export default function TemplatesPage() {
                     >
                     <div className="flex items-start justify-between">
                         <div className="flex items-center gap-4">
-                            <div className="flex h-16 w-16 items-center justify-center rounded-md border bg-gray-100">
-                                <Upload className="h-6 w-6 text-muted-foreground" />
-                            </div>
+                              <div className="relative h-16 w-16">
+                                  <Image src="/Logo.jpg" alt="School Logo" layout="fill" objectFit="contain" />
+                              </div>
                             <div 
                                 className={cn('editable-region', {'outline-blue-500 outline-dashed outline-2 outline-offset-2': selectedElement === 'schoolName'})}
                                 onClick={(e) => handleElementClick(e, 'schoolName')}
