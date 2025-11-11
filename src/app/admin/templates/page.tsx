@@ -23,7 +23,6 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 
 
 export default function TemplatesPage() {
@@ -93,15 +92,13 @@ export default function TemplatesPage() {
                         </div>
                     </div>
                      <Separator className="my-4" />
-                      <div className="flex items-start justify-between">
-                        <div className="grid grid-cols-[max-content_1fr] gap-x-4 gap-y-1 text-xs flex-1 ml-4">
-                            {visibleFields.studentName && <><div className="font-semibold">Student Name:</div><div>John Doe</div></>}
-                            {visibleFields.admissionNumber && <><div className="font-semibold">Admission No:</div><div>JKS-00123</div></>}
-                            {visibleFields.classLevel && <><div className="font-semibold">Class:</div><div>Primary 5</div></>}
-                            {visibleFields.attendance && <><div className="font-semibold">Attendance:</div><div>60/65 Days</div></>}
-                            {visibleFields.classTeacher && <><div className="font-semibold">Class Teacher:</div><div>Mrs. Ada</div></>}
-                        </div>
-                    </div>
+                      <div className="grid grid-cols-2 gap-x-8 gap-y-1 text-xs">
+                          {visibleFields.studentName && <div className="flex"><p className="w-28 font-semibold">Student Name:</p><p>John Doe</p></div>}
+                          {visibleFields.admissionNumber && <div className="flex"><p className="w-28 font-semibold">Admission No:</p><p>JKS-00123</p></div>}
+                          {visibleFields.classLevel && <div className="flex"><p className="w-28 font-semibold">Class:</p><p>Primary 5</p></div>}
+                          {visibleFields.attendance && <div className="flex"><p className="w-28 font-semibold">Attendance:</p><p>60/65 Days</p></div>}
+                          {visibleFields.classTeacher && <div className="flex col-span-2"><p className="w-28 font-semibold">Class Teacher:</p><p>Mrs. Ada</p></div>}
+                      </div>
                 </header>
                 <main className="mt-4">
                     {visibleFields.subjectsTable &&
