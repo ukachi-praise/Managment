@@ -1,5 +1,6 @@
 
 
+
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -15,9 +16,9 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { useCollection, useFirestore } from '@/firebase';
+import { useCollection, useDoc, useFirestore } from '@/firebase';
 import { useMemoFirebase } from '@/firebase/provider';
-import { collection } from 'firebase/firestore';
+import { collection, doc, Timestamp } from 'firebase/firestore';
 import {
   Select,
   SelectContent,
@@ -31,6 +32,8 @@ import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 import { Slider } from '@/components/ui/slider';
 import Image from 'next/image';
+import { format } from 'date-fns';
+import { Skeleton } from '@/components/ui/skeleton';
 
 
 type Subject = {
@@ -47,6 +50,13 @@ type ClassroomSubject = {
   id: string;
   classroomId: string;
   subjectId: string;
+};
+
+type SchoolSettingsData = {
+    currentSession: string;
+    currentTermId: string;
+    daysSchoolOpened: number;
+    nextTermResumptionDate: Timestamp | Date | string;
 };
 
 type TemplateElement = 'header' | 'studentInfo' | 'subjectsTable' | 'summary' | 'softSkills' | 'remarks' | 'footer' | 'schoolName' | null;
@@ -107,6 +117,12 @@ const initialSettings: TemplateSettings = {
   },
 };
 
+const termNames: Record<string, string> = {
+    term1: '1st Term',
+    term2: '2nd Term',
+    term3: '3rd Term',
+};
+
 
 export default function TemplatesPage() {
   const [templateName, setTemplateName] = useState('New Result Template');
@@ -119,6 +135,9 @@ export default function TemplatesPage() {
   const firestore = useFirestore();
 
   // --- Data Fetching ---
+  const settingsRef = useMemoFirebase(() => (firestore ? doc(firestore, 'schoolSettings', 'current') : null), [firestore]);
+  const { data: schoolSettings, isLoading: settingsLoading } = useDoc<SchoolSettingsData>(settingsRef);
+
   const classroomsQuery = useMemoFirebase(
     () => (firestore ? collection(firestore, 'classrooms') : null),
     [firestore]
@@ -169,6 +188,17 @@ export default function TemplatesPage() {
     if(!selectedClassId || !classrooms) return null;
     return classrooms.find(c => c.id === selectedClassId);
   }, [selectedClassId, classrooms]);
+
+    const formattedResumptionDate = useMemo(() => {
+    if (!schoolSettings?.nextTermResumptionDate) return 'N/A';
+    let date: Date;
+    if (schoolSettings.nextTermResumptionDate instanceof Timestamp) {
+      date = schoolSettings.nextTermResumptionDate.toDate();
+    } else {
+      date = new Date(schoolSettings.nextTermResumptionDate);
+    }
+    return format(date, 'PPP');
+  }, [schoolSettings]);
 
   const handleElementClick = (e: React.MouseEvent, elementName: TemplateElement) => {
     e.stopPropagation();
@@ -251,10 +281,12 @@ export default function TemplatesPage() {
     )
   }
 
-  const StudentInfoDetail = ({ label, value }: { label: string, value: string | React.ReactNode }) => (
+  const StudentInfoDetail = ({ label, value, isLoading = false }: { label: string, value?: string | React.ReactNode, isLoading?: boolean }) => (
     <div className="flex text-xs">
         <span className="font-semibold w-[80px] shrink-0">{label}:</span>
-        <span className="flex-1 border-b border-dotted border-gray-400">{value}</span>
+        <span className="flex-1 border-b border-dotted border-black">
+            {isLoading ? <Skeleton className="h-4 w-24" /> : value}
+        </span>
     </div>
   )
 
@@ -330,7 +362,7 @@ export default function TemplatesPage() {
                     <div className="relative z-10 flex flex-col h-full">
                         {settings.header.visible && (
                             <header 
-                                className={cn('mb-4 p-2 border editable-region', {'outline-blue-500 outline-dashed outline-2 outline-offset-2': selectedElement === 'header'})}
+                                className={cn('mb-4 p-2 border border-black editable-region', {'outline-blue-500 outline-dashed outline-2 outline-offset-2': selectedElement === 'header'})}
                                 onClick={(e) => handleElementClick(e, 'header')}
                             >
                             <div className="flex items-start justify-between">
@@ -351,18 +383,22 @@ export default function TemplatesPage() {
                                 </div>
                                 <div className="text-right">
                                 <h2 className="font-bold text-base">Student Report Card</h2>
-                                <p className="text-xs text-muted-foreground">
-                                    First Term, 2023/2024
-                                </p>
+                                {settingsLoading ? (
+                                  <Skeleton className="h-4 w-28 mt-1" />
+                                ) : (
+                                  <p className="text-xs text-muted-foreground">
+                                    {schoolSettings?.currentTermId ? termNames[schoolSettings.currentTermId] : 'N/A'}, {schoolSettings?.currentSession}
+                                  </p>
+                                )}
                                 </div>
                             </div>
-                            <Separator className="my-2" />
+                            <Separator className="my-2 bg-black" />
                         </header>
                         )}
 
                         {settings.studentInfo.visible && (
                             <div
-                                className={cn('editable-region mb-4 p-2 border', {'outline-blue-500 outline-dashed outline-2 outline-offset-2': selectedElement === 'studentInfo'})}
+                                className={cn('editable-region mb-4 p-2 border border-black', {'outline-blue-500 outline-dashed outline-2 outline-offset-2': selectedElement === 'studentInfo'})}
                                 onClick={(e) => handleElementClick(e, 'studentInfo')}
                                 style={{ fontSize: `10px` }}
                             >
@@ -373,13 +409,13 @@ export default function TemplatesPage() {
                                         <div className="w-1/3"><StudentInfoDetail label="Class" value={selectedClassroom?.name || 'Primary 5'} /></div>
                                     </div>
                                     <div className="flex gap-4">
-                                        <div className="w-1/3"><StudentInfoDetail label="Term" value="First" /></div>
-                                        <div className="w-1/3"><StudentInfoDetail label="Session" value="2023/2024" /></div>
+                                        <div className="w-1/3"><StudentInfoDetail label="Term" value={schoolSettings?.currentTermId ? termNames[schoolSettings.currentTermId] : undefined} isLoading={settingsLoading}/></div>
+                                        <div className="w-1/3"><StudentInfoDetail label="Session" value={schoolSettings?.currentSession} isLoading={settingsLoading} /></div>
                                         <div className="w-1/3"><StudentInfoDetail label="Days Attended" value="60" /></div>
                                     </div>
                                     <div className="flex gap-4">
-                                        <div className="w-1/3"><StudentInfoDetail label="School Open" value="65" /></div>
-                                        <div className="w-1/3"><StudentInfoDetail label="Resumption" value="April 25, 2024" /></div>
+                                        <div className="w-1/3"><StudentInfoDetail label="School Open" value={schoolSettings?.daysSchoolOpened.toString()} isLoading={settingsLoading} /></div>
+                                        <div className="w-1/3"><StudentInfoDetail label="Resumption" value={formattedResumptionDate} isLoading={settingsLoading} /></div>
                                         <div className="w-1/3"></div>
                                     </div>
                                 </div>
@@ -389,46 +425,46 @@ export default function TemplatesPage() {
                         <div className="flex-grow flex flex-col">
                             {settings.subjectsTable.visible && (
                             <div 
-                                className={cn('editable-region border flex-grow', {'outline-blue-500 outline-dashed outline-2 outline-offset-2': selectedElement === 'subjectsTable'})}
+                                className={cn('editable-region border border-black flex-grow', {'outline-blue-500 outline-dashed outline-2 outline-offset-2': selectedElement === 'subjectsTable'})}
                                 onClick={(e) => handleElementClick(e, 'subjectsTable')}
                             >
                                 <Table>
                                     <TableHeader>
                                     <TableRow>
-                                        <TableHead className="border p-1 h-auto text-xs">Subject</TableHead>
-                                        <TableHead className="text-center border p-1 h-auto text-xs"><div>CA1</div><div>(10)</div></TableHead>
-                                        <TableHead className="text-center border p-1 h-auto text-xs"><div>CA2</div><div>(10)</div></TableHead>
-                                        <TableHead className="text-center border p-1 h-auto text-xs"><div>CA3</div><div>(10)</div></TableHead>
-                                        <TableHead className="text-center border p-1 h-auto text-xs"><div>Exam</div><div>(70)</div></TableHead>
-                                        <TableHead className="text-center border p-1 h-auto text-xs"><div>Total</div><div>(100)</div></TableHead>
-                                        <TableHead className="border p-1 h-auto text-xs">Remark</TableHead>
+                                        <TableHead className="border border-black p-1 h-auto text-xs">Subject</TableHead>
+                                        <TableHead className="text-center border border-black p-1 h-auto text-xs"><div>CA1</div><div>(10)</div></TableHead>
+                                        <TableHead className="text-center border border-black p-1 h-auto text-xs"><div>CA2</div><div>(10)</div></TableHead>
+                                        <TableHead className="text-center border border-black p-1 h-auto text-xs"><div>CA3</div><div>(10)</div></TableHead>
+                                        <TableHead className="text-center border border-black p-1 h-auto text-xs"><div>Exam</div><div>(70)</div></TableHead>
+                                        <TableHead className="text-center border border-black p-1 h-auto text-xs"><div>Total</div><div>(100)</div></TableHead>
+                                        <TableHead className="border border-black p-1 h-auto text-xs">Remark</TableHead>
                                     </TableRow>
                                     </TableHeader>
                                     <TableBody>
                                     {subjectsLoading ? (
-                                        <TableRow><TableCell colSpan={7} className="text-center border p-1 text-xs">Loading subjects...</TableCell></TableRow>
+                                        <TableRow><TableCell colSpan={7} className="text-center border border-black p-1 text-xs">Loading subjects...</TableCell></TableRow>
                                     ) : displayedSubjects.length > 0 ? (
                                         displayedSubjects.map(subject => (
                                         <TableRow key={subject.id}>
-                                            <TableCell className="border p-1 text-xs">{subject.name}</TableCell>
-                                            <TableCell className="text-center border p-1 text-xs">--</TableCell>
-                                            <TableCell className="text-center border p-1 text-xs">--</TableCell>
-                                            <TableCell className="text-center border p-1 text-xs">--</TableCell>
-                                            <TableCell className="text-center border p-1 text-xs">--</TableCell>
-                                            <TableCell className="text-center border p-1 text-xs">--</TableCell>
-                                            <TableCell className="border p-1 text-xs">--</TableCell>
+                                            <TableCell className="border border-black p-1 text-xs">{subject.name}</TableCell>
+                                            <TableCell className="text-center border border-black p-1 text-xs">--</TableCell>
+                                            <TableCell className="text-center border border-black p-1 text-xs">--</TableCell>
+                                            <TableCell className="text-center border border-black p-1 text-xs">--</TableCell>
+                                            <TableCell className="text-center border border-black p-1 text-xs">--</TableCell>
+                                            <TableCell className="text-center border border-black p-1 text-xs">--</TableCell>
+                                            <TableCell className="border border-black p-1 text-xs">--</TableCell>
                                         </TableRow>
                                         ))
                                     ) : (
                                         Array.from({ length: 12 }).map((_, index) => (
                                             <TableRow key={`placeholder-${index}`}>
-                                                <TableCell className="border p-1 text-xs">Subject Name</TableCell>
-                                                <TableCell className="text-center border p-1 text-xs">--</TableCell>
-                                                <TableCell className="text-center border p-1 text-xs">--</TableCell>
-                                                <TableCell className="text-center border p-1 text-xs">--</TableCell>
-                                                <TableCell className="text-center border p-1 text-xs">--</TableCell>
-                                                <TableCell className="text-center border p-1 text-xs">--</TableCell>
-                                                <TableCell className="border p-1 text-xs">--</TableCell>
+                                                <TableCell className="border border-black p-1 text-xs">Subject Name</TableCell>
+                                                <TableCell className="text-center border border-black p-1 text-xs">--</TableCell>
+                                                <TableCell className="text-center border border-black p-1 text-xs">--</TableCell>
+                                                <TableCell className="text-center border border-black p-1 text-xs">--</TableCell>
+                                                <TableCell className="text-center border border-black p-1 text-xs">--</TableCell>
+                                                <TableCell className="text-center border border-black p-1 text-xs">--</TableCell>
+                                                <TableCell className="border border-black p-1 text-xs">--</TableCell>
                                             </TableRow>
                                         ))
                                     )}
@@ -441,7 +477,7 @@ export default function TemplatesPage() {
                                 className={cn('editable-region mt-2 flex justify-end', {'outline-blue-500 outline-dashed outline-2 outline-offset-2': selectedElement === 'summary'})}
                                 onClick={(e) => handleElementClick(e, 'summary')}
                             >
-                                <div className="w-1/2 rounded-md border p-2 text-xs space-y-1">
+                                <div className="w-1/2 rounded-md border border-black p-2 text-xs space-y-1">
                                     <div className="flex justify-between">
                                         <span className="font-semibold">
                                         Overall Average:
@@ -460,7 +496,7 @@ export default function TemplatesPage() {
                             className={cn('editable-region mt-auto pt-2 text-xs', {'outline-blue-500 outline-dashed outline-2 outline-offset-2': selectedElement === 'footer'})}
                             onClick={(e) => handleElementClick(e, 'footer')}
                         >
-                            <section className='border p-2 flex flex-col gap-2'>
+                            <section className='border border-black p-2 flex flex-col gap-2'>
                                 {settings.softSkills.visible && (
                                 <div className="space-y-1">
                                     <h3 className="font-bold">Soft Skills Assessment</h3>
@@ -468,24 +504,24 @@ export default function TemplatesPage() {
                                         <div>
                                             <Table>
                                                 <TableBody>
-                                                    <TableRow><TableCell className="font-medium p-1 h-auto text-[10px]">Punctuality</TableCell><TableCell className="text-right p-1 h-auto text-[10px]">5</TableCell></TableRow>
-                                                    <TableRow><TableCell className="font-medium p-1 h-auto text-[10px]">Neatness</TableCell><TableCell className="text-right p-1 h-auto text-[10px]">4</TableCell></TableRow>
+                                                    <TableRow><TableCell className="font-medium p-1 h-auto text-[10px] border-black">Punctuality</TableCell><TableCell className="text-right p-1 h-auto text-[10px] border-black">5</TableCell></TableRow>
+                                                    <TableRow><TableCell className="font-medium p-1 h-auto text-[10px] border-black">Neatness</TableCell><TableCell className="text-right p-1 h-auto text-[10px] border-black">4</TableCell></TableRow>
                                                 </TableBody>
                                             </Table>
                                         </div>
                                         <div>
                                         <Table>
                                             <TableBody>
-                                                <TableRow><TableCell className="font-medium p-1 h-auto text-[10px]">Honesty</TableCell><TableCell className="text-right p-1 h-auto text-[10px]">5</TableCell></TableRow>
-                                                <TableRow><TableCell className="font-medium p-1 h-auto text-[10px]">Communication</TableCell><TableCell className="text-right p-1 h-auto text-[10px]">5</TableCell></TableRow>
+                                                <TableRow><TableCell className="font-medium p-1 h-auto text-[10px] border-black">Honesty</TableCell><TableCell className="text-right p-1 h-auto text-[10px] border-black">5</TableCell></TableRow>
+                                                <TableRow><TableCell className="font-medium p-1 h-auto text-[10px] border-black">Communication</TableCell><TableCell className="text-right p-1 h-auto text-[10px] border-black">5</TableCell></TableRow>
                                             </TableBody>
                                         </Table>
                                         </div>
                                         <div>
                                         <Table>
                                             <TableBody>
-                                                <TableRow><TableCell className="font-medium p-1 h-auto text-[10px]">Attentiveness</TableCell><TableCell className="text-right p-1 h-auto text-[10px]">4</TableCell></TableRow>
-                                                <TableRow><TableCell className="font-medium p-1 h-auto text-[10px]">Self Control</TableCell><TableCell className="text-right p-1 h-auto text-[10px]">5</TableCell></TableRow>
+                                                <TableRow><TableCell className="font-medium p-1 h-auto text-[10px] border-black">Attentiveness</TableCell><TableCell className="text-right p-1 h-auto text-[10px] border-black">4</TableCell></TableRow>
+                                                <TableRow><TableCell className="font-medium p-1 h-auto text-[10px] border-black">Self Control</TableCell><TableCell className="text-right p-1 h-auto text-[10px] border-black">5</TableCell></TableRow>
                                             </TableBody>
                                         </Table>
                                         </div>
@@ -500,17 +536,17 @@ export default function TemplatesPage() {
                                             <Table>
                                                 <TableHeader>
                                                     <TableRow>
-                                                        <TableHead className="p-1 h-auto text-[10px]">Score</TableHead>
-                                                        <TableHead className="p-1 h-auto text-[10px]">Grade</TableHead>
-                                                        <TableHead className="p-1 h-auto text-[10px]">Remark</TableHead>
+                                                        <TableHead className="p-1 h-auto text-[10px] border-black">Score</TableHead>
+                                                        <TableHead className="p-1 h-auto text-[10px] border-black">Grade</TableHead>
+                                                        <TableHead className="p-1 h-auto text-[10px] border-black">Remark</TableHead>
                                                     </TableRow>
                                                 </TableHeader>
                                                 <TableBody>
-                                                    <TableRow><TableCell className="p-1 h-auto text-[10px]">80 – 100</TableCell><TableCell className="p-1 h-auto text-[10px]">A</TableCell><TableCell className="p-1 h-auto text-[10px]">Excellent</TableCell></TableRow>
-                                                    <TableRow><TableCell className="p-1 h-auto text-[10px]">70 – 79</TableCell><TableCell className="p-1 h-auto text-[10px]">B</TableCell><TableCell className="p-1 h-auto text-[10px]">Very Good</TableCell></TableRow>
-                                                    <TableRow><TableCell className="p-1 h-auto text-[10px]">60 – 69</TableCell><TableCell className="p-1 h-auto text-[10px]">C</TableCell><TableCell className="p-1 h-auto text-[10px]">Good</TableCell></TableRow>
-                                                    <TableRow><TableCell className="p-1 h-auto text-[10px]">50 – 59</TableCell><TableCell className="p-1 h-auto text-[10px]">D</TableCell><TableCell className="p-1 h-auto text-[10px]">Fair</TableCell></TableRow>
-                                                    <TableRow><TableCell className="p-1 h-auto text-[10px]">0 – 49</TableCell><TableCell className="p-1 h-auto text-[10px]">F</TableCell><TableCell className="p-1 h-auto text-[10px]">Fail</TableCell></TableRow>
+                                                    <TableRow><TableCell className="p-1 h-auto text-[10px] border-black">80 – 100</TableCell><TableCell className="p-1 h-auto text-[10px] border-black">A</TableCell><TableCell className="p-1 h-auto text-[10px] border-black">Excellent</TableCell></TableRow>
+                                                    <TableRow><TableCell className="p-1 h-auto text-[10px] border-black">70 – 79</TableCell><TableCell className="p-1 h-auto text-[10px] border-black">B</TableCell><TableCell className="p-1 h-auto text-[10px] border-black">Very Good</TableCell></TableRow>
+                                                    <TableRow><TableCell className="p-1 h-auto text-[10px] border-black">60 – 69</TableCell><TableCell className="p-1 h-auto text-[10px] border-black">C</TableCell><TableCell className="p-1 h-auto text-[10px] border-black">Good</TableCell></TableRow>
+                                                    <TableRow><TableCell className="p-1 h-auto text-[10px] border-black">50 – 59</TableCell><TableCell className="p-1 h-auto text-[10px] border-black">D</TableCell><TableCell className="p-1 h-auto text-[10px] border-black">Fair</TableCell></TableRow>
+                                                    <TableRow><TableCell className="p-1 h-auto text-[10px] border-black">0 – 49</TableCell><TableCell className="p-1 h-auto text-[10px] border-black">F</TableCell><TableCell className="p-1 h-auto text-[10px] border-black">Fail</TableCell></TableRow>
                                                 </TableBody>
                                             </Table>
                                         </div>
@@ -519,16 +555,16 @@ export default function TemplatesPage() {
                                             <Table>
                                                 <TableHeader>
                                                     <TableRow>
-                                                        <TableHead className="p-1 h-auto text-[10px]">Score</TableHead>
-                                                        <TableHead className="p-1 h-auto text-[10px]">Remark</TableHead>
+                                                        <TableHead className="p-1 h-auto text-[10px] border-black">Score</TableHead>
+                                                        <TableHead className="p-1 h-auto text-[10px] border-black">Remark</TableHead>
                                                     </TableRow>
                                                 </TableHeader>
                                                 <TableBody>
-                                                    <TableRow><TableCell className="p-1 h-auto text-[10px]">5</TableCell><TableCell className="p-1 h-auto text-[10px]">Excellent</TableCell></TableRow>
-                                                    <TableRow><TableCell className="p-1 h-auto text-[10px]">4</TableCell><TableCell className="p-1 h-auto text-[10px]">Very Good</TableCell></TableRow>
-                                                    <TableRow><TableCell className="p-1 h-auto text-[10px]">3</TableCell><TableCell className="p-1 h-auto text-[10px]">Good</TableCell></TableRow>
-                                                    <TableRow><TableCell className="p-1 h-auto text-[10px]">2</TableCell><TableCell className="p-1 h-auto text-[10px]">Fair</TableCell></TableRow>
-                                                    <TableRow><TableCell className="p-1 h-auto text-[10px]">1</TableCell><TableCell className="p-1 h-auto text-[10px]">Poor</TableCell></TableRow>
+                                                    <TableRow><TableCell className="p-1 h-auto text-[10px] border-black">5</TableCell><TableCell className="p-1 h-auto text-[10px] border-black">Excellent</TableCell></TableRow>
+                                                    <TableRow><TableCell className="p-1 h-auto text-[10px] border-black">4</TableCell><TableCell className="p-1 h-auto text-[10px] border-black">Very Good</TableCell></TableRow>
+                                                    <TableRow><TableCell className="p-1 h-auto text-[10px] border-black">3</TableCell><TableCell className="p-1 h-auto text-[10px] border-black">Good</TableCell></TableRow>
+                                                    <TableRow><TableCell className="p-1 h-auto text-[10px] border-black">2</TableCell><TableCell className="p-1 h-auto text-[10px] border-black">Fair</TableCell></TableRow>
+                                                    <TableRow><TableCell className="p-1 h-auto text-[10px] border-black">1</TableCell><TableCell className="p-1 h-auto text-[10px] border-black">Poor</TableCell></TableRow>
                                                 </TableBody>
                                             </Table>
                                         </div>
@@ -539,13 +575,13 @@ export default function TemplatesPage() {
                                 <div className="pt-2 space-y-2">
                                     <div>
                                         <h3 className="font-bold">Teacher's Remarks:</h3>
-                                        <p className="min-h-[25px] rounded-md border-b p-1">
+                                        <p className="min-h-[25px] rounded-md border-b border-black p-1">
                                         A brilliant student...
                                         </p>
                                     </div>
                                     <div>
                                         <h3 className="font-bold">Head Teacher's Remarks:</h3>
-                                        <p className="min-h-[25px] rounded-md border-b p-1">
+                                        <p className="min-h-[25px] rounded-md border-b border-black p-1">
                                         Excellent performance...
                                         </p>
                                     </div>
@@ -554,12 +590,12 @@ export default function TemplatesPage() {
                                 {settings.signatures.visible && (
                                 <div className="flex justify-between items-end pt-4">
                                     <div className="text-center w-36">
-                                        <div className="border-t pt-1">
+                                        <div className="border-t border-black pt-1">
                                         Class Teacher's Signature
                                         </div>
                                     </div>
                                     <div className="text-center w-36">
-                                        <div className="border-t pt-1">
+                                        <div className="border-t border-black pt-1">
                                         Head Teacher's Signature
                                         </div>
                                     </div>
@@ -581,3 +617,6 @@ export default function TemplatesPage() {
     
 
 
+
+
+    
