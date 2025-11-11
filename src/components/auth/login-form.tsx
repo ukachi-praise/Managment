@@ -1,3 +1,4 @@
+
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -43,7 +44,11 @@ export function LoginForm() {
   });
 
   useEffect(() => {
-    if (!isUserLoading && user) {
+    if (isUserLoading) {
+      setIsLoading(true);
+      return;
+    }
+    if (user) {
       const checkRole = async () => {
         const adminRoleRef = doc(firestore, 'roles_admin', user.uid);
         const adminDoc = await getDoc(adminRoleRef);
@@ -63,7 +68,7 @@ export function LoginForm() {
         }
       };
       checkRole();
-    } else if (!isUserLoading) {
+    } else {
       setIsLoading(false);
     }
   }, [user, isUserLoading, router, firestore]);
@@ -110,11 +115,13 @@ export function LoginForm() {
             </FormItem>
           )}
         />
-        <Button type="submit" className="w-full" disabled={isLoading || isUserLoading}>
-          {(isLoading || isUserLoading) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+        <Button type="submit" className="w-full" disabled={isLoading}>
+          {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           Sign In
         </Button>
       </form>
     </Form>
   );
 }
+
+    

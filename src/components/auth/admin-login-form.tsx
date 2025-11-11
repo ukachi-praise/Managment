@@ -1,3 +1,4 @@
+
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -44,7 +45,11 @@ export function AdminLoginForm() {
   });
 
   useEffect(() => {
-    if (!isUserLoading && user) {
+    if (isUserLoading) {
+      setIsLoading(true);
+      return;
+    }
+    if (user) {
       const checkAdmin = async () => {
         const adminRoleRef = doc(firestore, 'roles_admin', user.uid);
         const adminDoc = await getDoc(adminRoleRef);
@@ -55,7 +60,6 @@ export function AdminLoginForm() {
           });
           router.push('/admin/dashboard');
         } else {
-          // Not an admin, maybe sign out or show error
            toast({
             variant: 'destructive',
             title: 'Permission Denied',
@@ -65,7 +69,7 @@ export function AdminLoginForm() {
         }
       };
       checkAdmin();
-    } else if (!isUserLoading) {
+    } else {
       setIsLoading(false);
     }
   }, [user, isUserLoading, router, firestore]);
@@ -113,11 +117,13 @@ export function AdminLoginForm() {
             </FormItem>
           )}
         />
-        <Button type="submit" className="w-full" disabled={isLoading || isUserLoading}>
-          {(isLoading || isUserLoading) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+        <Button type="submit" className="w-full" disabled={isLoading}>
+          {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           Sign In
         </Button>
       </form>
     </Form>
   );
 }
+
+    
