@@ -38,22 +38,25 @@ export function LoginForm() {
 
   function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
-    const role = 'teacher';
     // Simulate API call
     setTimeout(() => {
-      if (
-        role === 'teacher' && values.email === 'teacher@justvision.com'
-      ) {
+      if (values.email === 'teacher@justvision.com') {
         toast({
           title: 'Login Successful',
-          description: `Welcome, ${role}! Redirecting...`,
+          description: `Welcome, Teacher! Redirecting...`,
         });
         router.push('/teacher/dashboard');
+      } else if (values.email === 'admin@justvision.com') {
+        toast({
+          title: 'Admin Login',
+          description: 'Redirecting to admin login...',
+        });
+        router.push('/admin/login');
       } else {
         toast({
           variant: 'destructive',
           title: 'Login Failed',
-          description: 'Invalid email or password for the selected role.',
+          description: 'Invalid email or password.',
         });
         setIsLoading(false);
       }
