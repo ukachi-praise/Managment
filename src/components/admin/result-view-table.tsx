@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo } from 'react';
+import Link from 'next/link';
 import {
   Table,
   TableBody,
@@ -17,8 +18,8 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { calculateGrade } from '@/lib/utils';
-import { Loader2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Loader2, Eye } from 'lucide-react';
 import {
   useFirestore,
   useCollection,
@@ -28,39 +29,19 @@ import {
   collection,
   query,
   where,
-  getDocs,
 } from 'firebase/firestore';
 
 // Define types based on backend.json
 type Student = { id: string; name: string };
-type Subject = { id: string; name: string };
 type Classroom = { id: string; name: string; };
 type Enrollment = { id: string; studentId: string; classroomId: string };
-type Result = {
-  id?: string;
-  studentId: string;
-  subjectId: string;
-  classroomId: string;
-  ca1: number | null;
-  ca2: number | null;
-  ca3: number | null;
-  exam: number | null;
-};
-
-type StudentResults = {
-    studentName: string;
-    scores: Record<string, { total: number; grade: string }>; // subjectId -> score
-};
 
 
 export function ResultViewTable() {
   const firestore = useFirestore();
 
   const [selectedClass, setSelectedClass] = useState<string | null>(null);
-  const [studentResults, setStudentResults] = useState<StudentResults[]>([]);
-  const [isFetchingResults, setIsFetchingResults] = useState(false);
   
-
   // --- Data Fetching ---
   const classroomsQuery = useMemoFirebase(
     () => (firestore ? collection(firestore, 'classrooms') : null),
@@ -68,30 +49,6 @@ export function ResultViewTable() {
   );
   const { data: classrooms, isLoading: classroomsLoading } = useCollection<Classroom>(classroomsQuery);
   
-  const classSubjectsQuery = useMemoFirebase(
-    () =>
-      selectedClass
-        ? query(
-            collection(firestore, 'classroomSubjects'),
-            where('classroomId', '==', selectedClass)
-          )
-        : null,
-    [selectedClass, firestore]
-  );
-  const { data: classSubjects, isLoading: classSubjectsLoading } = useCollection(classSubjectsQuery);
-
-  const allSubjectsQuery = useMemoFirebase(
-    () => (firestore ? collection(firestore, 'subjects') : null),
-    [firestore]
-  );
-  const { data: allSubjects, isLoading: allSubjectsLoading } = useCollection<Subject>(allSubjectsQuery);
-
-  const assignedSubjects = useMemo(() => {
-    if (!classSubjects || !allSubjects) return [];
-    const subjectIds = new Set(classSubjects.map(cs => cs.subjectId));
-    return allSubjects.filter(s => subjectIds.has(s.id)).sort((a,b) => a.name.localeCompare(b.name));
-  }, [classSubjects, allSubjects]);
-
   const enrollmentsQuery = useMemoFirebase(
     () =>
       selectedClass
@@ -116,58 +73,13 @@ export function ResultViewTable() {
       return allStudents.filter(s => studentIds.has(s.id)).sort((a,b) => a.name.localeCompare(b.name));
   }, [enrollments, allStudents]);
 
-  // --- Fetch existing results when class is selected ---
-  useEffect(() => {
-    if (!selectedClass) {
-      setStudentResults([]);
-      return;
-    };
-    
-    const fetchResults = async () => {
-        if (studentsInClass.length === 0) {
-            setStudentResults([]);
-            return;
-        }
-        setIsFetchingResults(true);
-        const resultsQuery = query(
-            collection(firestore, 'results'),
-            where('classroomId', '==', selectedClass),
-            // would also filter by termId and sessionId
-        );
-
-        const querySnapshot = await getDocs(resultsQuery);
-        const allResultDocs = querySnapshot.docs.map(doc => ({ ...doc.data() as Result, id: doc.id }));
-
-        const processedResults = studentsInClass.map(student => {
-            const studentScores: Record<string, { total: number, grade: string }> = {};
-
-            assignedSubjects.forEach(subject => {
-                const result = allResultDocs.find(r => r.studentId === student.id && r.subjectId === subject.id);
-                if (result) {
-                    const total = (result.ca1 || 0) + (result.ca2 || 0) + (result.ca3 || 0) + (result.exam || 0);
-                    const { grade } = calculateGrade(total);
-                    studentScores[subject.id] = { total, grade };
-                } else {
-                    studentScores[subject.id] = { total: 0, grade: 'N/A' };
-                }
-            });
-
-            return { studentName: student.name, scores: studentScores };
-        });
-        
-        setStudentResults(processedResults);
-        setIsFetchingResults(false);
-    };
-
-    fetchResults();
-  }, [selectedClass, studentsInClass, assignedSubjects, firestore]);
 
   const handleClassChange = (classId: string) => {
     setSelectedClass(classId);
-    setStudentResults([]);
   }
   
-  const isLoading = classroomsLoading || allSubjectsLoading;
+  const isLoading = classroomsLoading;
+  const isFetchingStudents = enrollmentsLoading || allStudentsLoading;
   const isDisplayingData = selectedClass;
 
   if (isLoading) {
@@ -180,7 +92,7 @@ export function ResultViewTable() {
         <CardTitle>View Results by Class</CardTitle>
         <div className="mt-4 grid gap-4 md:grid-cols-2">
           <Select onValueChange={handleClassChange} value={selectedClass || ''}>
-            <SelectTrigger>
+            <SelectTrigger className="w-full md:w-1/2">
               <SelectValue placeholder="Select a Class" />
             </SelectTrigger>
             <SelectContent>
@@ -200,34 +112,31 @@ export function ResultViewTable() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="w-[250px] font-bold sticky left-0 bg-background z-10">Student Name</TableHead>
-                    {classSubjectsLoading ? (
-                        <TableHead>Loading Subjects...</TableHead>
-                    ) : (
-                        assignedSubjects.map(subject => (
-                            <TableHead key={subject.id} className="text-center">{subject.name}</TableHead>
-                        ))
-                    )}
+                    <TableHead className="w-[350px]">Student Name</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {isFetchingResults || enrollmentsLoading || allStudentsLoading ? (
-                     <TableRow><TableCell colSpan={assignedSubjects.length + 1} className="text-center"><Loader2 className="inline-block animate-spin mr-2" /> Loading scores...</TableCell></TableRow>
-                  ) : studentResults.length > 0 ? (
-                    studentResults.map((studentResult) => (
-                        <TableRow key={studentResult.studentName}>
-                          <TableCell className="font-medium sticky left-0 bg-background z-10">{studentResult.studentName}</TableCell>
-                          {assignedSubjects.map(subject => (
-                              <TableCell key={subject.id} className="text-center">
-                                  {studentResult.scores[subject.id]?.total ?? '--'}
-                              </TableCell>
-                          ))}
+                  {isFetchingStudents ? (
+                     <TableRow><TableCell colSpan={2} className="text-center"><Loader2 className="inline-block animate-spin mr-2" /> Loading students...</TableCell></TableRow>
+                  ) : studentsInClass.length > 0 ? (
+                    studentsInClass.map((student) => (
+                        <TableRow key={student.id}>
+                          <TableCell className="font-medium">{student.name}</TableCell>
+                          <TableCell className="text-right">
+                            <Button asChild variant="outline" size="sm">
+                              <Link href={`/admin/students/${student.id}/results`}>
+                                <Eye className="mr-2 h-4 w-4" />
+                                View Report
+                              </Link>
+                            </Button>
+                          </TableCell>
                         </TableRow>
                     ))
                   ) : (
                     <TableRow>
-                        <TableCell colSpan={assignedSubjects.length + 1} className="text-center h-24">
-                           No students or results found for this class.
+                        <TableCell colSpan={2} className="text-center h-24">
+                           No students found for this class.
                         </TableCell>
                     </TableRow>
                   )}
@@ -237,7 +146,7 @@ export function ResultViewTable() {
           </>
         ) : (
           <div className="text-center text-muted-foreground py-12">
-            Please select a class to view student scores.
+            Please select a class to view the list of students.
           </div>
         )}
       </CardContent>
