@@ -11,5 +11,10 @@ service cloud.firestore {
     match /subjects/{subjectId} {
       allow read, write: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
+
+    // Classrooms collection only accessible by admins
+    match /classrooms/{classroomId} {
+      allow read, write: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
   }
 }
