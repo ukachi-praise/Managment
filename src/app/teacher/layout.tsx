@@ -3,9 +3,8 @@
 import { Header } from '@/components/shared/header';
 import { SidebarNav } from '@/components/shared/sidebar-nav';
 import { SidebarProvider } from '@/components/ui/sidebar';
-import { useUser, useFirestore } from '@/firebase';
-import { doc, getDoc } from 'firebase/firestore';
-import { redirect, useParams } from 'next/navigation';
+import { useUser } from '@/firebase';
+import { redirect } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -15,48 +14,15 @@ export default function TeacherLayout({
   children: React.ReactNode;
 }) {
   const { user, isUserLoading } = useUser();
-  const firestore = useFirestore();
-  const params = useParams();
-  const [isLoading, setIsLoading] = useState(true);
-  const [isAuthorized, setIsAuthorized] = useState(false);
-
+  
+  // A simple check to redirect unauthenticated users
   useEffect(() => {
-    if (isUserLoading || !firestore) return;
-
-    if (!user) {
+    if (!isUserLoading && !user) {
       redirect('/login');
-      return;
     }
+  }, [user, isUserLoading]);
 
-    const checkAuthorization = async () => {
-      const userDocRef = doc(firestore, 'users', user.uid);
-      const userDoc = await getDoc(userDocRef);
-
-      if (userDoc.exists()) {
-        const userData = userDoc.data();
-        const userClassId = userData.assignedClassroomId;
-        const pageClassId = params.classroomId;
-
-        // A teacher can only view their own class page.
-        if (userClassId && pageClassId === userClassId) {
-          setIsAuthorized(true);
-        } else if (userClassId) {
-            // If they try to access a different class, redirect them to their own.
-            redirect(`/teacher/class/${userClassId}`);
-        } else {
-            // If they have no assigned class, they are unauthorized.
-            setIsAuthorized(false);
-        }
-      } else {
-        setIsAuthorized(false);
-      }
-      setIsLoading(false);
-    };
-
-    checkAuthorization();
-  }, [user, isUserLoading, firestore, params]);
-
-  if (isLoading) {
+  if (isUserLoading || !user) {
     return (
         <div className="flex min-h-screen">
           <div className="w-56 hidden md:block border-r p-4 space-y-4">
@@ -76,15 +42,6 @@ export default function TeacherLayout({
           </div>
         </div>
     );
-  }
-  
-  if (!isAuthorized) {
-      // You can replace this with a proper "Unauthorized" component
-      return (
-        <div className="flex min-h-screen items-center justify-center">
-            <p>You are not authorized to view this page. Please contact an administrator.</p>
-        </div>
-      );
   }
 
   return (

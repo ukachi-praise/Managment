@@ -24,14 +24,14 @@ import {
 } from '@/components/ui/sidebar';
 import { Logo } from './logo';
 import { Button } from '../ui/button';
-import { useUser } from '@/firebase';
-import { useMemo } from 'react';
+import { useUser, useFirestore } from '@/firebase';
+import { useMemo, useState, useEffect } from 'react';
+import { doc, getDoc } from 'firebase/firestore';
 
 type NavItem = {
   href: string;
   label: string;
   icon: React.ElementType;
-  isDynamic?: boolean;
 };
 
 const adminNavItems: NavItem[] = [
@@ -47,25 +47,35 @@ const adminNavItems: NavItem[] = [
   { href: '/admin/settings', label: 'Settings', icon: Settings },
 ];
 
-const teacherNavItems: NavItem[] = [
-  { href: '/teacher/class', label: 'My Class', icon: Presentation, isDynamic: true },
-  { href: '/teacher/results', label: 'Enter Results', icon: Book },
-];
-
 export function SidebarNav({ role }: { role: 'admin' | 'teacher' }) {
   const pathname = usePathname();
-  const params = useParams();
+  const { user } = useUser();
+  const firestore = useFirestore();
+  const [teacherClassId, setTeacherClassId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (role === 'teacher' && user && firestore) {
+      const fetchTeacherClass = async () => {
+        const userDocRef = doc(firestore, 'users', user.uid);
+        const userDoc = await getDoc(userDocRef);
+        if (userDoc.exists() && userDoc.data().assignedClassroomId) {
+          setTeacherClassId(userDoc.data().assignedClassroomId);
+        }
+      };
+      fetchTeacherClass();
+    }
+  }, [role, user, firestore]);
   
   const navItems = useMemo(() => {
     if (role === 'teacher') {
-      const classroomId = params.classroomId;
+      const myClassHref = teacherClassId ? `/teacher/class/${teacherClassId}` : '/teacher/dashboard';
       return [
-        { href: `/teacher/class/${classroomId}`, label: 'My Class', icon: Presentation },
+        { href: myClassHref, label: 'My Class', icon: Presentation },
         { href: '/teacher/results', label: 'Enter Results', icon: Book },
       ];
     }
     return adminNavItems;
-  }, [role, params]);
+  }, [role, teacherClassId]);
 
   return (
     <Sidebar>
@@ -78,7 +88,7 @@ export function SidebarNav({ role }: { role: 'admin' | 'teacher' }) {
             <SidebarMenuItem key={item.href}>
               <Button
                 asChild
-                variant={pathname.startsWith(item.href) ? 'secondary' : 'ghost'}
+                variant={pathname === item.href || (pathname.startsWith(item.href) && item.href !== '/teacher/dashboard' && item.href !== '/admin/dashboard') ? 'secondary' : 'ghost'}
                 className="w-full justify-start"
               >
                 <Link href={item.href}>
