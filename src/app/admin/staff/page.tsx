@@ -27,15 +27,27 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { PlusCircle, Edit, Trash2, Loader2 } from 'lucide-react';
+import { PlusCircle, Edit, Trash2, Loader2, KeyRound } from 'lucide-react';
 import {
   useCollection,
   useFirestore,
   setDocumentNonBlocking,
   deleteDocumentNonBlocking,
+  useAuth,
 } from '@/firebase';
+import { sendPasswordResetEmail } from 'firebase/auth';
 import { useMemoFirebase } from '@/firebase/provider';
 import { collection, query, doc } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -65,11 +77,14 @@ type Classroom = {
 export default function StaffPage() {
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [resetDialogOpen, setResetDialogOpen] = useState(false);
+  const [userToReset, setUserToReset] = useState<User | null>(null);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [selectedRole, setSelectedRole] = useState('Teacher');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const firestore = useFirestore();
+  const auth = useAuth();
   const { toast } = useToast();
 
   // --- Data Fetching ---
@@ -111,6 +126,11 @@ export default function StaffPage() {
   const handleCloseEditDialog = () => {
     setEditingUser(null);
     setEditDialogOpen(false);
+  };
+  
+  const handleOpenResetDialog = (user: User) => {
+    setUserToReset(user);
+    setResetDialogOpen(true);
   };
   
   const handleAddStaff = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -187,19 +207,40 @@ export default function StaffPage() {
     setIsSubmitting(false);
   };
   
-    const handleDeleteStaff = (user: User) => {
-        if (!firestore) return;
+  const handleDeleteStaff = (user: User) => {
+      if (!firestore) return;
 
-        // Optionally, add a confirmation dialog here
-        
-        deleteDocumentNonBlocking(doc(firestore, 'users', user.id));
-        
-        toast({
-            variant: 'destructive',
-            title: 'Staff Removed',
-            description: `${user.name} has been removed from the staff list.`,
-        });
-    };
+      // Optionally, add a confirmation dialog here
+      
+      deleteDocumentNonBlocking(doc(firestore, 'users', user.id));
+      
+      toast({
+          variant: 'destructive',
+          title: 'Staff Removed',
+          description: `${user.name} has been removed from the staff list.`,
+      });
+  };
+
+  const handlePasswordReset = async () => {
+    if (!auth || !userToReset) return;
+
+    try {
+      await sendPasswordResetEmail(auth, userToReset.email);
+      toast({
+        title: 'Reset Email Sent',
+        description: `A password reset link has been sent to ${userToReset.email}.`,
+      });
+    } catch (error: any) {
+      toast({
+        variant: 'destructive',
+        title: 'Error Sending Email',
+        description: error.message,
+      });
+    } finally {
+      setResetDialogOpen(false);
+      setUserToReset(null);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -322,6 +363,23 @@ export default function StaffPage() {
           </DialogContent>
         </Dialog>
 
+        {/* Password Reset Dialog */}
+        <AlertDialog open={resetDialogOpen} onOpenChange={setResetDialogOpen}>
+            <AlertDialogContent>
+                <AlertDialogHeader>
+                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        This will send a password reset link to <span className="font-semibold">{userToReset?.email}</span>.
+                        The user will be able to set a new password by following the link.
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={handlePasswordReset}>Continue</AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
+
       <Card>
         <CardHeader>
           <CardTitle>Staff List</CardTitle>
@@ -352,6 +410,7 @@ export default function StaffPage() {
                       <div className="flex justify-end gap-2">
                         <Skeleton className="h-8 w-8" />
                         <Skeleton className="h-8 w-8" />
+                        <Skeleton className="h-8 w-8" />
                       </div>
                     </TableCell>
                   </TableRow>
@@ -364,6 +423,9 @@ export default function StaffPage() {
                     <TableCell><Badge variant={user.role === 'Admin' ? 'default' : 'secondary'}>{user.role}</Badge></TableCell>
                     <TableCell>{user.role === 'Teacher' && user.assignedClassroomId ? classroomMap[user.assignedClassroomId] || 'N/A' : 'N/A'}</TableCell>
                     <TableCell className="text-right">
+                      <Button variant="ghost" size="icon" onClick={() => handleOpenResetDialog(user)}>
+                        <KeyRound className="h-4 w-4" />
+                      </Button>
                       <Button variant="ghost" size="icon" onClick={() => handleOpenEditDialog(user)}>
                         <Edit className="h-4 w-4" />
                       </Button>
