@@ -80,7 +80,7 @@ type TemplateSettings = {
 
 const initialSettings: TemplateSettings = {
   studentInfo: {
-    fontSize: 12,
+    fontSize: 10,
     visible: true,
   },
   header: {
@@ -252,7 +252,7 @@ export default function TemplatesPage() {
 
   const StudentInfoDetail = ({ label, value }: { label: string, value: string | React.ReactNode }) => (
     <div className="flex text-xs whitespace-nowrap">
-        <span className="font-semibold w-28 shrink-0">{label}:</span>
+        <span className="font-semibold w-24 shrink-0">{label}:</span>
         <span className="flex-1 border-b border-dotted border-gray-400">{value}</span>
     </div>
   )
@@ -454,26 +454,33 @@ export default function TemplatesPage() {
                         >
                             <section className='border p-2 flex flex-col gap-2'>
                                 {settings.softSkills.visible && (
-                                <div className="grid grid-cols-2 gap-x-4">
-                                    <div>
-                                        <h3 className="font-bold mb-1">Soft Skills Assessment</h3>
+                                <div className="space-y-1">
+                                    <h3 className="font-bold">Soft Skills Assessment</h3>
+                                    <div className="grid grid-cols-3 gap-x-4">
+                                        <div>
+                                            <Table>
+                                                <TableBody>
+                                                    <TableRow><TableCell className="font-medium p-1 h-auto text-[10px]">Punctuality</TableCell><TableCell className="text-right p-1 h-auto text-[10px]">5</TableCell></TableRow>
+                                                    <TableRow><TableCell className="font-medium p-1 h-auto text-[10px]">Neatness</TableCell><TableCell className="text-right p-1 h-auto text-[10px]">4</TableCell></TableRow>
+                                                </TableBody>
+                                            </Table>
+                                        </div>
+                                        <div>
                                         <Table>
                                             <TableBody>
-                                                <TableRow><TableCell className="font-medium p-1 h-auto">Punctuality</TableCell><TableCell className="text-right p-1 h-auto">5</TableCell></TableRow>
-                                                <TableRow><TableCell className="font-medium p-1 h-auto">Neatness</TableCell><TableCell className="text-right p-1 h-auto">4</TableCell></TableRow>
-                                                <TableRow><TableCell className="font-medium p-1 h-auto">Honesty</TableCell><TableCell className="text-right p-1 h-auto">5</TableCell></TableRow>
+                                                <TableRow><TableCell className="font-medium p-1 h-auto text-[10px]">Honesty</TableCell><TableCell className="text-right p-1 h-auto text-[10px]">5</TableCell></TableRow>
+                                                <TableRow><TableCell className="font-medium p-1 h-auto text-[10px]">Communication</TableCell><TableCell className="text-right p-1 h-auto text-[10px]">5</TableCell></TableRow>
                                             </TableBody>
                                         </Table>
-                                    </div>
-                                    <div>
-                                    <h3 className="font-bold mb-1 text-white">.</h3>
-                                    <Table>
-                                        <TableBody>
-                                            <TableRow><TableCell className="font-medium p-1 h-auto">Communication</TableCell><TableCell className="text-right p-1 h-auto">5</TableCell></TableRow>
-                                            <TableRow><TableCell className="font-medium p-1 h-auto">Attentiveness</TableCell><TableCell className="text-right p-1 h-auto">4</TableCell></TableRow>
-                                            <TableRow><TableCell className="font-medium p-1 h-auto">Self Control</TableCell><TableCell className="text-right p-1 h-auto">5</TableCell></TableRow>
-                                        </TableBody>
-                                    </Table>
+                                        </div>
+                                        <div>
+                                        <Table>
+                                            <TableBody>
+                                                <TableRow><TableCell className="font-medium p-1 h-auto text-[10px]">Attentiveness</TableCell><TableCell className="text-right p-1 h-auto text-[10px]">4</TableCell></TableRow>
+                                                <TableRow><TableCell className="font-medium p-1 h-auto text-[10px]">Self Control</TableCell><TableCell className="text-right p-1 h-auto text-[10px]">5</TableCell></TableRow>
+                                            </TableBody>
+                                        </Table>
+                                        </div>
                                     </div>
                                 </div>
                                 )}
