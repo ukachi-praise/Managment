@@ -1,3 +1,58 @@
 {
-  "placeholderImages": []
+  "placeholderImages": [
+    {
+      "id": "1",
+      "description": "A placeholder avatar for a student.",
+      "imageUrl": "https://images.unsplash.com/photo-1608734265656-f035d3e7bcbf?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw4fHxjaGlsZCUyMHBvcnRyYWl0fGVufDB8fHx8MTc2Mjg1MDAyOXww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "child portrait"
+    },
+    {
+      "id": "2",
+      "description": "A placeholder avatar for a student.",
+      "imageUrl": "https://images.unsplash.com/photo-1595280983913-0d2e57a2fc43?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHxjaGlsZCUyMHBvcnRyYWl0fGVufDB8fHx8MTc2Mjg1MDAyOXww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "child portrait"
+    },
+    {
+      "id": "3",
+      "description": "A placeholder avatar for a student.",
+      "imageUrl": "https://images.unsplash.com/photo-1472490059022-d5d084f09e5e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwyfHxjaGlsZCUyMHBvcnRyYWl0fGVufDB8fHx8MTc2Mjg1MDAyOXww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "child portrait"
+    },
+    {
+      "id": "4",
+      "description": "A placeholder avatar for a student.",
+      "imageUrl": "https://images.unsplash.com/photo-1497881807663-38b9a95b7192?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxjaGlsZCUyMHBvcnRyYWl0fGVufDB8fHx8MTc2Mjg1MDAyOXww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "child portrait"
+    },
+    {
+      "id": "5",
+      "description": "A placeholder avatar for a student.",
+      "imageUrl": "https://images.unsplash.com/photo-1519238263530-99bdd11df2ea?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw3fHxjaGlsZCUyMHBvcnRyYWl0fGVufDB8fHx8MTc2Mjg1MDAyOXww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "child portrait"
+    },
+    {
+      "id": "6",
+      "description": "A placeholder avatar for a student.",
+      "imageUrl": "https://images.unsplash.com/photo-1472490059022-d5d084f09e5e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwyfHxjaGlsZCUyMHBvcnRyYWl0fGVufDB8fHx8MTc2Mjg1MDAyOXww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "child portrait"
+    },
+    {
+      "id": "7",
+      "description": "A placeholder avatar for a student.",
+      "imageUrl": "https://images.unsplash.com/photo-1595760780346-f972eb49709f?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHxjaGlsZCUyMHBvcnRyYWl0fGVufDB8fHx8MTc2Mjg1MDAyOXww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "child portrait"
+    },
+    {
+      "id": "8",
+      "description": "A placeholder avatar for a student.",
+      "imageUrl": "https://images.unsplash.com/photo-1497881807663-38b9a95b7192?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxjaGlsZCUyMHBvcnRyYWl0fGVufDB8fHx8MTc2Mjg1MDAyOXww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "child portrait"
+    },
+    {
+      "id": "9",
+      "description": "A hero image for the login page.",
+      "imageUrl": "https://images.unsplash.com/photo-1668620589356-56ba14193005?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw3fHxjaGlsZHJlbiUyMGNsYXNzcm9vbXxlbnwwfHx8fDE3NjI4NTEyMjh8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "children classroom"
+    }
+  ]
 }

@@ -1,0 +1,138 @@
+'use client';
+
+import { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { classrooms as initialClassrooms, Classroom } from '@/lib/data';
+import { PlusCircle, Edit, Trash2 } from 'lucide-react';
+
+export default function ClassroomsPage() {
+  const [classrooms, setClassrooms] = useState<Classroom[]>(initialClassrooms);
+  const [open, setOpen] = useState(false);
+
+  const handleAddClassroom = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const formData = new FormData(event.currentTarget);
+    const newClassroom: Classroom = {
+      id: `c${classrooms.length + 1}`,
+      name: formData.get('name') as string,
+      teacher: formData.get('teacher') as string,
+    };
+    setClassrooms([...classrooms, newClassroom]);
+    setOpen(false);
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h1 className="text-3xl font-bold tracking-tight">Classrooms</h1>
+        <Dialog open={open} onOpenChange={setOpen}>
+          <DialogTrigger asChild>
+            <Button>
+              <PlusCircle className="mr-2 h-4 w-4" />
+              Add Classroom
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle>Add New Classroom</DialogTitle>
+              <DialogDescription>
+                Enter the details for the new classroom.
+              </DialogDescription>
+            </DialogHeader>
+            <form onSubmit={handleAddClassroom} className="grid gap-4 py-4">
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="name" className="text-right">
+                  Name
+                </Label>
+                <Input
+                  id="name"
+                  name="name"
+                  placeholder="e.g. Primary 3"
+                  className="col-span-3"
+                  required
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="teacher" className="text-right">
+                  Teacher
+                </Label>
+                <Input
+                  id="teacher"
+                  name="teacher"
+                  placeholder="e.g. Mrs. Jane Doe"
+                  className="col-span-3"
+                  required
+                />
+              </div>
+              <DialogFooter>
+                <Button type="submit">Save Classroom</Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Existing Classrooms</CardTitle>
+          <CardDescription>
+            A list of all classrooms in the school.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Class Name</TableHead>
+                <TableHead>Class Teacher</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {classrooms.map((classroom) => (
+                <TableRow key={classroom.id}>
+                  <TableCell className="font-medium">{classroom.name}</TableCell>
+                  <TableCell>{classroom.teacher}</TableCell>
+                  <TableCell className="text-right">
+                    <Button variant="ghost" size="icon">
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
