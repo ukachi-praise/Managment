@@ -20,7 +20,6 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Eye, PlusCircle } from 'lucide-react';
 import Link from 'next/link';
-import { Badge } from '@/components/ui/badge';
 import {
   useCollection,
   useFirestore,
@@ -47,6 +46,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion';
 
 type Student = {
   id: string;
@@ -88,25 +93,40 @@ export default function StudentsPage() {
   const { data: enrollments, isLoading: enrollmentsLoading } = useCollection<Enrollment>(enrollmentsQuery);
 
   const isLoading = studentsLoading || classroomsLoading || enrollmentsLoading;
+  
+  // --- Data Grouping ---
+  const studentsByClass = useMemo(() => {
+    if (isLoading || !students || !classrooms || !enrollments) {
+      return {};
+    }
 
-  // --- Data Mapping for Display ---
-  const classroomMap = useMemo(
-    () =>
-      classrooms?.reduce((acc, classroom) => {
-        acc[classroom.id] = classroom.name;
-        return acc;
-      }, {} as Record<string, string>) || {},
-    [classrooms]
-  );
+    const grouped: Record<string, { classroom: Classroom, students: Student[] }> = {};
 
-  const studentClassroomMap = useMemo(
-    () =>
-      enrollments?.reduce((acc, enrollment) => {
-        acc[enrollment.studentId] = enrollment.classroomId;
-        return acc;
-      }, {} as Record<string, string>) || {},
-    [enrollments]
-  );
+    // Initialize with all classrooms
+    classrooms.forEach(classroom => {
+        grouped[classroom.id] = { classroom, students: [] };
+    });
+
+    // Map students to their IDs for quick lookup
+    const studentMap = new Map(students.map(s => [s.id, s]));
+
+    // Populate students into their classrooms
+    enrollments.forEach(enrollment => {
+      const student = studentMap.get(enrollment.studentId);
+      if (student && grouped[enrollment.classroomId]) {
+        grouped[enrollment.classroomId].students.push(student);
+      }
+    });
+
+    // Sort students within each class
+    Object.values(grouped).forEach(group => {
+      group.students.sort((a, b) => a.name.localeCompare(b.name));
+    });
+    
+    // Sort classrooms by name
+    return Object.values(grouped).sort((a,b) => a.classroom.name.localeCompare(b.classroom.name));
+
+  }, [isLoading, students, classrooms, enrollments]);
 
   // --- Event Handlers ---
   const handleAddStudent = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -224,81 +244,88 @@ export default function StudentsPage() {
           </DialogContent>
         </Dialog>
       </div>
-      <Card>
-        <CardHeader>
-          <CardTitle>Student List</CardTitle>
-          <CardDescription>
-            A list of all students enrolled in the school.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Student</TableHead>
-                <TableHead>Class</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {isLoading ? (
-                Array.from({ length: 5 }).map((_, i) => (
-                  <TableRow key={i}>
-                    <TableCell>
-                      <div className="flex items-center gap-3">
-                        <Skeleton className="h-10 w-10 rounded-full" />
-                        <Skeleton className="h-5 w-32" />
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Skeleton className="h-5 w-24" />
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Skeleton className="h-9 w-32 ml-auto" />
-                    </TableCell>
-                  </TableRow>
-                ))
-              ) : students && students.length > 0 ? (
-                students.map((student) => {
-                  const classroomId = studentClassroomMap[student.id];
-                  const classroomName = classroomId ? classroomMap[classroomId] : 'N/A';
-                  return (
-                    <TableRow key={student.id}>
-                      <TableCell className="font-medium">
-                        <div className="flex items-center gap-3">
-                          <Avatar>
-                            <AvatarFallback>
-                              {student.name.charAt(0).toUpperCase()}
-                            </AvatarFallback>
-                          </Avatar>
-                          <span>{student.name}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline">{classroomName}</Badge>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Button asChild variant="outline" size="sm">
-                          <Link href={`/admin/students/${student.id}/results`}>
-                            <Eye className="mr-2 h-4 w-4" />
-                            View Results
-                          </Link>
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })
-              ) : (
-                <TableRow>
-                  <TableCell colSpan={3} className="h-24 text-center">
-                    No students found.
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+
+        {isLoading ? (
+            <Card>
+                <CardHeader>
+                    <Skeleton className="h-6 w-1/2" />
+                    <Skeleton className="h-4 w-3/4" />
+                </CardHeader>
+                <CardContent>
+                    <div className="space-y-4">
+                        <Skeleton className="h-12 w-full" />
+                        <Skeleton className="h-12 w-full" />
+                        <Skeleton className="h-12 w-full" />
+                    </div>
+                </CardContent>
+            </Card>
+        ) : (
+             <Card>
+                <CardHeader>
+                <CardTitle>Student List by Class</CardTitle>
+                <CardDescription>
+                    A list of all students enrolled in the school, grouped by their class.
+                </CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <Accordion type="single" collapsible className="w-full">
+                        {studentsByClass.length > 0 ? studentsByClass.map(({ classroom, students: classStudents }) => (
+                            <AccordionItem value={classroom.id} key={classroom.id}>
+                                <AccordionTrigger className="text-lg font-medium hover:no-underline">
+                                    {classroom.name} ({classStudents.length} students)
+                                </AccordionTrigger>
+                                <AccordionContent>
+                                    <Table>
+                                        <TableHeader>
+                                        <TableRow>
+                                            <TableHead>Student</TableHead>
+                                            <TableHead className="text-right">Actions</TableHead>
+                                        </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                        {classStudents.length > 0 ? (
+                                            classStudents.map((student) => (
+                                            <TableRow key={student.id}>
+                                                <TableCell className="font-medium">
+                                                <div className="flex items-center gap-3">
+                                                    <Avatar>
+                                                    <AvatarFallback>
+                                                        {student.name.charAt(0).toUpperCase()}
+                                                    </AvatarFallback>
+                                                    </Avatar>
+                                                    <span>{student.name}</span>
+                                                </div>
+                                                </TableCell>
+                                                <TableCell className="text-right">
+                                                <Button asChild variant="outline" size="sm">
+                                                    <Link href={`/admin/students/${student.id}/results`}>
+                                                    <Eye className="mr-2 h-4 w-4" />
+                                                    View Results
+                                                    </Link>
+                                                </Button>
+                                                </TableCell>
+                                            </TableRow>
+                                            ))
+                                        ) : (
+                                            <TableRow>
+                                                <TableCell colSpan={2} className="h-24 text-center">
+                                                No students enrolled in this class.
+                                                </TableCell>
+                                            </TableRow>
+                                        )}
+                                        </TableBody>
+                                    </Table>
+                                </AccordionContent>
+                            </AccordionItem>
+                        )) : (
+                            <div className="text-center text-muted-foreground p-8">
+                                No classrooms or students found.
+                            </div>
+                        )}
+                    </Accordion>
+                </CardContent>
+             </Card>
+        )}
     </div>
   );
 }
