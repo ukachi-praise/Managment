@@ -1,13 +1,10 @@
 
-
-
-
 'use client';
 
 import { useState, useMemo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Eye, Save, RotateCcw, Upload, Settings, CaseUpper, CaseLower, BookOpenCheck, PanelLeft, PanelRight } from 'lucide-react';
+import { Eye, Save, RotateCcw, Upload, Settings, CaseUpper, CaseLower, BookOpenCheck, PanelLeft, PanelRight, Loader2 } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import {
   Table,
@@ -17,7 +14,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { useCollection, useDoc, useFirestore } from '@/firebase';
+import { useCollection, useDoc, useFirestore, setDocumentNonBlocking } from '@/firebase';
 import { useMemoFirebase } from '@/firebase/provider';
 import { collection, doc, Timestamp } from 'firebase/firestore';
 import {
@@ -35,6 +32,7 @@ import { Slider } from '@/components/ui/slider';
 import Image from 'next/image';
 import { format } from 'date-fns';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useToast } from '@/hooks/use-toast';
 
 
 type Subject = {
@@ -126,12 +124,14 @@ const termNames: Record<string, string> = {
 
 
 export default function TemplatesPage() {
+  const { toast } = useToast();
   const [templateName, setTemplateName] = useState('New Result Template');
   const [schoolName, setSchoolName] = useState('JustVision Kiddies School');
   const [selectedClassId, setSelectedClassId] = useState<string | null>(null);
   const [settings, setSettings] = useState<TemplateSettings>(initialSettings);
   const [selectedElement, setSelectedElement] = useState<TemplateElement>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
 
   const firestore = useFirestore();
 
@@ -217,6 +217,31 @@ export default function TemplatesPage() {
   };
 
   const resetSettings = () => setSettings(initialSettings);
+
+  const handleSaveTemplate = () => {
+    if (!firestore) return;
+    setIsSaving(true);
+    
+    const templateData = {
+      name: templateName,
+      schoolName: schoolName,
+      settings: settings,
+      // In a real app, you might want to save the logo URL too
+    };
+
+    const templateRef = doc(firestore, 'resultTemplates', 'main-template');
+    setDocumentNonBlocking(templateRef, templateData, { merge: true });
+
+    // Simulate save time and show feedback
+    setTimeout(() => {
+      setIsSaving(false);
+      toast({
+        title: 'Template Saved!',
+        description: `${templateName} has been successfully saved.`,
+      });
+    }, 1500);
+  };
+
 
   const renderSettingsPanel = () => {
     if (!selectedElement) {
@@ -333,9 +358,9 @@ export default function TemplatesPage() {
                     <Eye className="mr-2 h-4 w-4" />
                     Preview PDF
                 </Button>
-                <Button>
-                    <Save className="mr-2 h-4 w-4" />
-                    Save Template
+                <Button onClick={handleSaveTemplate} disabled={isSaving}>
+                  {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                  {isSaving ? 'Saving...' : 'Save Template'}
                 </Button>
                 </div>
             </div>
@@ -376,14 +401,14 @@ export default function TemplatesPage() {
                                         onClick={(e) => handleElementClick(e, 'schoolName')}
                                     >
                                         <div>
-                                            <h1 className="font-headline text-xl font-bold">{schoolName}</h1>
-                                            <p className="text-sm">Katampe 2 Mpape Abuja</p>
-                                            <p className="text-sm font-semibold">Motto: Exceeding Great</p>
+                                            <h1 className="font-headline text-xl font-bold text-foreground">{schoolName}</h1>
+                                            <p className="text-sm text-foreground">Katampe 2 Mpape Abuja</p>
+                                            <p className="text-sm font-semibold text-foreground">Motto: Exceeding Great</p>
                                         </div>
                                     </div>
                                 </div>
                                 <div className="text-right">
-                                <h2 className="font-bold text-base">Student Report Card</h2>
+                                <h2 className="font-bold text-base text-foreground">Student Report Card</h2>
                                 {settingsLoading ? (
                                   <Skeleton className="h-4 w-28 mt-1" />
                                 ) : (
@@ -480,14 +505,14 @@ export default function TemplatesPage() {
                             >
                                 <div className="w-1/2 rounded-md border border-black p-2 text-xs space-y-1">
                                     <div className="flex justify-between">
-                                        <span className="font-semibold">
+                                        <span className="font-semibold text-foreground">
                                         Overall Average:
                                         </span>
-                                        <span>75.5%</span>
+                                        <span className="text-foreground">75.5%</span>
                                     </div>
                                     <div className="flex justify-between">
-                                        <span className="font-semibold">Overall Grade:</span>
-                                        <span>B (Very Good)</span>
+                                        <span className="font-semibold text-foreground">Overall Grade:</span>
+                                        <span className="text-foreground">B (Very Good)</span>
                                     </div>
                                 </div>
                             </div>
@@ -611,15 +636,6 @@ export default function TemplatesPage() {
     </div>
   );
 }
-    
-
-    
-
-    
-
-
-
-
     
 
     
