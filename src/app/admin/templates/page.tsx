@@ -251,7 +251,7 @@ export default function TemplatesPage() {
   }
 
   const StudentInfoDetail = ({ label, value }: { label: string, value: string | React.ReactNode }) => (
-    <div className="flex">
+    <div className="flex text-sm">
         <span className="font-semibold w-32 shrink-0">{label}:</span>
         <span className="flex-1 border-b border-dotted border-gray-400">{value}</span>
     </div>
@@ -316,7 +316,7 @@ export default function TemplatesPage() {
             {/* Preview Area */}
             <main className="flex-1 p-4 sm:p-6 overflow-auto">
                  {/* A4 Preview Canvas */}
-                <div className="relative mx-auto aspect-[210/297] w-full max-w-[210mm] bg-white p-8 shadow-lg print:shadow-none print:m-0 print:p-0 print:max-w-none print:h-full">
+                <div className="relative mx-auto aspect-[210/297] w-full max-w-[210mm] bg-white p-6 shadow-lg print:shadow-none print:m-0 print:p-0 print:max-w-none print:h-full">
                     <div className="absolute inset-0 z-0 flex items-center justify-center">
                         <Image
                             src="/Logo.jpg"
@@ -329,7 +329,7 @@ export default function TemplatesPage() {
                     <div className="relative z-10 flex flex-col h-full">
                         {settings.header.visible && (
                             <header 
-                                className={cn('mb-4 p-4 border editable-region', {'outline-blue-500 outline-dashed outline-2 outline-offset-2': selectedElement === 'header'})}
+                                className={cn('mb-4 p-2 border editable-region', {'outline-blue-500 outline-dashed outline-2 outline-offset-2': selectedElement === 'header'})}
                                 onClick={(e) => handleElementClick(e, 'header')}
                             >
                             <div className="flex items-start justify-between">
@@ -355,17 +355,17 @@ export default function TemplatesPage() {
                                 </p>
                                 </div>
                             </div>
-                            <Separator className="my-4" />
+                            <Separator className="my-2" />
                         </header>
                         )}
 
                         {settings.studentInfo.visible && (
                             <div
-                                className={cn('editable-region mb-4 p-4 border', {'outline-blue-500 outline-dashed outline-2 outline-offset-2': selectedElement === 'studentInfo'})}
+                                className={cn('editable-region mb-4 p-2 border', {'outline-blue-500 outline-dashed outline-2 outline-offset-2': selectedElement === 'studentInfo'})}
                                 onClick={(e) => handleElementClick(e, 'studentInfo')}
                                 style={{ fontSize: `${settings.studentInfo.fontSize}px` }}
                             >
-                                <div className="grid grid-cols-2 gap-x-8 gap-y-2">
+                                <div className="grid grid-cols-2 gap-x-8 gap-y-1">
                                     <StudentInfoDetail label="Student Name" value="John Doe" />
                                     <StudentInfoDetail label="Admission No" value="JKS-00123" />
                                     <StudentInfoDetail label="Class" value={selectedClassroom?.name || 'Primary 5'} />
@@ -378,49 +378,49 @@ export default function TemplatesPage() {
                             </div>
                         )}
                         
-                        <div className="flex-grow flex flex-col mt-4">
+                        <div className="flex-grow flex flex-col">
                             {settings.subjectsTable.visible && (
                             <div 
-                                className={cn('editable-region p-4 border flex-grow', {'outline-blue-500 outline-dashed outline-2 outline-offset-2': selectedElement === 'subjectsTable'})}
+                                className={cn('editable-region border flex-grow', {'outline-blue-500 outline-dashed outline-2 outline-offset-2': selectedElement === 'subjectsTable'})}
                                 onClick={(e) => handleElementClick(e, 'subjectsTable')}
                             >
                                 <Table>
                                     <TableHeader>
                                     <TableRow>
-                                        <TableHead className="border">Subject</TableHead>
-                                        <TableHead className="text-center border"><div>CA1</div><div>(10)</div></TableHead>
-                                        <TableHead className="text-center border"><div>CA2</div><div>(10)</div></TableHead>
-                                        <TableHead className="text-center border"><div>CA3</div><div>(10)</div></TableHead>
-                                        <TableHead className="text-center border"><div>Exam</div><div>(70)</div></TableHead>
-                                        <TableHead className="text-center border"><div>Total</div><div>(100)</div></TableHead>
-                                        <TableHead className="border">Remark</TableHead>
+                                        <TableHead className="border p-1 h-auto">Subject</TableHead>
+                                        <TableHead className="text-center border p-1 h-auto"><div>CA1</div><div>(10)</div></TableHead>
+                                        <TableHead className="text-center border p-1 h-auto"><div>CA2</div><div>(10)</div></TableHead>
+                                        <TableHead className="text-center border p-1 h-auto"><div>CA3</div><div>(10)</div></TableHead>
+                                        <TableHead className="text-center border p-1 h-auto"><div>Exam</div><div>(70)</div></TableHead>
+                                        <TableHead className="text-center border p-1 h-auto"><div>Total</div><div>(100)</div></TableHead>
+                                        <TableHead className="border p-1 h-auto">Remark</TableHead>
                                     </TableRow>
                                     </TableHeader>
                                     <TableBody>
                                     {subjectsLoading ? (
-                                        <TableRow><TableCell colSpan={7} className="text-center border">Loading subjects...</TableCell></TableRow>
+                                        <TableRow><TableCell colSpan={7} className="text-center border p-1">Loading subjects...</TableCell></TableRow>
                                     ) : displayedSubjects.length > 0 ? (
                                         displayedSubjects.map(subject => (
                                         <TableRow key={subject.id}>
-                                            <TableCell className="border">{subject.name}</TableCell>
-                                            <TableCell className="text-center border">--</TableCell>
-                                            <TableCell className="text-center border">--</TableCell>
-                                            <TableCell className="text-center border">--</TableCell>
-                                            <TableCell className="text-center border">--</TableCell>
-                                            <TableCell className="text-center border">--</TableCell>
-                                            <TableCell className="border">--</TableCell>
+                                            <TableCell className="border p-1">{subject.name}</TableCell>
+                                            <TableCell className="text-center border p-1">--</TableCell>
+                                            <TableCell className="text-center border p-1">--</TableCell>
+                                            <TableCell className="text-center border p-1">--</TableCell>
+                                            <TableCell className="text-center border p-1">--</TableCell>
+                                            <TableCell className="text-center border p-1">--</TableCell>
+                                            <TableCell className="border p-1">--</TableCell>
                                         </TableRow>
                                         ))
                                     ) : (
                                         Array.from({ length: 12 }).map((_, index) => (
                                             <TableRow key={`placeholder-${index}`}>
-                                                <TableCell className="border">Subject Name</TableCell>
-                                                <TableCell className="text-center border">--</TableCell>
-                                                <TableCell className="text-center border">--</TableCell>
-                                                <TableCell className="text-center border">--</TableCell>
-                                                <TableCell className="text-center border">--</TableCell>
-                                                <TableCell className="text-center border">--</TableCell>
-                                                <TableCell className="border">--</TableCell>
+                                                <TableCell className="border p-1">Subject Name</TableCell>
+                                                <TableCell className="text-center border p-1">--</TableCell>
+                                                <TableCell className="text-center border p-1">--</TableCell>
+                                                <TableCell className="text-center border p-1">--</TableCell>
+                                                <TableCell className="text-center border p-1">--</TableCell>
+                                                <TableCell className="text-center border p-1">--</TableCell>
+                                                <TableCell className="border p-1">--</TableCell>
                                             </TableRow>
                                         ))
                                     )}
@@ -430,10 +430,10 @@ export default function TemplatesPage() {
                             )}
                             {settings.summary.visible && (
                             <div 
-                                className={cn('editable-region mt-4 flex justify-end', {'outline-blue-500 outline-dashed outline-2 outline-offset-2': selectedElement === 'summary'})}
+                                className={cn('editable-region mt-2 flex justify-end', {'outline-blue-500 outline-dashed outline-2 outline-offset-2': selectedElement === 'summary'})}
                                 onClick={(e) => handleElementClick(e, 'summary')}
                             >
-                                <div className="w-1/3 rounded-md border p-2 text-sm space-y-1">
+                                <div className="w-1/2 rounded-md border p-2 text-xs space-y-1">
                                     <div className="flex justify-between">
                                         <span className="font-semibold">
                                         Overall Average:
@@ -449,29 +449,29 @@ export default function TemplatesPage() {
                             )}
                         </div>
                         <footer 
-                            className={cn('editable-region mt-auto pt-4 text-xs', {'outline-blue-500 outline-dashed outline-2 outline-offset-2': selectedElement === 'footer'})}
+                            className={cn('editable-region mt-auto pt-2 text-xs', {'outline-blue-500 outline-dashed outline-2 outline-offset-2': selectedElement === 'footer'})}
                             onClick={(e) => handleElementClick(e, 'footer')}
                         >
-                            <section className='border p-4 flex flex-col gap-4'>
+                            <section className='border p-2 flex flex-col gap-2'>
                                 {settings.softSkills.visible && (
-                                <div className="grid grid-cols-2 gap-x-8">
+                                <div className="grid grid-cols-2 gap-x-4">
                                     <div>
-                                        <h3 className="font-bold mb-2">Soft Skills Assessment</h3>
+                                        <h3 className="font-bold mb-1">Soft Skills Assessment</h3>
                                         <Table>
                                             <TableBody>
-                                                <TableRow><TableCell className="font-medium p-1">Punctuality</TableCell><TableCell className="text-right p-1">5</TableCell></TableRow>
-                                                <TableRow><TableCell className="font-medium p-1">Neatness</TableCell><TableCell className="text-right p-1">4</TableCell></TableRow>
-                                                <TableRow><TableCell className="font-medium p-1">Honesty</TableCell><TableCell className="text-right p-1">5</TableCell></TableRow>
+                                                <TableRow><TableCell className="font-medium p-1 h-auto">Punctuality</TableCell><TableCell className="text-right p-1 h-auto">5</TableCell></TableRow>
+                                                <TableRow><TableCell className="font-medium p-1 h-auto">Neatness</TableCell><TableCell className="text-right p-1 h-auto">4</TableCell></TableRow>
+                                                <TableRow><TableCell className="font-medium p-1 h-auto">Honesty</TableCell><TableCell className="text-right p-1 h-auto">5</TableCell></TableRow>
                                             </TableBody>
                                         </Table>
                                     </div>
                                     <div>
-                                    <h3 className="font-bold mb-2 text-white">.</h3>
+                                    <h3 className="font-bold mb-1 text-white">.</h3>
                                     <Table>
                                         <TableBody>
-                                            <TableRow><TableCell className="font-medium p-1">Communication</TableCell><TableCell className="text-right p-1">5</TableCell></TableRow>
-                                            <TableRow><TableCell className="font-medium p-1">Attentiveness</TableCell><TableCell className="text-right p-1">4</TableCell></TableRow>
-                                            <TableRow><TableCell className="font-medium p-1">Self Control</TableCell><TableCell className="text-right p-1">5</TableCell></TableRow>
+                                            <TableRow><TableCell className="font-medium p-1 h-auto">Communication</TableCell><TableCell className="text-right p-1 h-auto">5</TableCell></TableRow>
+                                            <TableRow><TableCell className="font-medium p-1 h-auto">Attentiveness</TableCell><TableCell className="text-right p-1 h-auto">4</TableCell></TableRow>
+                                            <TableRow><TableCell className="font-medium p-1 h-auto">Self Control</TableCell><TableCell className="text-right p-1 h-auto">5</TableCell></TableRow>
                                         </TableBody>
                                     </Table>
                                     </div>
@@ -479,8 +479,8 @@ export default function TemplatesPage() {
                                 )}
                                 
                                 {settings.gradingKey.visible && (
-                                    <div className="grid grid-cols-2 gap-x-8 pt-4">
-                                        <div className="space-y-2">
+                                    <div className="grid grid-cols-2 gap-x-4 pt-2">
+                                        <div className="space-y-1">
                                             <h3 className="font-bold">Grading Key</h3>
                                             <Table>
                                                 <TableHeader>
@@ -491,15 +491,15 @@ export default function TemplatesPage() {
                                                     </TableRow>
                                                 </TableHeader>
                                                 <TableBody>
-                                                    <TableRow><TableCell className="p-1">80 – 100</TableCell><TableCell className="p-1">A</TableCell><TableCell className="p-1">Excellent</TableCell></TableRow>
-                                                    <TableRow><TableCell className="p-1">70 – 79</TableCell><TableCell className="p-1">B</TableCell><TableCell className="p-1">Very Good</TableCell></TableRow>
-                                                    <TableRow><TableCell className="p-1">60 – 69</TableCell><TableCell className="p-1">C</TableCell><TableCell className="p-1">Good</TableCell></TableRow>
-                                                    <TableRow><TableCell className="p-1">50 – 59</TableCell><TableCell className="p-1">D</TableCell><TableCell className="p-1">Fair</TableCell></TableRow>
-                                                    <TableRow><TableCell className="p-1">0 – 49</TableCell><TableCell className="p-1">F</TableCell><TableCell className="p-1">Fail</TableCell></TableRow>
+                                                    <TableRow><TableCell className="p-1 h-auto">80 – 100</TableCell><TableCell className="p-1 h-auto">A</TableCell><TableCell className="p-1 h-auto">Excellent</TableCell></TableRow>
+                                                    <TableRow><TableCell className="p-1 h-auto">70 – 79</TableCell><TableCell className="p-1 h-auto">B</TableCell><TableCell className="p-1 h-auto">Very Good</TableCell></TableRow>
+                                                    <TableRow><TableCell className="p-1 h-auto">60 – 69</TableCell><TableCell className="p-1 h-auto">C</TableCell><TableCell className="p-1 h-auto">Good</TableCell></TableRow>
+                                                    <TableRow><TableCell className="p-1 h-auto">50 – 59</TableCell><TableCell className="p-1 h-auto">D</TableCell><TableCell className="p-1 h-auto">Fair</TableCell></TableRow>
+                                                    <TableRow><TableCell className="p-1 h-auto">0 – 49</TableCell><TableCell className="p-1 h-auto">F</TableCell><TableCell className="p-1 h-auto">Fail</TableCell></TableRow>
                                                 </TableBody>
                                             </Table>
                                         </div>
-                                        <div className="space-y-2">
+                                        <div className="space-y-1">
                                             <h3 className="font-bold">Skill Score Rating</h3>
                                             <Table>
                                                 <TableHeader>
@@ -509,11 +509,11 @@ export default function TemplatesPage() {
                                                     </TableRow>
                                                 </TableHeader>
                                                 <TableBody>
-                                                    <TableRow><TableCell className="p-1">5</TableCell><TableCell className="p-1">Excellent</TableCell></TableRow>
-                                                    <TableRow><TableCell className="p-1">4</TableCell><TableCell className="p-1">Very Good</TableCell></TableRow>
-                                                    <TableRow><TableCell className="p-1">3</TableCell><TableCell className="p-1">Good</TableCell></TableRow>
-                                                    <TableRow><TableCell className="p-1">2</TableCell><TableCell className="p-1">Fair</TableCell></TableRow>
-                                                    <TableRow><TableCell className="p-1">1</TableCell><TableCell className="p-1">Poor</TableCell></TableRow>
+                                                    <TableRow><TableCell className="p-1 h-auto">5</TableCell><TableCell className="p-1 h-auto">Excellent</TableCell></TableRow>
+                                                    <TableRow><TableCell className="p-1 h-auto">4</TableCell><TableCell className="p-1 h-auto">Very Good</TableCell></TableRow>
+                                                    <TableRow><TableCell className="p-1 h-auto">3</TableCell><TableCell className="p-1 h-auto">Good</TableCell></TableRow>
+                                                    <TableRow><TableCell className="p-1 h-auto">2</TableCell><TableCell className="p-1 h-auto">Fair</TableCell></TableRow>
+                                                    <TableRow><TableCell className="p-1 h-auto">1</TableCell><TableCell className="p-1 h-auto">Poor</TableCell></TableRow>
                                                 </TableBody>
                                             </Table>
                                         </div>
@@ -521,23 +521,23 @@ export default function TemplatesPage() {
                                 )}
 
                                 {settings.remarks.visible && (
-                                <div className="pt-4 space-y-4">
+                                <div className="pt-2 space-y-2">
                                     <div>
                                         <h3 className="font-bold">Teacher's Remarks:</h3>
-                                        <p className="min-h-[40px] rounded-md border-b p-1">
+                                        <p className="min-h-[25px] rounded-md border-b p-1">
                                         A brilliant student...
                                         </p>
                                     </div>
                                     <div>
                                         <h3 className="font-bold">Head Teacher's Remarks:</h3>
-                                        <p className="min-h-[40px] rounded-md border-b p-1">
+                                        <p className="min-h-[25px] rounded-md border-b p-1">
                                         Excellent performance...
                                         </p>
                                     </div>
                                 </div>
                                 )}
                                 {settings.signatures.visible && (
-                                <div className="flex justify-between items-end pt-8">
+                                <div className="flex justify-between items-end pt-4">
                                     <div className="text-center w-36">
                                         <div className="border-t pt-1">
                                         Class Teacher's Signature
@@ -559,3 +559,5 @@ export default function TemplatesPage() {
     </div>
   );
 }
+
+    
