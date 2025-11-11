@@ -295,14 +295,15 @@ export default function TemplatesPage() {
                                     <TableHead>Subject</TableHead>
                                     <TableHead className="text-center">CA1</TableHead>
                                     <TableHead className="text-center">CA2</TableHead>
+                                    <TableHead className="text-center">CA3</TableHead>
                                     <TableHead className="text-center">Exam</TableHead>
                                     <TableHead className="text-center">Total</TableHead>
                                     <TableHead>Remark</TableHead>
                                 </TableRow>
                             </TableHeader>
                              <TableBody>
-                                <TableRow><TableCell>Mathematics</TableCell><TableCell className="text-center">--</TableCell><TableCell className="text-center">--</TableCell><TableCell className="text-center">--</TableCell><TableCell className="text-center">--</TableCell><TableCell>--</TableCell></TableRow>
-                                <TableRow><TableCell>English</TableCell><TableCell className="text-center">--</TableCell><TableCell className="text-center">--</TableCell><TableCell className="text-center">--</TableCell><TableCell className="text-center">--</TableCell><TableCell>--</TableCell></TableRow>
+                                <TableRow><TableCell>Mathematics</TableCell><TableCell className="text-center">--</TableCell><TableCell className="text-center">--</TableCell><TableCell className="text-center">--</TableCell><TableCell className="text-center">--</TableCell><TableCell className="text-center">--</TableCell><TableCell>--</TableCell></TableRow>
+                                <TableRow><TableCell>English</TableCell><TableCell className="text-center">--</TableCell><TableCell className="text-center">--</TableCell><TableCell className="text-center">--</TableCell><TableCell className="text-center">--</TableCell><TableCell className="text-center">--</TableCell><TableCell>--</TableCell></TableRow>
                             </TableBody>
                         </Table>
                     }
