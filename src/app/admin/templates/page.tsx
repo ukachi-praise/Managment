@@ -136,7 +136,7 @@ export default function TemplatesPage() {
   return (
     <div className="flex h-full flex-col gap-6">
       {/* Top Section: Metadata and Actions */}
-      <div className="flex flex-wrap items-center justify-between gap-4">
+      <div className="flex flex-wrap items-center justify-between gap-4 no-print">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">
             Result Template Builder
@@ -150,7 +150,7 @@ export default function TemplatesPage() {
             <RotateCcw />
             Reset
           </Button>
-          <Button variant="outline">
+          <Button variant="outline" onClick={() => window.print()}>
             <Eye />
             Preview PDF
           </Button>
@@ -161,101 +161,11 @@ export default function TemplatesPage() {
         </div>
       </div>
 
-      <Card>
-        <CardContent className="p-4">
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
-            <div className="space-y-2">
-              <Label htmlFor="template-name">Template Name</Label>
-              <Input
-                id="template-name"
-                placeholder="e.g., Primary Section Template"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="class-level">Class/Level</Label>
-              <Select>
-                <SelectTrigger id="class-level">
-                  <SelectValue placeholder="Select a class" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="primary-5">Primary 5</SelectItem>
-                  <SelectItem value="primary-4">Primary 4</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="session">Academic Session</Label>
-              <Select defaultValue="2023-2024">
-                <SelectTrigger id="session">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="2023-2024">2023/2024</SelectItem>
-                  <SelectItem value="2024-2025">2024/2025</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="term">Term</Label>
-              <Select defaultValue="first">
-                <SelectTrigger id="term">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="first">First Term</SelectItem>
-                  <SelectItem value="second">Second Term</SelectItem>
-                  <SelectItem value="third">Third Term</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Main Designer: 3-column layout */}
-      <div className="grid flex-1 grid-cols-1 gap-6 lg:grid-cols-12">
-        {/* Left Sidebar: Available Fields */}
-        <div className="lg:col-span-3">
+      {/* Main Canvas: Preview */}
+      <div className="flex-1">
           <Card className="h-full">
-            <CardHeader>
-              <CardTitle>Available Fields</CardTitle>
-              <CardDescription>
-                Select fields to add to the template.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Accordion type="multiple" defaultValue={['studentInfo', 'academicInfo']} className="w-full">
-                <AccordionItem value="studentInfo">
-                  <AccordionTrigger>Student Info</AccordionTrigger>
-                  <AccordionContent className="space-y-2">
-                    {renderCheckboxes(availableFields.studentInfo)}
-                  </AccordionContent>
-                </AccordionItem>
-                 <AccordionItem value="academicInfo">
-                  <AccordionTrigger>Academic Info</AccordionTrigger>
-                  <AccordionContent className="space-y-2">
-                    {renderCheckboxes(availableFields.academicInfo)}
-                  </AccordionContent>
-                </AccordionItem>
-                <AccordionItem value="remarks">
-                  <AccordionTrigger>Remarks & Other</AccordionTrigger>
-                  <AccordionContent className="space-y-2">
-                    {renderCheckboxes([...availableFields.remarks, ...availableFields.otherInfo])}
-                  </AccordionContent>
-                </AccordionItem>
-              </Accordion>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Main Canvas: Preview */}
-        <div className="lg:col-span-6">
-          <Card className="h-full">
-            <CardHeader>
-              <CardTitle>Template Preview</CardTitle>
-            </CardHeader>
-            <CardContent className="h-full overflow-auto rounded-lg border bg-muted/50 p-4">
-              <div className="aspect-[210/297] w-full bg-white p-6 shadow-md">
+            <CardContent className="h-full overflow-auto rounded-lg bg-muted/50 p-4 sm:p-8">
+              <div className="mx-auto aspect-[210/297] max-w-[210mm] bg-white p-8 shadow-md print:shadow-none print:p-0 print:m-0 print:max-w-none">
                  <header className="mb-4">
                     <div className="flex items-start justify-between">
                         <div className="flex items-center gap-2">
@@ -378,68 +288,7 @@ export default function TemplatesPage() {
               </div>
             </CardContent>
           </Card>
-        </div>
-
-        {/* Right Sidebar: Properties */}
-        <div className="lg:col-span-3">
-          <Card>
-            <CardHeader>
-              <CardTitle>Properties</CardTitle>
-              <CardDescription>
-                Edit properties for the selected field.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label>Selected Field</Label>
-                <Input readOnly value="Student Name" className="bg-muted" />
-              </div>
-              <Separator />
-              <div className="space-y-2">
-                <Label htmlFor="field-label">Label</Label>
-                <Input id="field-label" value="Student Name" />
-              </div>
-              <div className="space-y-2">
-                <Label>Font Style</Label>
-                <div className="flex gap-1">
-                  <Button variant="outline" size="icon"><Bold className="h-4 w-4" /></Button>
-                  <Button variant="outline" size="icon"><Italic className="h-4 w-4" /></Button>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                 <div className="space-y-2">
-                    <Label htmlFor="font-size">Font Size</Label>
-                    <Input id="font-size" type="number" defaultValue="12" />
-                 </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="font-color">Font Color</Label>
-                    <Input id="font-color" type="color" defaultValue="#000000" className="p-1"/>
-                 </div>
-              </div>
-               <div className="space-y-2">
-                <Label>Alignment</Label>
-                <div className="flex gap-1">
-                  <Button variant="outline" size="icon"><AlignLeft className="h-4 w-4" /></Button>
-                  <Button variant="outline" size="icon"><AlignCenter className="h-4 w-4" /></Button>
-                  <Button variant="outline" size="icon"><AlignRight className="h-4 w-4" /></Button>
-                </div>
-              </div>
-               <div className="space-y-2">
-                <Label htmlFor="placeholder">Placeholder</Label>
-                <Input id="placeholder" value="{{student.name}}" />
-              </div>
-               <div className="flex items-center space-x-2 pt-2">
-                    <Checkbox id="conditional-visibility" />
-                    <Label htmlFor="conditional-visibility" className="font-normal">
-                      Hide if empty
-                    </Label>
-                </div>
-            </CardContent>
-          </Card>
-        </div>
       </div>
     </div>
   );
 }
-
-    

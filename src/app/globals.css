@@ -89,18 +89,23 @@ body {
 
 @media print {
   body {
-    background-color: white;
+    background: white;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
   }
   .no-print {
     display: none !important;
   }
-  .print-only {
-    display: block !important;
+  .print\:shadow-none {
+    box-shadow: none !important;
   }
-  .print-area {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 100%;
+  .print\:p-0 {
+    padding: 0 !important;
+  }
+  .print\:m-0 {
+    margin: 0 !important;
+  }
+  .print\:max-w-none {
+    max-width: none !important;
   }
 }
