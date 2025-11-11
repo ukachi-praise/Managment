@@ -287,7 +287,7 @@ export default function TemplatesPage() {
                         </div>
                     </div>
                 </header>
-                <main>
+                <main className="mt-4">
                     {visibleFields.subjectsTable &&
                         <Table>
                             <TableHeader>
@@ -310,9 +310,30 @@ export default function TemplatesPage() {
                 </main>
                  <footer className="mt-8 space-y-4 text-xs">
                     {visibleFields.softSkills && 
-                        <div>
-                            <h3 className="font-bold">Soft Skills:</h3>
-                            <p className="min-h-[40px] rounded-md border-b p-1">Punctuality: 5/5, Neatness: 4/5</p>
+                        <div className="space-y-2">
+                            <h3 className="font-bold">Soft Skills Assessment</h3>
+                             <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead>Skill</TableHead>
+                                        <TableHead className="text-right">Rating</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    <TableRow>
+                                        <TableCell>Punctuality</TableCell>
+                                        <TableCell className="text-right">5/5</TableCell>
+                                    </TableRow>
+                                     <TableRow>
+                                        <TableCell>Neatness</TableCell>
+                                        <TableCell className="text-right">4/5</TableCell>
+                                    </TableRow>
+                                    <TableRow>
+                                        <TableCell>Communication</TableCell>
+                                        <TableCell className="text-right">5/5</TableCell>
+                                    </TableRow>
+                                </TableBody>
+                            </Table>
                         </div>
                     }
                     {visibleFields.teacherRemark &&
