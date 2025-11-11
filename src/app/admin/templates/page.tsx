@@ -140,27 +140,48 @@ export default function TemplatesPage() {
                     )}
                 </main>
                  <footer className="mt-8 space-y-4 text-xs">
-                    {visibleFields.softSkills && 
-                        <div className="space-y-2">
-                            <h3 className="font-bold">Soft Skills Assessment</h3>
-                            <div className="grid grid-cols-2 gap-x-4">
-                               <Table>
-                                  <TableBody>
-                                      <TableRow><TableCell className="font-medium p-1">Punctuality</TableCell><TableCell className="text-right p-1">5</TableCell></TableRow>
-                                      <TableRow><TableCell className="font-medium p-1">Neatness</TableCell><TableCell className="text-right p-1">4</TableCell></TableRow>
-                                      <TableRow><TableCell className="font-medium p-1">Honesty</TableCell><TableCell className="text-right p-1">5</TableCell></TableRow>
-                                  </TableBody>
-                              </Table>
-                               <Table>
-                                  <TableBody>
-                                      <TableRow><TableCell className="font-medium p-1">Communication</TableCell><TableCell className="text-right p-1">5</TableCell></TableRow>
-                                      <TableRow><TableCell className="font-medium p-1">Attentiveness</TableCell><TableCell className="text-right p-1">4</TableCell></TableRow>
-                                      <TableRow><TableCell className="font-medium p-1">Self Control</TableCell><TableCell className="text-right p-1">5</TableCell></TableRow>
-                                  </TableBody>
-                              </Table>
+                    <div className="grid grid-cols-2 gap-8">
+                        {visibleFields.softSkills && 
+                            <div className="space-y-2">
+                                <h3 className="font-bold">Soft Skills Assessment</h3>
+                                <div className="grid grid-cols-2 gap-x-4">
+                                <Table>
+                                    <TableBody>
+                                        <TableRow><TableCell className="font-medium p-1">Punctuality</TableCell><TableCell className="text-right p-1">5</TableCell></TableRow>
+                                        <TableRow><TableCell className="font-medium p-1">Neatness</TableCell><TableCell className="text-right p-1">4</TableCell></TableRow>
+                                        <TableRow><TableCell className="font-medium p-1">Honesty</TableCell><TableCell className="text-right p-1">5</TableCell></TableRow>
+                                    </TableBody>
+                                </Table>
+                                <Table>
+                                    <TableBody>
+                                        <TableRow><TableCell className="font-medium p-1">Communication</TableCell><TableCell className="text-right p-1">5</TableCell></TableRow>
+                                        <TableRow><TableCell className="font-medium p-1">Attentiveness</TableCell><TableCell className="text-right p-1">4</TableCell></TableRow>
+                                        <TableRow><TableCell className="font-medium p-1">Self Control</TableCell><TableCell className="text-right p-1">5</TableCell></TableRow>
+                                    </TableBody>
+                                </Table>
+                                </div>
                             </div>
+                        }
+                         <div className="space-y-2">
+                            <h3 className="font-bold">Grading Key</h3>
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead className="p-1 h-auto">Score</TableHead>
+                                        <TableHead className="p-1 h-auto">Grade</TableHead>
+                                        <TableHead className="p-1 h-auto">Remark</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    <TableRow><TableCell className="p-1">80 – 100</TableCell><TableCell className="p-1">A</TableCell><TableCell className="p-1">Excellent</TableCell></TableRow>
+                                    <TableRow><TableCell className="p-1">70 – 79</TableCell><TableCell className="p-1">B</TableCell><TableCell className="p-1">Very Good</TableCell></TableRow>
+                                    <TableRow><TableCell className="p-1">60 – 69</TableCell><TableCell className="p-1">C</TableCell><TableCell className="p-1">Good</TableCell></TableRow>
+                                    <TableRow><TableCell className="p-1">50 – 59</TableCell><TableCell className="p-1">D</TableCell><TableCell className="p-1">Fair</TableCell></TableRow>
+                                    <TableRow><TableCell className="p-1">0 – 49</TableCell><TableCell className="p-1">F</TableCell><TableCell className="p-1">Fail</TableCell></TableRow>
+                                </TableBody>
+                            </Table>
                         </div>
-                    }
+                    </div>
                     {visibleFields.teacherRemark &&
                         <div>
                             <h3 className="font-bold">Teacher's Remarks:</h3>
