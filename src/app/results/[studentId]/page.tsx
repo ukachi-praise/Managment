@@ -26,10 +26,11 @@ export default function StudentResultsPage() {
   const { data: student, isLoading: studentLoading } = useDoc(studentRef);
 
   const enrollmentsQuery = useMemoFirebase(
-    () => (studentId ? query(collection(firestore, 'enrollments'), where('studentId', '==', studentId)) : null),
+    () => (firestore && studentId ? query(collection(firestore, 'enrollments'), where('studentId', '==', studentId)) : null),
     [firestore, studentId]
   );
   const { data: enrollments, isLoading: enrollmentsLoading } = useCollection(enrollmentsQuery);
+  
   const classroomId = useMemo(() => enrollments?.[0]?.classroomId, [enrollments]);
 
   const classroomRef = useMemoFirebase(
@@ -89,4 +90,3 @@ export default function StudentResultsPage() {
     </div>
   );
 }
-
