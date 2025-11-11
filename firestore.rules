@@ -16,8 +16,11 @@ service cloud.firestore {
       allow read, write: if isAdmin();
     }
     
-    // Subjects collection only accessible by admins
     match /subjects/{subjectId} {
+      allow read, write: if isAdmin();
+    }
+
+    match /students/{docId} {
       allow read, write: if isAdmin();
     }
   }
