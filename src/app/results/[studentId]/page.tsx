@@ -1,10 +1,10 @@
 
 'use client';
 
-import { useParams, notFound } from 'next/navigation';
+import { useParams, notFound, useRouter } from 'next/navigation';
 import { ResultSheet } from '@/components/results/result-sheet';
 import { Button } from '@/components/ui/button';
-import { Download, Loader2 } from 'lucide-react';
+import { Download, Loader2, ArrowLeft } from 'lucide-react';
 import { useDoc, useCollection, useFirestore } from '@/firebase';
 import { useMemoFirebase } from '@/firebase/provider';
 import { doc, collection, query, where } from 'firebase/firestore';
@@ -14,6 +14,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 export default function StudentResultsPage() {
   const params = useParams();
+  const router = useRouter();
   const studentId = params.studentId as string;
   const firestore = useFirestore();
 
@@ -36,8 +37,10 @@ export default function StudentResultsPage() {
     [firestore, classroomId]
   );
   const { data: classroom, isLoading: classroomLoading } = useDoc(classroomRef);
+  
+  const isLoading = studentLoading || enrollmentsLoading || classroomLoading;
 
-  if (!studentId) {
+  if (!isLoading && !student) {
     notFound();
   }
 
@@ -50,8 +53,6 @@ export default function StudentResultsPage() {
     document.title = originalTitle;
   };
   
-  const isLoading = studentLoading || enrollmentsLoading || classroomLoading;
-
   return (
     <div className="space-y-6 p-4 sm:p-6">
       <div className="flex items-center justify-between no-print">
@@ -62,7 +63,11 @@ export default function StudentResultsPage() {
             </p>
         </div>
         <div className="flex gap-2">
-          <Button onClick={handleDownload} variant="outline" disabled={isLoading}>
+          <Button onClick={() => router.back()} variant="outline">
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Go Back
+          </Button>
+          <Button onClick={handleDownload} variant="default" disabled={isLoading}>
             {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" /> }
             {isLoading ? 'Loading...' : 'Download Result'}
           </Button>
@@ -84,3 +89,4 @@ export default function StudentResultsPage() {
     </div>
   );
 }
+
