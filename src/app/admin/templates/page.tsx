@@ -248,6 +248,13 @@ export default function TemplatesPage() {
     )
   }
 
+  const StudentInfoDetail = ({ label, value }: { label: string, value: string | React.ReactNode }) => (
+    <div className="flex">
+        <span className="font-semibold w-32 shrink-0">{label}:</span>
+        <span className="flex-1 border-b border-dotted border-gray-400">{value}</span>
+    </div>
+  )
+
   return (
     <div className="h-full flex flex-col bg-muted print:bg-white no-print" onClick={() => setSelectedElement(null)}>
         {/* Main Content */}
@@ -329,7 +336,7 @@ export default function TemplatesPage() {
                                         <Image src="/Logo.jpg" alt="School Logo" layout="fill" objectFit="contain" />
                                     </div>
                                     <div 
-                                        className={cn('editable-region', {'outline-blue-500 outline-dashed outline-2 outline-offset-2': selectedElement === 'schoolName'})}
+                                        className={cn('editable-region text-left', {'outline-blue-500 outline-dashed outline-2 outline-offset-2': selectedElement === 'schoolName'})}
                                         onClick={(e) => handleElementClick(e, 'schoolName')}
                                     >
                                         <div>
@@ -356,26 +363,16 @@ export default function TemplatesPage() {
                                 onClick={(e) => handleElementClick(e, 'studentInfo')}
                                 style={{ fontSize: `${settings.studentInfo.fontSize}px` }}
                             >
-                                <table className="w-full">
-                                    <tbody>
-                                        <tr>
-                                            <td className="font-semibold pr-2">Student Name:</td>
-                                            <td>John Doe</td>
-                                            <td className="font-semibold px-2">Admission No:</td>
-                                            <td>JKS-00123</td>
-                                        </tr>
-                                        <tr>
-                                            <td className="font-semibold pr-2">Class:</td>
-                                            <td>{selectedClassroom?.name || 'Primary 5'}</td>
-                                            <td className="font-semibold px-2">Attendance:</td>
-                                            <td>60/65 Days</td>
-                                        </tr>
-                                        <tr>
-                                            <td className="font-semibold pr-2">Class Teacher:</td>
-                                            <td colSpan={3}>Mrs. Ada</td>
-                                        </tr>
-                                    </tbody>
-                                </table>
+                                <div className="grid grid-cols-2 gap-x-8 gap-y-2">
+                                    <StudentInfoDetail label="Student Name" value="John Doe" />
+                                    <StudentInfoDetail label="Admission No" value="JKS-00123" />
+                                    <StudentInfoDetail label="Class" value={selectedClassroom?.name || 'Primary 5'} />
+                                    <StudentInfoDetail label="Term" value="First" />
+                                    <StudentInfoDetail label="Session" value="2023/2024" />
+                                    <StudentInfoDetail label="No of times school open" value="65" />
+                                    <StudentInfoDetail label="Days Attended" value="60" />
+                                    <StudentInfoDetail label="Next term resumes" value="April 25, 2024" />
+                                </div>
                             </div>
                         )}
                         
