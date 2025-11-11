@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -298,7 +299,7 @@ export default function StudentsPage() {
                                                 </TableCell>
                                                 <TableCell className="text-right">
                                                 <Button asChild variant="outline" size="sm">
-                                                    <Link href={`/admin/students/${student.id}/results`}>
+                                                    <Link href={`/results/${student.id}`}>
                                                     <Eye className="mr-2 h-4 w-4" />
                                                     View Results
                                                     </Link>

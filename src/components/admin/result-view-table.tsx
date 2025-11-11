@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -158,7 +159,7 @@ export function ResultViewTable() {
                           </TableCell>
                            <TableCell className="text-right">
                             <Button asChild variant="outline" size="sm">
-                              <Link href={`/admin/students/${student.id}/results`}>
+                              <Link href={`/results/${student.id}`}>
                                 View Report
                               </Link>
                             </Button>
