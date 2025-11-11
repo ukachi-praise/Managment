@@ -312,12 +312,11 @@ export default function TemplatesPage() {
                                 className={cn('editable-region', {'outline-blue-500 outline-dashed outline-2 outline-offset-2': selectedElement === 'schoolName'})}
                                 onClick={(e) => handleElementClick(e, 'schoolName')}
                             >
-                                <div className="flex items-center gap-2">
-                                    <BookOpenCheck className="h-7 w-7 text-accent" />
+                                <div>
                                     <h1 className="font-headline text-2xl font-bold">{schoolName}</h1>
+                                    <p className="text-sm">Katampe 2 Mpape Abuja</p>
+                                    <p className="text-sm font-semibold">Motto: Exceeding Great</p>
                                 </div>
-                                <p className="text-sm ml-9">Katampe 2 Mpape Abuja</p>
-                                <p className="text-sm font-semibold ml-9">Motto: Exceeding Great</p>
                             </div>
                         </div>
                         <div className="text-right">
