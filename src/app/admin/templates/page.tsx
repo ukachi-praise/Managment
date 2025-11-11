@@ -1,5 +1,7 @@
+
 'use client';
 
+import { useState } from 'react';
 import {
   Card,
   CardContent,
@@ -52,16 +54,15 @@ const availableFields = {
   studentInfo: [
     'Student Name',
     'Admission Number',
-    'Date of Birth',
-    'Gender',
-    'Parent Name',
-    'Contact Number',
+    'Class / Level',
+    'Academic Session',
+    'Term',
+    'Attendance',
+    'Class Teacher',
   ],
-  classInfo: ['Class / Level', 'Academic Session', 'Term'],
   academicInfo: [
     'Subjects Table',
     'Soft Skills',
-    'Attendance',
     'Overall Average',
     'Overall Grade',
   ],
@@ -69,7 +70,69 @@ const availableFields = {
   otherInfo: ['Next Term Resumption Date', 'Next Term Fees'],
 };
 
+// Map field names to state keys for easier management
+const fieldToStateKey: { [key: string]: string } = {
+  'Student Name': 'studentName',
+  'Admission Number': 'admissionNumber',
+  'Class / Level': 'classLevel',
+  'Academic Session': 'academicSession',
+  Term: 'term',
+  Attendance: 'attendance',
+  'Class Teacher': 'classTeacher',
+  'Subjects Table': 'subjectsTable',
+  'Soft Skills': 'softSkills',
+  'Overall Average': 'overallAverage',
+  'Overall Grade': 'overallGrade',
+  'Class Teacher Remark': 'teacherRemark',
+  'Head Teacher Remark': 'headTeacherRemark',
+  'Next Term Resumption Date': 'nextTermResumption',
+  'Next Term Fees': 'nextTermFees',
+};
+
+
 export default function TemplatesPage() {
+    const [visibleFields, setVisibleFields] = useState({
+        studentName: true,
+        admissionNumber: true,
+        classLevel: true,
+        academicSession: true,
+        term: true,
+        attendance: true,
+        classTeacher: true,
+        subjectsTable: true,
+        softSkills: true,
+        overallAverage: false,
+        overallGrade: false,
+        teacherRemark: true,
+        headTeacherRemark: true,
+        nextTermResumption: false,
+        nextTermFees: false,
+    });
+
+    const handleFieldVisibilityChange = (field: string, checked: boolean) => {
+        const stateKey = fieldToStateKey[field];
+        if (stateKey) {
+            setVisibleFields(prev => ({ ...prev, [stateKey]: checked }));
+        }
+    };
+
+    const renderCheckboxes = (fields: string[]) => {
+        return fields.map((field) => {
+            const stateKey = fieldToStateKey[field] as keyof typeof visibleFields;
+            return (
+              <div key={field} className="flex items-center gap-2">
+                <Checkbox 
+                    id={field} 
+                    checked={visibleFields[stateKey]}
+                    onCheckedChange={(checked) => handleFieldVisibilityChange(field, !!checked)}
+                />
+                <Label htmlFor={field} className="font-normal">{field}</Label>
+              </div>
+            );
+        });
+    };
+
+
   return (
     <div className="flex h-full flex-col gap-6">
       {/* Top Section: Metadata and Actions */}
@@ -161,38 +224,23 @@ export default function TemplatesPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <Accordion type="multiple" defaultValue={['student-info', 'academic-info']} className="w-full">
-                <AccordionItem value="student-info">
+              <Accordion type="multiple" defaultValue={['studentInfo', 'academicInfo']} className="w-full">
+                <AccordionItem value="studentInfo">
                   <AccordionTrigger>Student Info</AccordionTrigger>
                   <AccordionContent className="space-y-2">
-                    {availableFields.studentInfo.map((field) => (
-                      <div key={field} className="flex items-center gap-2">
-                        <Checkbox id={field} />
-                        <Label htmlFor={field} className="font-normal">{field}</Label>
-                      </div>
-                    ))}
+                    {renderCheckboxes(availableFields.studentInfo)}
                   </AccordionContent>
                 </AccordionItem>
-                 <AccordionItem value="academic-info">
+                 <AccordionItem value="academicInfo">
                   <AccordionTrigger>Academic Info</AccordionTrigger>
                   <AccordionContent className="space-y-2">
-                    {availableFields.academicInfo.map((field) => (
-                      <div key={field} className="flex items-center gap-2">
-                        <Checkbox id={field} />
-                        <Label htmlFor={field} className="font-normal">{field}</Label>
-                      </div>
-                    ))}
+                    {renderCheckboxes(availableFields.academicInfo)}
                   </AccordionContent>
                 </AccordionItem>
                 <AccordionItem value="remarks">
                   <AccordionTrigger>Remarks & Other</AccordionTrigger>
                   <AccordionContent className="space-y-2">
-                    {[...availableFields.remarks, ...availableFields.otherInfo].map((field) => (
-                      <div key={field} className="flex items-center gap-2">
-                        <Checkbox id={field} />
-                        <Label htmlFor={field} className="font-normal">{field}</Label>
-                      </div>
-                    ))}
+                    {renderCheckboxes([...availableFields.remarks, ...availableFields.otherInfo])}
                   </AccordionContent>
                 </AccordionItem>
               </Accordion>
@@ -218,7 +266,7 @@ export default function TemplatesPage() {
                         </div>
                         <div className="text-right">
                         <h1 className="font-bold text-lg">Student Report Card</h1>
-                        <p className="text-xs text-muted-foreground">First Term, 2023/2024</p>
+                        {(visibleFields.term || visibleFields.academicSession) && <p className="text-xs text-muted-foreground">First Term, 2023/2024</p>}
                         </div>
                     </div>
                      <Separator className="my-4" />
@@ -228,44 +276,56 @@ export default function TemplatesPage() {
                             <AvatarFallback>SN</AvatarFallback>
                         </Avatar>
                         <div className="text-xs">
-                            <p><strong>Student Name:</strong> John Doe</p>
-                            <p><strong>Class:</strong> Primary 5</p>
-                            <p><strong>Admission No:</strong> JKS-00123</p>
+                            {visibleFields.studentName && <p><strong>Student Name:</strong> John Doe</p>}
+                            {visibleFields.classLevel && <p><strong>Class:</strong> Primary 5</p>}
+                            {visibleFields.admissionNumber && <p><strong>Admission No:</strong> JKS-00123</p>}
                         </div>
                         </div>
                         <div className="text-right text-xs">
-                        <p><strong>Attendance:</strong> 60/65 Days</p>
-                        <p><strong>Class Teacher:</strong> Mrs. Ada</p>
+                        {visibleFields.attendance && <p><strong>Attendance:</strong> 60/65 Days</p>}
+                        {visibleFields.classTeacher && <p><strong>Class Teacher:</strong> Mrs. Ada</p>}
                         </div>
                     </div>
                 </header>
                 <main>
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>Subject</TableHead>
-                                <TableHead className="text-center">CA1</TableHead>
-                                <TableHead className="text-center">CA2</TableHead>
-                                <TableHead className="text-center">Exam</TableHead>
-                                <TableHead className="text-center">Total</TableHead>
-                                <TableHead>Remark</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                         <TableBody>
-                            <TableRow><TableCell>Mathematics</TableCell><TableCell className="text-center">--</TableCell><TableCell className="text-center">--</TableCell><TableCell className="text-center">--</TableCell><TableCell className="text-center">--</TableCell><TableCell>--</TableCell></TableRow>
-                            <TableRow><TableCell>English</TableCell><TableCell className="text-center">--</TableCell><TableCell className="text-center">--</TableCell><TableCell className="text-center">--</TableCell><TableCell className="text-center">--</TableCell><TableCell>--</TableCell></TableRow>
-                        </TableBody>
-                    </Table>
+                    {visibleFields.subjectsTable &&
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Subject</TableHead>
+                                    <TableHead className="text-center">CA1</TableHead>
+                                    <TableHead className="text-center">CA2</TableHead>
+                                    <TableHead className="text-center">Exam</TableHead>
+                                    <TableHead className="text-center">Total</TableHead>
+                                    <TableHead>Remark</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                             <TableBody>
+                                <TableRow><TableCell>Mathematics</TableCell><TableCell className="text-center">--</TableCell><TableCell className="text-center">--</TableCell><TableCell className="text-center">--</TableCell><TableCell className="text-center">--</TableCell><TableCell>--</TableCell></TableRow>
+                                <TableRow><TableCell>English</TableCell><TableCell className="text-center">--</TableCell><TableCell className="text-center">--</TableCell><TableCell className="text-center">--</TableCell><TableCell className="text-center">--</TableCell><TableCell>--</TableCell></TableRow>
+                            </TableBody>
+                        </Table>
+                    }
                 </main>
                  <footer className="mt-8 space-y-4 text-xs">
-                    <div>
-                        <h3 className="font-bold">Teacher's Remarks:</h3>
-                        <p className="min-h-[40px] rounded-md border-b p-1">A brilliant student...</p>
-                    </div>
-                    <div>
-                        <h3 className="font-bold">Head Teacher's Remarks:</h3>
-                        <p className="min-h-[40px] rounded-md border-b p-1">Excellent performance...</p>
-                    </div>
+                    {visibleFields.softSkills && 
+                        <div>
+                            <h3 className="font-bold">Soft Skills:</h3>
+                            <p className="min-h-[40px] rounded-md border-b p-1">Punctuality: 5/5, Neatness: 4/5</p>
+                        </div>
+                    }
+                    {visibleFields.teacherRemark &&
+                        <div>
+                            <h3 className="font-bold">Teacher's Remarks:</h3>
+                            <p className="min-h-[40px] rounded-md border-b p-1">A brilliant student...</p>
+                        </div>
+                    }
+                    {visibleFields.headTeacherRemark &&
+                        <div>
+                            <h3 className="font-bold">Head Teacher's Remarks:</h3>
+                            <p className="min-h-[40px] rounded-md border-b p-1">Excellent performance...</p>
+                        </div>
+                    }
                     <div className="flex justify-between items-end pt-8">
                         <div className="text-center w-36">
                         <div className="border-t pt-1">Class Teacher's Signature</div>
