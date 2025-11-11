@@ -198,7 +198,7 @@ export default function TemplatesPage() {
                     <TableHead className="text-center"><div>CA2</div><div>(10)</div></TableHead>
                     <TableHead className="text-center"><div>CA3</div><div>(10)</div></TableHead>
                     <TableHead className="text-center"><div>Exam</div><div>(70)</div></TableHead>
-                    <TableHead className="text-center">Total</TableHead>
+                    <TableHead className="text-center"><div>Total</div><div>(100)</div></TableHead>
                     <TableHead>Remark</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -363,5 +363,7 @@ export default function TemplatesPage() {
 
     
 
+
+    
 
     
