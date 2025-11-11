@@ -17,9 +17,8 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { Eye, PlusCircle } from 'lucide-react';
+import { PlusCircle, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 import {
   useCollection,
@@ -47,87 +46,26 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from '@/components/ui/accordion';
-
-type Student = {
-  id: string;
-  name: string;
-};
 
 type Classroom = {
   id: string;
   name: string;
 };
 
-type Enrollment = {
-  id: string;
-  studentId: string;
-  classroomId: string;
-  // sessionId would be here in a full implementation
-};
 
 export default function StudentsPage() {
   const [open, setOpen] = useState(false);
   const firestore = useFirestore();
 
   // --- Data Fetching ---
-  const studentsQuery = useMemoFirebase(
-    () => (firestore ? query(collection(firestore, 'students')) : null),
-    [firestore]
-  );
   const classroomsQuery = useMemoFirebase(
     () => (firestore ? query(collection(firestore, 'classrooms')) : null),
     [firestore]
   );
-  const enrollmentsQuery = useMemoFirebase(
-    () => (firestore ? query(collection(firestore, 'enrollments')) : null),
-    [firestore]
-  );
-
-  const { data: students, isLoading: studentsLoading } = useCollection<Student>(studentsQuery);
+ 
   const { data: classrooms, isLoading: classroomsLoading } = useCollection<Classroom>(classroomsQuery);
-  const { data: enrollments, isLoading: enrollmentsLoading } = useCollection<Enrollment>(enrollmentsQuery);
-
-  const isLoading = studentsLoading || classroomsLoading || enrollmentsLoading;
   
-  // --- Data Grouping ---
-  const studentsByClass = useMemo(() => {
-    if (isLoading || !students || !classrooms || !enrollments) {
-      return {};
-    }
-
-    const grouped: Record<string, { classroom: Classroom, students: Student[] }> = {};
-
-    // Initialize with all classrooms
-    classrooms.forEach(classroom => {
-        grouped[classroom.id] = { classroom, students: [] };
-    });
-
-    // Map students to their IDs for quick lookup
-    const studentMap = new Map(students.map(s => [s.id, s]));
-
-    // Populate students into their classrooms
-    enrollments.forEach(enrollment => {
-      const student = studentMap.get(enrollment.studentId);
-      if (student && grouped[enrollment.classroomId]) {
-        grouped[enrollment.classroomId].students.push(student);
-      }
-    });
-
-    // Sort students within each class
-    Object.values(grouped).forEach(group => {
-      group.students.sort((a, b) => a.name.localeCompare(b.name));
-    });
-    
-    // Sort classrooms by name
-    return Object.values(grouped).sort((a,b) => a.classroom.name.localeCompare(b.classroom.name));
-
-  }, [isLoading, students, classrooms, enrollments]);
+  const isLoading = classroomsLoading;
 
   // --- Event Handlers ---
   const handleAddStudent = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -165,6 +103,12 @@ export default function StudentsPage() {
     setOpen(false);
     event.currentTarget.reset();
   };
+  
+    const sortedClassrooms = useMemo(() => {
+        if (!classrooms) return [];
+        return [...classrooms].sort((a, b) => a.name.localeCompare(b.name));
+    }, [classrooms]);
+
 
   return (
     <div className="space-y-6">
@@ -254,9 +198,9 @@ export default function StudentsPage() {
                 </CardHeader>
                 <CardContent>
                     <div className="space-y-4">
-                        <Skeleton className="h-12 w-full" />
-                        <Skeleton className="h-12 w-full" />
-                        <Skeleton className="h-12 w-full" />
+                        <Skeleton className="h-10 w-full" />
+                        <Skeleton className="h-10 w-full" />
+                        <Skeleton className="h-10 w-full" />
                     </div>
                 </CardContent>
             </Card>
@@ -265,65 +209,39 @@ export default function StudentsPage() {
                 <CardHeader>
                 <CardTitle>Student List by Class</CardTitle>
                 <CardDescription>
-                    A list of all students enrolled in the school, grouped by their class.
+                    Select a class to view the students enrolled in it.
                 </CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <Accordion type="single" collapsible className="w-full">
-                        {studentsByClass.length > 0 ? studentsByClass.map(({ classroom, students: classStudents }) => (
-                            <AccordionItem value={classroom.id} key={classroom.id}>
-                                <AccordionTrigger className="text-lg font-medium hover:no-underline">
-                                    {classroom.name} ({classStudents.length} students)
-                                </AccordionTrigger>
-                                <AccordionContent>
-                                    <Table>
-                                        <TableHeader>
-                                        <TableRow>
-                                            <TableHead>Student</TableHead>
-                                            <TableHead className="text-right">Actions</TableHead>
-                                        </TableRow>
-                                        </TableHeader>
-                                        <TableBody>
-                                        {classStudents.length > 0 ? (
-                                            classStudents.map((student) => (
-                                            <TableRow key={student.id}>
-                                                <TableCell className="font-medium">
-                                                <div className="flex items-center gap-3">
-                                                    <Avatar>
-                                                    <AvatarFallback>
-                                                        {student.name.charAt(0).toUpperCase()}
-                                                    </AvatarFallback>
-                                                    </Avatar>
-                                                    <span>{student.name}</span>
-                                                </div>
-                                                </TableCell>
-                                                <TableCell className="text-right">
-                                                <Button asChild variant="outline" size="sm">
-                                                    <Link href={`/results/${student.id}`}>
-                                                    <Eye className="mr-2 h-4 w-4" />
-                                                    View Results
-                                                    </Link>
-                                                </Button>
-                                                </TableCell>
-                                            </TableRow>
-                                            ))
-                                        ) : (
-                                            <TableRow>
-                                                <TableCell colSpan={2} className="h-24 text-center">
-                                                No students enrolled in this class.
-                                                </TableCell>
-                                            </TableRow>
-                                        )}
-                                        </TableBody>
-                                    </Table>
-                                </AccordionContent>
-                            </AccordionItem>
-                        )) : (
-                            <div className="text-center text-muted-foreground p-8">
-                                No classrooms or students found.
-                            </div>
-                        )}
-                    </Accordion>
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>Class Name</TableHead>
+                                <TableHead className="text-right">Actions</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {sortedClassrooms.length > 0 ? sortedClassrooms.map((classroom) => (
+                                <TableRow key={classroom.id}>
+                                    <TableCell className="font-medium">{classroom.name}</TableCell>
+                                    <TableCell className="text-right">
+                                        <Button asChild variant="outline" size="sm">
+                                            <Link href={`/teacher/class/${classroom.id}`}>
+                                                View Students
+                                                <ArrowRight className="ml-2 h-4 w-4" />
+                                            </Link>
+                                        </Button>
+                                    </TableCell>
+                                </TableRow>
+                            )) : (
+                                <TableRow>
+                                    <TableCell colSpan={2} className="h-24 text-center">
+                                        No classrooms found.
+                                    </TableCell>
+                                </TableRow>
+                            )}
+                        </TableBody>
+                    </Table>
                 </CardContent>
              </Card>
         )}
