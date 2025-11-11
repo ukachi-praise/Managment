@@ -20,24 +20,17 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { PlusCircle, Edit, Trash2, BookUp } from 'lucide-react';
+import { PlusCircle, Trash2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import {
   useCollection,
   useFirestore,
   addDocumentNonBlocking,
-  setDocumentNonBlocking,
   deleteDocumentNonBlocking,
 } from '@/firebase';
 import { useMemoFirebase } from '@/firebase/provider';
 import { collection, query, doc } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from '@/components/ui/accordion';
 import {
   Select,
   SelectContent,
@@ -64,11 +57,10 @@ type ClassroomSubject = {
 };
 
 export default function SubjectsPage() {
-  const [subjectDialogOpen, setSubjectDialogOpen] = useState(false);
+  const [newSubjectDialogOpen, setNewSubjectDialogOpen] = useState(false);
   const [assignDialogOpen, setAssignDialogOpen] = useState(false);
-  const [editingSubject, setEditingSubject] = useState<Subject | null>(null);
-  const [subjectToAssign, setSubjectToAssign] = useState<Subject | null>(null);
-  
+  const [classToAssign, setClassToAssign] = useState<Classroom | null>(null);
+
   const firestore = useFirestore();
   const { toast } = useToast();
 
@@ -93,102 +85,80 @@ export default function SubjectsPage() {
   const isLoading = subjectsLoading || classroomsLoading || classroomSubjectsLoading;
 
   // --- Data Mapping ---
-  const classroomMap = useMemo(
-    () => classrooms?.reduce((acc, c) => ({ ...acc, [c.id]: c.name }), {} as Record<string, string>) || {},
-    [classrooms]
+  const subjectMap = useMemo(
+    () => subjects?.reduce((acc, s) => ({ ...acc, [s.id]: s }), {} as Record<string, Subject>) || {},
+    [subjects]
   );
 
-  const subjectAssignmentMap = useMemo(() => {
-    const map: Record<string, { classroomId: string, assignmentId: string }[]> = {};
-    if (!subjects || !classroomSubjects) return map;
+  const classSubjectMap = useMemo(() => {
+    const map: Record<string, { subject: Subject; assignmentId: string }[]> = {};
+    if (!classrooms || !classroomSubjects || !subjects) return map;
 
-    subjects.forEach(s => {
-      map[s.id] = [];
+    classrooms.forEach(c => {
+      map[c.id] = [];
     });
 
     classroomSubjects.forEach(cs => {
-      if (map[cs.subjectId]) {
-        map[cs.subjectId].push({ classroomId: cs.classroomId, assignmentId: cs.id });
+      if (map[cs.classroomId] && subjectMap[cs.subjectId]) {
+        map[cs.classroomId].push({
+          subject: subjectMap[cs.subjectId],
+          assignmentId: cs.id,
+        });
       }
     });
 
     return map;
-  }, [subjects, classroomSubjects]);
+  }, [classrooms, classroomSubjects, subjectMap, subjects]);
+
 
   // --- Dialog and Form Handling ---
-  const handleOpenSubjectDialog = (subject: Subject | null = null) => {
-    setEditingSubject(subject);
-    setSubjectDialogOpen(true);
-  };
-  
-  const handleCloseSubjectDialog = () => {
-    setSubjectDialogOpen(false);
-    setEditingSubject(null);
-  };
-
-  const handleOpenAssignDialog = (subject: Subject) => {
-    setSubjectToAssign(subject);
+  const handleOpenAssignDialog = (classroom: Classroom) => {
+    setClassToAssign(classroom);
     setAssignDialogOpen(true);
   };
   
   const handleCloseAssignDialog = () => {
     setAssignDialogOpen(false);
-    setSubjectToAssign(null);
+    setClassToAssign(null);
   };
 
-  const handleSubjectSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+  const handleNewSubjectSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!firestore) return;
 
     const formData = new FormData(event.currentTarget);
     const subjectName = formData.get('name') as string;
 
-    if (editingSubject) {
-      const subjectRef = doc(firestore, 'subjects', editingSubject.id);
-      setDocumentNonBlocking(subjectRef, { name: subjectName }, { merge: true });
-      toast({ title: "Subject Updated", description: `"${subjectName}" has been updated.`});
-    } else {
-      addDocumentNonBlocking(collection(firestore, 'subjects'), { name: subjectName });
-      toast({ title: "Subject Added", description: `"${subjectName}" has been created.`});
-    }
+    addDocumentNonBlocking(collection(firestore, 'subjects'), { name: subjectName });
+    toast({ title: "Subject Added", description: `"${subjectName}" has been created.`});
     
-    handleCloseSubjectDialog();
+    setNewSubjectDialogOpen(false);
+    event.currentTarget.reset();
   };
   
   const handleAssignSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if(!firestore || !subjectToAssign) return;
+    if(!firestore || !classToAssign) return;
 
     const formData = new FormData(event.currentTarget);
-    const classroomId = formData.get('classroomId') as string;
+    const subjectId = formData.get('subjectId') as string;
 
-    if (!classroomId) {
-        toast({ variant: 'destructive', title: "Assignment Failed", description: "Please select a class."});
+    if (!subjectId) {
+        toast({ variant: 'destructive', title: "Assignment Failed", description: "Please select a subject."});
         return;
     }
 
-    const alreadyAssigned = subjectAssignmentMap[subjectToAssign.id]?.some(a => a.classroomId === classroomId);
+    const alreadyAssigned = classSubjectMap[classToAssign.id]?.some(cs => cs.subject.id === subjectId);
     if(alreadyAssigned) {
-         toast({ variant: 'destructive', title: "Already Assigned", description: `This subject is already assigned to ${classroomMap[classroomId]}.`});
+         toast({ variant: 'destructive', title: "Already Assigned", description: `This subject is already assigned to ${classToAssign.name}.`});
         return;
     }
 
-    addDocumentNonBlocking(collection(firestore, 'classroomSubjects'), { subjectId: subjectToAssign.id, classroomId: classroomId });
-    toast({ title: "Subject Assigned", description: `${subjectToAssign.name} assigned to ${classroomMap[classroomId]}.`});
+    addDocumentNonBlocking(collection(firestore, 'classroomSubjects'), { subjectId: subjectId, classroomId: classToAssign.id });
+    toast({ title: "Subject Assigned", description: `${subjectMap[subjectId].name} assigned to ${classToAssign.name}.`});
     handleCloseAssignDialog();
   };
 
-  const handleDeleteSubject = (subjectId: string) => {
-    if(!firestore) return;
-    deleteDocumentNonBlocking(doc(firestore, 'subjects', subjectId));
-    
-    // Also delete all assignments for this subject
-    const assignmentsToDelete = classroomSubjects?.filter(cs => cs.subjectId === subjectId) || [];
-    assignmentsToDelete.forEach(cs => {
-        deleteDocumentNonBlocking(doc(firestore, 'classroomSubjects', cs.id));
-    });
-    toast({ variant: 'destructive', title: "Subject Deleted"});
-  };
 
   const handleUnassignSubject = (assignmentId: string) => {
      if(!firestore) return;
@@ -198,29 +168,28 @@ export default function SubjectsPage() {
 
   return (
     <div className="space-y-6">
-      {/* Add/Edit Subject Dialog */}
-      <Dialog open={subjectDialogOpen} onOpenChange={setSubjectDialogOpen}>
+      {/* Create New Subject Dialog */}
+      <Dialog open={newSubjectDialogOpen} onOpenChange={setNewSubjectDialogOpen}>
         <DialogContent className="sm:max-w-md">
             <DialogHeader>
-              <DialogTitle>{editingSubject ? 'Edit' : 'Add New'} Subject</DialogTitle>
+              <DialogTitle>Create New Subject</DialogTitle>
               <DialogDescription>
-                {editingSubject ? 'Update the subject name.' : 'Create a new subject that can be assigned to classes.'}
+                Create a new subject that can be assigned to classes.
               </DialogDescription>
             </DialogHeader>
-            <form onSubmit={handleSubjectSubmit} className="grid gap-4 py-4">
+            <form onSubmit={handleNewSubjectSubmit} className="grid gap-4 py-4">
               <div className="space-y-2">
                 <Label htmlFor="name">Subject Name</Label>
                 <Input
                   id="name"
                   name="name"
-                  defaultValue={editingSubject?.name || ''}
                   placeholder="e.g. Creative Arts"
                   required
                 />
               </div>
               <DialogFooter>
-                <Button type="button" variant="outline" onClick={handleCloseSubjectDialog}>Cancel</Button>
-                <Button type="submit">Save Subject</Button>
+                <Button type="button" variant="outline" onClick={() => setNewSubjectDialogOpen(false)}>Cancel</Button>
+                <Button type="submit">Create Subject</Button>
               </DialogFooter>
             </form>
           </DialogContent>
@@ -230,25 +199,25 @@ export default function SubjectsPage() {
       <Dialog open={assignDialogOpen} onOpenChange={setAssignDialogOpen}>
           <DialogContent className="sm:max-w-md">
              <DialogHeader>
-                <DialogTitle>Assign Subject</DialogTitle>
+                <DialogTitle>Assign Subject to {classToAssign?.name}</DialogTitle>
                 <DialogDescription>
-                    Assign "{subjectToAssign?.name}" to a classroom.
+                    Select a subject from the list to assign it to this class.
                 </DialogDescription>
             </DialogHeader>
             <form onSubmit={handleAssignSubmit} className="grid gap-4 py-4">
                 <div className="space-y-2">
-                    <Label htmlFor="classroomId">Classroom</Label>
-                    <Select name="classroomId" required>
+                    <Label htmlFor="subjectId">Subject</Label>
+                    <Select name="subjectId" required>
                         <SelectTrigger>
-                            <SelectValue placeholder="Select a classroom" />
+                            <SelectValue placeholder="Select a subject to assign" />
                         </SelectTrigger>
                         <SelectContent>
-                            {classroomsLoading ? (
+                            {subjectsLoading ? (
                             <SelectItem value="loading" disabled>Loading...</SelectItem>
                             ) : (
-                            classrooms?.map((c) => (
-                                <SelectItem key={c.id} value={c.id}>
-                                {c.name}
+                            subjects?.map((s) => (
+                                <SelectItem key={s.id} value={s.id}>
+                                {s.name}
                                 </SelectItem>
                             ))
                             )}
@@ -257,60 +226,50 @@ export default function SubjectsPage() {
                 </div>
                  <DialogFooter>
                     <Button type="button" variant="outline" onClick={handleCloseAssignDialog}>Cancel</Button>
-                    <Button type="submit">Assign to Class</Button>
+                    <Button type="submit">Assign Subject</Button>
                 </DialogFooter>
             </form>
           </DialogContent>
       </Dialog>
 
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold tracking-tight">Subjects</h1>
-        <Button onClick={() => handleOpenSubjectDialog()}>
+        <div>
+            <h1 className="text-3xl font-bold tracking-tight">Subjects by Class</h1>
+            <p className="text-muted-foreground">Manage which subjects are taught in each classroom.</p>
+        </div>
+        <Button onClick={() => setNewSubjectDialogOpen(true)}>
           <PlusCircle className="mr-2 h-4 w-4" />
-          Add Subject
+          Create New Subject
         </Button>
       </div>
 
-      <Card>
-        <CardHeader>
-            <CardTitle>All Subjects</CardTitle>
-            <CardDescription>A list of all subjects offered in the school and their class assignments.</CardDescription>
-        </CardHeader>
-        <CardContent>
-            {isLoading ? (
-                <div className="space-y-2">
-                    {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-12 w-full" />)}
-                </div>
-            ) : (subjects && subjects.length > 0) ? (
-                <Accordion type="single" collapsible className="w-full">
-                {subjects.map(subject => (
-                    <AccordionItem value={subject.id} key={subject.id}>
-                        <AccordionTrigger className="font-medium text-base px-4">
-                            {subject.name}
-                        </AccordionTrigger>
-                        <AccordionContent className="px-4 pt-2 pb-4 space-y-4">
-                            <div className="flex items-center justify-between">
-                                <h4 className="font-semibold">Assigned Classes:</h4>
-                                 <div className="flex items-center gap-2">
-                                     <Button size="sm" variant="outline" onClick={() => handleOpenAssignDialog(subject)}>
-                                        <BookUp className="mr-2 h-4 w-4" />
-                                        Assign to Class
-                                    </Button>
-                                    <Button size="sm" variant="ghost" onClick={() => handleOpenSubjectDialog(subject)}>
-                                        <Edit className="mr-2 h-4 w-4" />
-                                        Edit Name
-                                    </Button>
-                                    <Button size="sm" variant="destructive" onClick={() => handleDeleteSubject(subject.id)}>
-                                        <Trash2 className="mr-2 h-4 w-4" />
-                                        Delete Subject
-                                    </Button>
-                                 </div>
-                            </div>
-                            <div className="flex flex-wrap gap-2 items-center min-h-[30px]">
-                                {subjectAssignmentMap[subject.id]?.length > 0 ? (
-                                    subjectAssignmentMap[subject.id].map(({ classroomId, assignmentId }) => (
+        {isLoading ? (
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                {Array.from({ length: 3 }).map((_, i) => (
+                     <Card key={i}>
+                        <CardHeader><Skeleton className="h-6 w-1/2" /></CardHeader>
+                        <CardContent><Skeleton className="h-20 w-full" /></CardContent>
+                     </Card>
+                ))}
+            </div>
+        ) : (
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {(classrooms || []).map(classroom => (
+                <Card key={classroom.id}>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+                        <CardTitle className="text-xl">{classroom.name}</CardTitle>
+                        <Button size="sm" onClick={() => handleOpenAssignDialog(classroom)}>
+                            <PlusCircle className="mr-2 h-4 w-4" />
+                            Add Subject
+                        </Button>
+                    </CardHeader>
+                    <CardContent>
+                        <p className="text-sm font-medium mb-2 text-muted-foreground">Assigned Subjects:</p>
+                        <div className="flex flex-wrap gap-2 items-center min-h-[40px] p-2 border rounded-md bg-muted/50">
+                                {classSubjectMap[classroom.id]?.length > 0 ? (
+                                    classSubjectMap[classroom.id].map(({ subject, assignmentId }) => (
                                         <Badge key={assignmentId} variant="secondary" className="pl-3 pr-1 text-sm">
-                                            {classroomMap[classroomId]}
+                                            {subject.name}
                                             <Button 
                                                 variant="ghost" 
                                                 size="icon" 
@@ -322,21 +281,14 @@ export default function SubjectsPage() {
                                         </Badge>
                                     ))
                                 ) : (
-                                    <p className="text-sm text-muted-foreground">Not assigned to any classes yet.</p>
+                                    <p className="text-xs text-muted-foreground italic">No subjects assigned yet.</p>
                                 )}
                             </div>
-                        </AccordionContent>
-                    </AccordionItem>
-                ))}
-                </Accordion>
-            ) : (
-                <div className="text-center py-12 text-muted-foreground">
-                    <p>No subjects found.</p>
-                    <p>Click "Add Subject" to get started.</p>
-                </div>
-            )}
-        </CardContent>
-      </Card>
+                    </CardContent>
+                </Card>
+            ))}
+            </div>
+        )}
     </div>
   );
 }
