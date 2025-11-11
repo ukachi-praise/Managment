@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import {
   Card,
   CardContent,
@@ -27,7 +27,7 @@ import {
   addDocumentNonBlocking,
 } from '@/firebase';
 import { useMemoFirebase } from '@/firebase/provider';
-import { collection, query, addDoc } from 'firebase/firestore';
+import { collection, query } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   Dialog,
@@ -114,15 +114,22 @@ export default function StudentsPage() {
     if (!firestore) return;
 
     const formData = new FormData(event.currentTarget);
-    const studentName = formData.get('name') as string;
+    const newStudentData = {
+      name: formData.get('name') as string,
+      admissionNumber: formData.get('admissionNumber') as string,
+      dob: formData.get('dob') as string,
+      gender: formData.get('gender') as string,
+      parentName: formData.get('parentName') as string,
+      contact: formData.get('contact') as string,
+    };
     const classroomId = formData.get('classroomId') as string;
 
-    if (!studentName || !classroomId) return;
+    if (!newStudentData.name || !classroomId || !newStudentData.admissionNumber) return;
 
     // 1. Create the student
     const studentRef = await addDocumentNonBlocking(
       collection(firestore, 'students'),
-      { name: studentName }
+      newStudentData
     );
 
     if (studentRef) {
@@ -130,7 +137,7 @@ export default function StudentsPage() {
       await addDocumentNonBlocking(collection(firestore, 'enrollments'), {
         studentId: studentRef.id,
         classroomId: classroomId,
-        // In a real app, you'd also have sessionId and termId
+        // In a real app, you'd also have sessionId (e.g. "2025/2026")
       });
     }
 
@@ -149,7 +156,7 @@ export default function StudentsPage() {
               Add Student
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-[425px]">
+          <DialogContent className="sm:max-w-xl">
             <DialogHeader>
               <DialogTitle>Add New Student</DialogTitle>
               <DialogDescription>
@@ -157,40 +164,60 @@ export default function StudentsPage() {
               </DialogDescription>
             </DialogHeader>
             <form onSubmit={handleAddStudent} className="grid gap-4 py-4">
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="name" className="text-right">
-                  Full Name
-                </Label>
-                <Input
-                  id="name"
-                  name="name"
-                  placeholder="e.g. John Doe"
-                  className="col-span-3"
-                  required
-                />
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="classroomId" className="text-right">
-                  Classroom
-                </Label>
-                <Select name="classroomId" required>
-                  <SelectTrigger className="col-span-3">
-                    <SelectValue placeholder="Select a classroom" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {classroomsLoading ? (
-                      <SelectItem value="loading" disabled>Loading...</SelectItem>
-                    ) : (
-                      classrooms?.map((c) => (
-                        <SelectItem key={c.id} value={c.id}>
-                          {c.name}
-                        </SelectItem>
-                      ))
-                    )}
-                  </SelectContent>
-                </Select>
-              </div>
-              <DialogFooter>
+               <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="name">Student Name</Label>
+                  <Input id="name" name="name" placeholder="John Doe" required />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="admissionNumber">Admission Number</Label>
+                  <Input id="admissionNumber" name="admissionNumber" placeholder="JKS-00123" required />
+                </div>
+                 <div className="space-y-2">
+                   <Label htmlFor="classroomId">Classroom</Label>
+                    <Select name="classroomId" required>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a classroom" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {classroomsLoading ? (
+                          <SelectItem value="loading" disabled>Loading...</SelectItem>
+                        ) : (
+                          classrooms?.map((c) => (
+                            <SelectItem key={c.id} value={c.id}>
+                              {c.name}
+                            </SelectItem>
+                          ))
+                        )}
+                      </SelectContent>
+                    </Select>
+                 </div>
+                 <div className="space-y-2">
+                  <Label htmlFor="dob">Date of Birth</Label>
+                  <Input id="dob" name="dob" type="date" required />
+                </div>
+                <div className="space-y-2">
+                   <Label htmlFor="gender">Gender</Label>
+                    <Select name="gender" required>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select Gender" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Male">Male</SelectItem>
+                        <SelectItem value="Female">Female</SelectItem>
+                      </SelectContent>
+                    </Select>
+                 </div>
+                 <div className="space-y-2">
+                  <Label htmlFor="parentName">Parent / Guardian Name</Label>
+                  <Input id="parentName" name="parentName" placeholder="Jane Doe" required />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="contact">Contact Number</Label>
+                  <Input id="contact" name="contact" placeholder="+1234567890" required />
+                </div>
+               </div>
+              <DialogFooter className="mt-4">
                 <Button type="submit">Save Student</Button>
               </DialogFooter>
             </form>

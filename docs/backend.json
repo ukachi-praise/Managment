@@ -51,9 +51,14 @@
       "properties": {
         "id": { "type": "string", "description": "Unique identifier for the student." },
         "name": { "type": "string", "description": "Name of the student." },
+        "admissionNumber": { "type": "string", "description": "The student's unique admission number." },
+        "dob": { "type": "string", "format": "date", "description": "Date of birth." },
+        "gender": { "type": "string", "enum": ["Male", "Female"] },
+        "parentName": { "type": "string", "description": "Name of the parent or guardian." },
+        "contact": { "type": "string", "description": "Contact phone number for the parent or guardian." },
         "isDeleted": {"type": "boolean", "description": "Flag for soft-deleting a student."}
       },
-      "required": ["id", "name"]
+      "required": ["id", "name", "admissionNumber"]
     },
     "Enrollment": {
         "title": "Enrollment",
@@ -206,5 +211,3 @@
     ]
   }
 }
-
-    
