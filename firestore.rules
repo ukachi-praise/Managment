@@ -18,12 +18,16 @@ service cloud.firestore {
       return request.auth.uid == 'GOpbb9SsavhpATk1p0KNmPGGQ0S2' || exists(/databases/$(database)/documents/roles_admin/$(request.auth.uid));
     }
     function isTeacher() {
-      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Teacher';
+      // Use the `get` method safely with `exists()` to prevent errors if the user doc doesn't exist yet.
+      let userDoc = get(/databases/$(database)/documents/users/$(request.auth.uid));
+      return isSignedIn() && userDoc.data.role == 'Teacher';
     }
     function isOwner(userId) {
       return request.auth.uid == userId;
     }
     function teacherClassroomId() {
+        // This function assumes the user is a teacher and the document exists.
+        // It should be used in rules that have already verified this.
         return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.assignedClassroomId;
     }
     function isTeacherForClassroom(classroomId) {
@@ -33,61 +37,56 @@ service cloud.firestore {
     // Admin role mapping. Read-only for admins to check status.
     match /roles_admin/{userId} {
       allow get: if isAdmin();
-      allow list, create, update, delete: if false; // Managed via backend functions
+      // Writing to this collection should be a privileged operation, handled by a secure backend function.
+      allow list, create, update, delete: if false; 
     }
 
     // User profiles
     match /users/{userId} {
       allow get: if isOwner(userId) || isAdmin();
       allow list: if isAdmin();
-      allow create: if isOwner(userId); // Users create their own profile on signup
+      allow create: if isOwner(userId); // Users can create their own profile.
       allow update: if isOwner(userId) || isAdmin();
       allow delete: if isAdmin();
     }
 
-    // Core data managed by Admins
-    match /{collection}/{docId} where collection in ['classrooms', 'subjects', 'classroomSubjects', 'sessions', 'nextTermInfo', 'resultTemplates', 'headTeacherRemarks', 'auditLogs'] {
+    // Core data collections managed exclusively by Admins.
+    // This single rule covers classrooms, subjects, enrollments, etc.
+    match /{collection}/{docId} where collection in ['classrooms', 'subjects', 'classroomSubjects', 'sessions', 'enrollments', 'students', 'nextTermInfo', 'resultTemplates', 'headTeacherRemarks', 'auditLogs'] {
       allow read, write: if isAdmin();
     }
     
-    // Terms are nested under sessions
+    // Terms are nested under sessions and also managed by Admins.
     match /sessions/{sessionId}/terms/{termId} {
         allow read, write: if isAdmin();
     }
-
-    // Students can be managed by Admins
-    match /students/{studentId} {
-      allow read, write: if isAdmin();
-    }
-
-    // Enrollments can be managed by Admins
-    match /enrollments/{enrollmentId} {
-        allow read, write: if isAdmin();
-    }
     
+    // --- Teacher-Specific Rules ---
+
     // Results can be read by admins or the teacher of the class.
     // Writes are restricted to the assigned teacher.
     match /results/{resultId} {
-      allow get: if isAdmin() || isTeacherForClassroom(resource.data.classroomId);
-      // Teachers can list results for their own class
+      allow get: if isAdmin() || (isTeacher() && resource.data.classroomId == teacherClassroomId());
+      // Teachers can list results for their own class, admins for any.
       allow list: if isAdmin() || (isTeacher() && request.query.where[0][2] == teacherClassroomId());
-      allow write: if isTeacherForClassroom(request.resource.data.classroomId);
+      // Only the assigned teacher can create or update results.
+      allow write: if isTeacher() && request.resource.data.classroomId == teacherClassroomId();
       allow delete: if isAdmin();
     }
     
-    // Result summaries follow same rules as results
+    // Result summaries follow the same rules as results.
     match /resultSummaries/{summaryId} {
-        allow get: if isAdmin() || isTeacherForClassroom(resource.data.classroomId);
+        allow get: if isAdmin() || (isTeacher() && resource.data.classroomId == teacherClassroomId());
         allow list: if isAdmin() || (isTeacher() && request.query.where[0][2] == teacherClassroomId());
-        allow write: if isTeacherForClassroom(request.resource.data.classroomId);
+        allow write: if isTeacher() && request.resource.data.classroomId == teacherClassroomId();
         allow delete: if isAdmin();
     }
 
-    // Soft skill results follow same rules as results
+    // Soft skill results follow the same rules as results.
     match /softSkillResults/{softSkillResultId} {
-        allow get: if isAdmin() || isTeacherForClassroom(resource.data.classroomId);
+        allow get: if isAdmin() || (isTeacher() && resource.data.classroomId == teacherClassroomId());
         allow list: if isAdmin() || (isTeacher() && request.query.where[0][2] == teacherClassroomId());
-        allow write: if isTeacherForClassroom(request.resource.data.classroomId);
+        allow write: if isTeacher() && request.resource.data.classroomId == teacherClassroomId();
         allow delete: if isAdmin();
     }
   }
