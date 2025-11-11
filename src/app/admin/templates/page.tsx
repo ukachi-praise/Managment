@@ -251,8 +251,8 @@ export default function TemplatesPage() {
   }
 
   const StudentInfoDetail = ({ label, value }: { label: string, value: string | React.ReactNode }) => (
-    <div className="flex text-sm">
-        <span className="font-semibold w-32 shrink-0">{label}:</span>
+    <div className="flex text-xs whitespace-nowrap">
+        <span className="font-semibold w-28 shrink-0">{label}:</span>
         <span className="flex-1 border-b border-dotted border-gray-400">{value}</span>
     </div>
   )
