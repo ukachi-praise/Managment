@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useParams } from 'next/navigation';
@@ -89,7 +90,7 @@ export default function TeacherClassPage() {
         <CardHeader>
           <CardTitle>Student List</CardTitle>
           <CardDescription>
-            A list of all students enrolled in your class.
+            A list of all students enrolled in your class. Click a student's name to view their report card.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -98,6 +99,7 @@ export default function TeacherClassPage() {
               <TableRow>
                 <TableHead>Student</TableHead>
                 <TableHead>Admission Number</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -113,30 +115,40 @@ export default function TeacherClassPage() {
                     <TableCell>
                       <Skeleton className="h-5 w-24" />
                     </TableCell>
+                    <TableCell className="text-right">
+                        <Skeleton className="h-8 w-24" />
+                    </TableCell>
                   </TableRow>
                 ))
               ) : studentsInClass && studentsInClass.length > 0 ? (
                 studentsInClass.map((student) => (
                     <TableRow key={student.id}>
                       <TableCell className="font-medium">
-                        <div className="flex items-center gap-3">
+                        <Link href={`/results/${student.id}`} className="flex items-center gap-3 hover:underline">
                           <Avatar>
                             <AvatarFallback>
                               {student.name.charAt(0).toUpperCase()}
                             </AvatarFallback>
                           </Avatar>
                           <span>{student.name}</span>
-                        </div>
+                        </Link>
                       </TableCell>
                       <TableCell>
                         {/* This assumes admissionNumber is on the student doc */}
                         {(student as any).admissionNumber || 'N/A'}
                       </TableCell>
+                       <TableCell className="text-right">
+                        <Button asChild variant="outline" size="sm">
+                          <Link href={`/results/${student.id}`}>
+                            View Report
+                          </Link>
+                        </Button>
+                      </TableCell>
                     </TableRow>
                   ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={2} className="h-24 text-center">
+                  <TableCell colSpan={3} className="h-24 text-center">
                     No students found in this class.
                   </TableCell>
                 </TableRow>
