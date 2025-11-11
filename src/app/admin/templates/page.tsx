@@ -283,7 +283,7 @@ export default function TemplatesPage() {
             <div className="mx-auto aspect-[210/297] w-full max-w-[210mm] bg-white p-8 shadow-lg print:shadow-none print:m-0 print:p-0 print:max-w-none print:h-full">
                 {settings.header.visible && (
                     <header 
-                        className={cn('mb-4 editable-region', {'outline-blue-500 outline-dashed outline-2 outline-offset-2': selectedElement === 'header'})}
+                        className={cn('mb-4 p-4 border editable-region', {'outline-blue-500 outline-dashed outline-2 outline-offset-2': selectedElement === 'header'})}
                         onClick={(e) => handleElementClick(e, 'header')}
                     >
                     <div className="flex items-start justify-between">
@@ -306,7 +306,7 @@ export default function TemplatesPage() {
 
                 {settings.studentInfo.visible && (
                     <div
-                        className={cn('editable-region mb-4', {'outline-blue-500 outline-dashed outline-2 outline-offset-2': selectedElement === 'studentInfo'})}
+                        className={cn('editable-region mb-4 p-4 border', {'outline-blue-500 outline-dashed outline-2 outline-offset-2': selectedElement === 'studentInfo'})}
                         onClick={(e) => handleElementClick(e, 'studentInfo')}
                         style={{ fontSize: `${settings.studentInfo.fontSize}px` }}
                     >
@@ -336,7 +336,7 @@ export default function TemplatesPage() {
                 <main className="mt-4">
                     {settings.subjectsTable.visible && (
                     <div 
-                        className={cn('editable-region', {'outline-blue-500 outline-dashed outline-2 outline-offset-2': selectedElement === 'subjectsTable'})}
+                        className={cn('editable-region p-4 border', {'outline-blue-500 outline-dashed outline-2 outline-offset-2': selectedElement === 'subjectsTable'})}
                         onClick={(e) => handleElementClick(e, 'subjectsTable')}
                     >
                         <Table>
@@ -391,7 +391,7 @@ export default function TemplatesPage() {
                 >
                     {settings.softSkills.visible && (
                     <div 
-                        className="space-y-2"
+                        className="space-y-2 p-4 border"
                     >
                         <h3 className="font-bold">Soft Skills Assessment</h3>
                         <div className="grid grid-cols-2 gap-x-4">
@@ -444,7 +444,7 @@ export default function TemplatesPage() {
                     )}
                     
                     {settings.gradingKey.visible && (
-                        <div className="grid grid-cols-2 gap-x-8 pt-4">
+                        <div className="grid grid-cols-2 gap-x-8 pt-4 p-4 border">
                             <div className="space-y-2">
                                 <h3 className="font-bold">Grading Key</h3>
                                 <Table>
@@ -486,7 +486,7 @@ export default function TemplatesPage() {
                     )}
 
                     {settings.remarks.visible && (
-                    <div className="pt-4 space-y-4">
+                    <div className="pt-4 space-y-4 p-4 border">
                         <div>
                             <h3 className="font-bold">Teacher's Remarks:</h3>
                             <p className="min-h-[40px] rounded-md border-b p-1">
@@ -502,7 +502,7 @@ export default function TemplatesPage() {
                     </div>
                     )}
                     {settings.signatures.visible && (
-                    <div className="flex justify-between items-end pt-8">
+                    <div className="flex justify-between items-end pt-8 p-4 border">
                         <div className="text-center w-36">
                             <div className="border-t pt-1">
                             Class Teacher's Signature
