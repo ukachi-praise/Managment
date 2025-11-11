@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -32,7 +33,7 @@ import { Separator } from '@/components/ui/separator';
 // --- TYPE DEFINITIONS ---
 type StudentData = { id: string; name: string; admissionNumber: string };
 type Subject = { id: string; name: string };
-type Classroom = { id: string; name: string };
+type Classroom = { id: string; name: string; teacherName?: string; };
 type Enrollment = { studentId: string; classroomId: string };
 type Result = { subjectId: string; ca1: number; ca2: number; ca3: number; exam: number; daysAttended: number; sessionId: string; termId: string; };
 type SchoolSettingsData = { currentSession: string; currentTermId: string; daysSchoolOpened: number; nextTermResumptionDate: Timestamp | Date | string; };
@@ -201,7 +202,7 @@ export function ResultSheet({ studentId }: { studentId: string }) {
                     <div className="flex gap-4">
                         <div className="w-1/3"><StudentInfoDetail label="School Open" value={schoolSettings?.daysSchoolOpened.toString()} /></div>
                         <div className="w-1/3"><StudentInfoDetail label="Resumption" value={formattedResumptionDate} /></div>
-                        <div className="w-1/3"></div>
+                        <div className="w-1/3"><StudentInfoDetail label="Class Teacher" value={classroom?.teacherName || 'N/A'} /></div>
                     </div>
                 </div>
             </div>
@@ -285,3 +286,5 @@ export function ResultSheet({ studentId }: { studentId: string }) {
     </div>
   );
 }
+
+    

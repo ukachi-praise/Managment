@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -43,6 +44,7 @@ type Subject = {
 type Classroom = {
   id: string;
   name: string;
+  teacherName?: string;
 };
 
 type ClassroomSubject = {
@@ -490,7 +492,7 @@ export default function TemplatesPage() {
                                     <div className="flex gap-4">
                                         <div className="w-1/3"><StudentInfoDetail label="School Open" value={schoolSettings?.daysSchoolOpened.toString()} isLoading={settingsLoading} /></div>
                                         <div className="w-1/3"><StudentInfoDetail label="Resumption" value={formattedResumptionDate} isLoading={settingsLoading} /></div>
-                                        <div className="w-1/3"></div>
+                                        <div className="w-1/3"><StudentInfoDetail label="Class Teacher" value={selectedClassroom?.teacherName || 'Mrs. Doe'} /></div>
                                     </div>
                                 </div>
                             </div>
@@ -684,6 +686,8 @@ export default function TemplatesPage() {
     </div>
   );
 }
+    
+
     
 
     
