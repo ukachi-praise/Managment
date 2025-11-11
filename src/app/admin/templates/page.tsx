@@ -1,6 +1,5 @@
 
 
-
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -504,24 +503,24 @@ export default function TemplatesPage() {
                                         <div>
                                             <Table>
                                                 <TableBody>
-                                                    <TableRow><TableCell className="font-medium p-1 h-auto text-[10px] border-black">Punctuality</TableCell><TableCell className="text-right p-1 h-auto text-[10px] border-black">5</TableCell></TableRow>
-                                                    <TableRow><TableCell className="font-medium p-1 h-auto text-[10px] border-black">Neatness</TableCell><TableCell className="text-right p-1 h-auto text-[10px] border-black">4</TableCell></TableRow>
+                                                    <TableRow><TableCell className="font-medium p-1 h-auto text-[10px] border-b-0 border-black">Punctuality</TableCell><TableCell className="text-right p-1 h-auto text-[10px] border-b-0 border-black">5</TableCell></TableRow>
+                                                    <TableRow><TableCell className="font-medium p-1 h-auto text-[10px] border-b-0 border-black">Neatness</TableCell><TableCell className="text-right p-1 h-auto text-[10px] border-b-0 border-black">4</TableCell></TableRow>
                                                 </TableBody>
                                             </Table>
                                         </div>
                                         <div>
                                         <Table>
                                             <TableBody>
-                                                <TableRow><TableCell className="font-medium p-1 h-auto text-[10px] border-black">Honesty</TableCell><TableCell className="text-right p-1 h-auto text-[10px] border-black">5</TableCell></TableRow>
-                                                <TableRow><TableCell className="font-medium p-1 h-auto text-[10px] border-black">Communication</TableCell><TableCell className="text-right p-1 h-auto text-[10px] border-black">5</TableCell></TableRow>
+                                                <TableRow><TableCell className="font-medium p-1 h-auto text-[10px] border-b-0 border-black">Honesty</TableCell><TableCell className="text-right p-1 h-auto text-[10px] border-b-0 border-black">5</TableCell></TableRow>
+                                                <TableRow><TableCell className="font-medium p-1 h-auto text-[10px] border-b-0 border-black">Communication</TableCell><TableCell className="text-right p-1 h-auto text-[10px] border-b-0 border-black">5</TableCell></TableRow>
                                             </TableBody>
                                         </Table>
                                         </div>
                                         <div>
                                         <Table>
                                             <TableBody>
-                                                <TableRow><TableCell className="font-medium p-1 h-auto text-[10px] border-black">Attentiveness</TableCell><TableCell className="text-right p-1 h-auto text-[10px] border-black">4</TableCell></TableRow>
-                                                <TableRow><TableCell className="font-medium p-1 h-auto text-[10px] border-black">Self Control</TableCell><TableCell className="text-right p-1 h-auto text-[10px] border-black">5</TableCell></TableRow>
+                                                <TableRow><TableCell className="font-medium p-1 h-auto text-[10px] border-b-0 border-black">Attentiveness</TableCell><TableCell className="text-right p-1 h-auto text-[10px] border-b-0 border-black">4</TableCell></TableRow>
+                                                <TableRow><TableCell className="font-medium p-1 h-auto text-[10px] border-b-0 border-black">Self Control</TableCell><TableCell className="text-right p-1 h-auto text-[10px] border-b-0 border-black">5</TableCell></TableRow>
                                             </TableBody>
                                         </Table>
                                         </div>
@@ -618,5 +617,7 @@ export default function TemplatesPage() {
 
 
 
+
+    
 
     
