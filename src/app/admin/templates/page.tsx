@@ -5,39 +5,14 @@ import { useState } from 'react';
 import {
   Card,
   CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
-  PlusCircle,
   Eye,
   Save,
   RotateCcw,
   Upload,
-  Bold,
-  Italic,
-  AlignCenter,
-  AlignLeft,
-  AlignRight,
 } from 'lucide-react';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { Checkbox } from '@/components/ui/checkbox';
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from '@/components/ui/accordion';
 import { Separator } from '@/components/ui/separator';
 import { Logo } from '@/components/shared/logo';
 import {
@@ -48,46 +23,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-
-const availableFields = {
-  studentInfo: [
-    'Student Name',
-    'Admission Number',
-    'Class / Level',
-    'Academic Session',
-    'Term',
-    'Attendance',
-    'Class Teacher',
-  ],
-  academicInfo: [
-    'Subjects Table',
-    'Soft Skills',
-    'Overall Average',
-    'Overall Grade',
-  ],
-  remarks: ['Class Teacher Remark', 'Head Teacher Remark'],
-  otherInfo: ['Next Term Resumption Date', 'Next Term Fees'],
-};
-
-// Map field names to state keys for easier management
-const fieldToStateKey: { [key: string]: string } = {
-  'Student Name': 'studentName',
-  'Admission Number': 'admissionNumber',
-  'Class / Level': 'classLevel',
-  'Academic Session': 'academicSession',
-  Term: 'term',
-  Attendance: 'attendance',
-  'Class Teacher': 'classTeacher',
-  'Subjects Table': 'subjectsTable',
-  'Soft Skills': 'softSkills',
-  'Overall Average': 'overallAverage',
-  'Overall Grade': 'overallGrade',
-  'Class Teacher Remark': 'teacherRemark',
-  'Head Teacher Remark': 'headTeacherRemark',
-  'Next Term Resumption Date': 'nextTermResumption',
-  'Next Term Fees': 'nextTermFees',
-};
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 
 
 export default function TemplatesPage() {
@@ -109,29 +45,6 @@ export default function TemplatesPage() {
         nextTermFees: false,
     });
 
-    const handleFieldVisibilityChange = (field: string, checked: boolean) => {
-        const stateKey = fieldToStateKey[field];
-        if (stateKey) {
-            setVisibleFields(prev => ({ ...prev, [stateKey]: checked }));
-        }
-    };
-
-    const renderCheckboxes = (fields: string[]) => {
-        return fields.map((field) => {
-            const stateKey = fieldToStateKey[field] as keyof typeof visibleFields;
-            return (
-              <div key={field} className="flex items-center gap-2">
-                <Checkbox 
-                    id={field} 
-                    checked={visibleFields[stateKey]}
-                    onCheckedChange={(checked) => handleFieldVisibilityChange(field, !!checked)}
-                />
-                <Label htmlFor={field} className="font-normal">{field}</Label>
-              </div>
-            );
-        });
-    };
-
 
   return (
     <div className="flex h-full flex-col gap-6">
@@ -147,15 +60,15 @@ export default function TemplatesPage() {
         </div>
         <div className="flex gap-2">
           <Button variant="outline">
-            <RotateCcw />
+            <RotateCcw className="mr-2 h-4 w-4" />
             Reset
           </Button>
           <Button variant="outline" onClick={() => window.print()}>
-            <Eye />
+            <Eye className="mr-2 h-4 w-4" />
             Preview PDF
           </Button>
           <Button>
-            <Save />
+            <Save className="mr-2 h-4 w-4" />
             Save Template
           </Button>
         </div>
@@ -180,20 +93,18 @@ export default function TemplatesPage() {
                         </div>
                     </div>
                      <Separator className="my-4" />
-                      <div className="flex items-center justify-between">
+                      <div className="flex items-start justify-between">
                         <div className="flex items-center gap-4">
-                        <Avatar className="h-20 w-20 border">
-                            <AvatarFallback>SN</AvatarFallback>
-                        </Avatar>
-                        <div className="text-xs">
-                            {visibleFields.studentName && <p><strong>Student Name:</strong> John Doe</p>}
-                            {visibleFields.classLevel && <p><strong>Class:</strong> Primary 5</p>}
-                            {visibleFields.admissionNumber && <p><strong>Admission No:</strong> JKS-00123</p>}
+                            <Avatar className="h-20 w-20 border">
+                                <AvatarFallback>SN</AvatarFallback>
+                            </Avatar>
                         </div>
-                        </div>
-                        <div className="text-right text-xs">
-                        {visibleFields.attendance && <p><strong>Attendance:</strong> 60/65 Days</p>}
-                        {visibleFields.classTeacher && <p><strong>Class Teacher:</strong> Mrs. Ada</p>}
+                        <div className="grid grid-cols-2 gap-x-8 gap-y-2 text-xs flex-1">
+                            {visibleFields.studentName && <div><strong>Student Name:</strong> John Doe</div>}
+                            {visibleFields.admissionNumber && <div><strong>Admission No:</strong> JKS-00123</div>}
+                            {visibleFields.classLevel && <div><strong>Class:</strong> Primary 5</div>}
+                            {visibleFields.attendance && <div><strong>Attendance:</strong> 60/65 Days</div>}
+                            {visibleFields.classTeacher && <div><strong>Class Teacher:</strong> Mrs. Ada</div>}
                         </div>
                     </div>
                 </header>
