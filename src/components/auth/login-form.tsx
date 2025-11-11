@@ -15,13 +15,6 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { toast } from '@/hooks/use-toast';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import Link from 'next/link';
@@ -29,9 +22,6 @@ import Link from 'next/link';
 const formSchema = z.object({
   email: z.string().email({ message: 'Please enter a valid email.' }),
   password: z.string().min(1, { message: 'Password is required.' }),
-  role: z.enum(['admin', 'teacher'], {
-    required_error: 'You need to select a role.',
-  }),
 });
 
 export function LoginForm() {
@@ -48,21 +38,17 @@ export function LoginForm() {
 
   function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
+    const role = 'teacher';
     // Simulate API call
     setTimeout(() => {
       if (
-        (values.role === 'admin' && values.email === 'admin@justvision.com') ||
-        (values.role === 'teacher' && values.email === 'teacher@justvision.com')
+        role === 'teacher' && values.email === 'teacher@justvision.com'
       ) {
         toast({
           title: 'Login Successful',
-          description: `Welcome, ${values.role}! Redirecting...`,
+          description: `Welcome, ${role}! Redirecting...`,
         });
-        if (values.role === 'admin') {
-          router.push('/admin/dashboard');
-        } else {
-          router.push('/teacher/dashboard');
-        }
+        router.push('/teacher/dashboard');
       } else {
         toast({
           variant: 'destructive',
@@ -107,27 +93,6 @@ export function LoginForm() {
               <FormControl>
                 <Input type="password" placeholder="••••••••" {...field} />
               </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="role"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Role</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select your role" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  <SelectItem value="admin">Admin</SelectItem>
-                  <SelectItem value="teacher">Teacher</SelectItem>
-                </SelectContent>
-              </Select>
               <FormMessage />
             </FormItem>
           )}
