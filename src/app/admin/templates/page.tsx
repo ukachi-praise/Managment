@@ -399,7 +399,7 @@ export default function TemplatesPage() {
                             <div
                                 className={cn('editable-region mb-4 p-2 border border-black', {'outline-blue-500 outline-dashed outline-2 outline-offset-2': selectedElement === 'studentInfo'})}
                                 onClick={(e) => handleElementClick(e, 'studentInfo')}
-                                style={{ fontSize: `10px` }}
+                                style={{ fontSize: `${settings.studentInfo.fontSize}px` }}
                             >
                                 <div className="flex flex-col gap-1">
                                     <div className="flex gap-4">
@@ -430,13 +430,13 @@ export default function TemplatesPage() {
                                 <Table>
                                     <TableHeader>
                                     <TableRow>
-                                        <TableHead className="border border-black p-1 h-auto text-xs">Subject</TableHead>
-                                        <TableHead className="text-center border border-black p-1 h-auto text-[10px]"><div>CA1</div><div>(10)</div></TableHead>
-                                        <TableHead className="text-center border border-black p-1 h-auto text-[10px]"><div>CA2</div><div>(10)</div></TableHead>
-                                        <TableHead className="text-center border border-black p-1 h-auto text-[10px]"><div>CA3</div><div>(10)</div></TableHead>
-                                        <TableHead className="text-center border border-black p-1 h-auto text-[10px]"><div>Exam</div><div>(70)</div></TableHead>
-                                        <TableHead className="text-center border border-black p-1 h-auto text-[10px]"><div>Total</div><div>(100)</div></TableHead>
-                                        <TableHead className="border border-black p-1 h-auto text-xs">Remark</TableHead>
+                                        <TableHead className="border border-black p-1 h-auto text-xs text-foreground">Subject</TableHead>
+                                        <TableHead className="text-center border border-black p-1 h-auto text-[10px] text-foreground"><div>CA1</div><div>(10)</div></TableHead>
+                                        <TableHead className="text-center border border-black p-1 h-auto text-[10px] text-foreground"><div>CA2</div><div>(10)</div></TableHead>
+                                        <TableHead className="text-center border border-black p-1 h-auto text-[10px] text-foreground"><div>CA3</div><div>(10)</div></TableHead>
+                                        <TableHead className="text-center border border-black p-1 h-auto text-[10px] text-foreground"><div>Exam</div><div>(70)</div></TableHead>
+                                        <TableHead className="text-center border border-black p-1 h-auto text-[10px] text-foreground"><div>Total</div><div>(100)</div></TableHead>
+                                        <TableHead className="border border-black p-1 h-auto text-xs text-foreground">Remark</TableHead>
                                     </TableRow>
                                     </TableHeader>
                                     <TableBody>
