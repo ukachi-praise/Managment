@@ -20,7 +20,7 @@ import { useState, useEffect } from 'react';
 import { Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { useAuth, useUser, useFirestore } from '@/firebase';
-import { initiateEmailSignIn } from '@/firebase/non-blocking-login';
+import { signInWithEmailAndPassword } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
 
 const formSchema = z.object({
@@ -104,9 +104,27 @@ export function LoginForm() {
     }
   }, [user, isUserLoading, router, firestore]);
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
+  async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
-    initiateEmailSignIn(auth, values.email, values.password);
+    try {
+        await signInWithEmailAndPassword(auth, values.email, values.password);
+        // onAuthStateChanged will handle the redirect
+    } catch (error: any) {
+        if (error.code === 'auth/invalid-credential') {
+            toast({
+                variant: 'destructive',
+                title: 'Login Failed',
+                description: 'Invalid credentials. Please check your email and password.',
+            });
+        } else {
+            toast({
+                variant: 'destructive',
+                title: 'Login Failed',
+                description: error.message,
+            });
+        }
+        setIsLoading(false);
+    }
   }
 
   return (
