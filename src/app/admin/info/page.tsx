@@ -43,7 +43,7 @@ import {
   setDocumentNonBlocking,
 } from '@/firebase';
 import { useMemoFirebase } from '@/firebase/provider';
-import { doc } from 'firebase/firestore';
+import { doc, Timestamp } from 'firebase/firestore';
 import { useEffect } from 'react';
 
 const formSchema = z.object({
@@ -81,10 +81,25 @@ export default function InfoPage() {
   
   useEffect(() => {
     if (settingsData) {
+        let resumptionDate: Date | undefined = undefined;
+        if (settingsData.nextTermResumptionDate) {
+            // Firestore returns a Timestamp object, convert it to a JS Date
+            if (settingsData.nextTermResumptionDate instanceof Timestamp) {
+                resumptionDate = settingsData.nextTermResumptionDate.toDate();
+            } else if (settingsData.nextTermResumptionDate instanceof Date) {
+                 resumptionDate = settingsData.nextTermResumptionDate;
+            } else {
+                try {
+                    // Fallback for string representations
+                    resumptionDate = new Date(settingsData.nextTermResumptionDate);
+                } catch (e) {
+                    console.error("Could not parse date:", settingsData.nextTermResumptionDate);
+                }
+            }
+        }
       form.reset({
         ...settingsData,
-        // The date from firestore might be a string or timestamp, convert it to a Date object
-        nextTermResumptionDate: settingsData.nextTermResumptionDate ? new Date(settingsData.nextTermResumptionDate) : undefined,
+        nextTermResumptionDate: resumptionDate,
       });
     }
   }, [settingsData, form]);
