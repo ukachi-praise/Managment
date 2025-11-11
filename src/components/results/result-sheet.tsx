@@ -79,13 +79,18 @@ export function ResultSheet({ student, classroom }: ResultSheetProps) {
   const { data: allSubjects, isLoading: subjectsLoading } = useCollection<Subject>(allSubjectsQuery);
 
   const resultsQuery = useMemoFirebase(() => {
-    if (!firestore || !schoolSettings?.currentSession || !schoolSettings?.currentTermId) return null;
-    return query(collection(firestore, 'results'), 
+    // IMPORTANT: Wait for schoolSettings to be loaded before creating the query
+    if (!firestore || !studentId || !schoolSettings?.currentSession || !schoolSettings?.currentTermId) {
+      return null;
+    }
+    return query(
+      collection(firestore, 'results'), 
       where('studentId', '==', studentId),
       where('sessionId', '==', schoolSettings.currentSession),
       where('termId', '==', schoolSettings.currentTermId)
     );
-  }, [firestore, studentId, schoolSettings]);
+  }, [firestore, studentId, schoolSettings]); // Dependency on schoolSettings is crucial
+  
   const { data: studentResults, isLoading: resultsLoading } = useCollection<Result>(resultsQuery);
 
   // --- DATA PROCESSING & MEMOIZATION ---
@@ -139,12 +144,13 @@ export function ResultSheet({ student, classroom }: ResultSheetProps) {
     return format(date, 'PPP');
   }, [schoolSettings]);
 
+  // The main loading state now correctly includes resultsLoading
   const isLoading = resultsLoading || subjectsLoading || settingsLoading || classroomSubjectsLoading || templateLoading;
 
   if (isLoading) {
     return (
-        <div className="rounded-lg border bg-card p-8 print-area">
-            <Skeleton className="h-[1123px] w-full" />
+        <div className="relative mx-auto aspect-[210/297] w-full max-w-[210mm] bg-white p-6 shadow-lg">
+            <Skeleton className="h-full w-full" />
         </div>
     );
   }
