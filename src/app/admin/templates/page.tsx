@@ -143,28 +143,22 @@ export default function TemplatesPage() {
                     {visibleFields.softSkills && 
                         <div className="space-y-2">
                             <h3 className="font-bold">Soft Skills Assessment</h3>
-                             <Table>
-                                <TableHeader>
-                                    <TableRow>
-                                        <TableHead>Skill</TableHead>
-                                        <TableHead className="text-right">Rating</TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    <TableRow>
-                                        <TableCell>Punctuality</TableCell>
-                                        <TableCell className="text-right">5/5</TableCell>
-                                    </TableRow>
-                                     <TableRow>
-                                        <TableCell>Neatness</TableCell>
-                                        <TableCell className="text-right">4/5</TableCell>
-                                    </TableRow>
-                                    <TableRow>
-                                        <TableCell>Communication</TableCell>
-                                        <TableCell className="text-right">5/5</TableCell>
-                                    </TableRow>
-                                </TableBody>
-                            </Table>
+                            <div className="grid grid-cols-2 gap-x-4">
+                               <Table>
+                                  <TableBody>
+                                      <TableRow><TableCell className="font-medium p-1">Punctuality</TableCell><TableCell className="text-right p-1">5/5</TableCell></TableRow>
+                                      <TableRow><TableCell className="font-medium p-1">Neatness</TableCell><TableCell className="text-right p-1">4/5</TableCell></TableRow>
+                                      <TableRow><TableCell className="font-medium p-1">Honesty</TableCell><TableCell className="text-right p-1">5/5</TableCell></TableRow>
+                                  </TableBody>
+                              </Table>
+                               <Table>
+                                  <TableBody>
+                                      <TableRow><TableCell className="font-medium p-1">Communication</TableCell><TableCell className="text-right p-1">5/5</TableCell></TableRow>
+                                      <TableRow><TableCell className="font-medium p-1">Attentiveness</TableCell><TableCell className="text-right p-1">4/5</TableCell></TableRow>
+                                      <TableRow><TableCell className="font-medium p-1">Self Control</TableCell><TableCell className="text-right p-1">5/5</TableCell></TableRow>
+                                  </TableBody>
+                              </Table>
+                            </div>
                         </div>
                     }
                     {visibleFields.teacherRemark &&
