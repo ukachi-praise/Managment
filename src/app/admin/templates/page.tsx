@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -250,25 +249,20 @@ export default function TemplatesPage() {
   }
 
   return (
-    <div className="h-full flex bg-muted print:bg-white no-print" onClick={() => setSelectedElement(null)}>
-        {/* Settings Sidebar */}
-        <aside className={cn("border-r bg-background flex-shrink-0 transition-all duration-300", sidebarOpen ? "w-72" : "w-0 overflow-hidden")}>
-            {sidebarOpen && renderSettingsPanel()}
-        </aside>
-
+    <div className="h-full flex flex-col bg-muted print:bg-white no-print" onClick={() => setSelectedElement(null)}>
         {/* Main Content */}
-        <main className="flex-1 p-4 sm:p-6 overflow-auto relative">
-            <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
+        <header className="flex-shrink-0 bg-background border-b z-10 no-print">
+            <div className="flex flex-wrap items-center justify-between gap-4 p-4">
                 <div className="flex items-center gap-2">
-                 <Button variant="ghost" size="icon" onClick={() => setSidebarOpen(!sidebarOpen)}>
+                <Button variant="ghost" size="icon" onClick={() => setSidebarOpen(!sidebarOpen)}>
                     {sidebarOpen ? <PanelLeft /> : <PanelRight />}
-                  </Button>
+                </Button>
                 <div>
-                <h1 className="text-3xl font-bold tracking-tight">
+                <h1 className="text-2xl font-bold tracking-tight">
                     Result Template Builder
                 </h1>
-                <p className="text-muted-foreground">
-                    Design and manage result templates for different classes.
+                <p className="text-sm text-muted-foreground">
+                    Design and manage result templates.
                 </p>
                 </div>
                 </div>
@@ -302,117 +296,114 @@ export default function TemplatesPage() {
                 </Button>
                 </div>
             </div>
+        </header>
 
-            {/* A4 Preview Canvas */}
-            <div className="relative mx-auto aspect-[210/297] w-full max-w-[210mm] bg-white p-8 shadow-lg print:shadow-none print:m-0 print:p-0 print:max-w-none print:h-full">
-                <div className="absolute inset-0 z-0 flex items-center justify-center">
-                    <Image
-                        src="/Logo.jpg"
-                        alt="School Watermark"
-                        width={400}
-                        height={400}
-                        className="opacity-10"
-                    />
-                </div>
-                <div className="relative z-10">
-                    {settings.header.visible && (
-                        <header 
-                            className={cn('mb-4 p-4 border editable-region', {'outline-blue-500 outline-dashed outline-2 outline-offset-2': selectedElement === 'header'})}
-                            onClick={(e) => handleElementClick(e, 'header')}
-                        >
-                        <div className="flex items-start justify-between">
-                            <div className="flex items-center gap-4">
-                                <div className="relative h-16 w-16">
-                                    <Image src="/Logo.jpg" alt="School Logo" layout="fill" objectFit="contain" />
-                                </div>
-                                <div 
-                                    className={cn('editable-region', {'outline-blue-500 outline-dashed outline-2 outline-offset-2': selectedElement === 'schoolName'})}
-                                    onClick={(e) => handleElementClick(e, 'schoolName')}
-                                >
-                                    <div>
-                                        <h1 className="font-headline text-2xl font-bold">{schoolName}</h1>
-                                        <p className="text-sm">Katampe 2 Mpape Abuja</p>
-                                        <p className="text-sm font-semibold">Motto: Exceeding Great</p>
+        <div className="flex-1 flex overflow-hidden">
+            {/* Settings Sidebar */}
+            <aside className={cn("border-r bg-background flex-shrink-0 transition-all duration-300 overflow-y-auto no-print", sidebarOpen ? "w-72" : "w-0")}>
+                {sidebarOpen && renderSettingsPanel()}
+            </aside>
+
+            {/* Preview Area */}
+            <main className="flex-1 p-4 sm:p-6 overflow-auto">
+                 {/* A4 Preview Canvas */}
+                <div className="relative mx-auto aspect-[210/297] w-full max-w-[210mm] bg-white p-8 shadow-lg print:shadow-none print:m-0 print:p-0 print:max-w-none print:h-full">
+                    <div className="absolute inset-0 z-0 flex items-center justify-center">
+                        <Image
+                            src="/Logo.jpg"
+                            alt="School Watermark"
+                            width={400}
+                            height={400}
+                            className="opacity-10"
+                        />
+                    </div>
+                    <div className="relative z-10 flex flex-col h-full">
+                        {settings.header.visible && (
+                            <header 
+                                className={cn('mb-4 p-4 border editable-region', {'outline-blue-500 outline-dashed outline-2 outline-offset-2': selectedElement === 'header'})}
+                                onClick={(e) => handleElementClick(e, 'header')}
+                            >
+                            <div className="flex items-start justify-between">
+                                <div className="flex items-center gap-4">
+                                    <div className="relative h-16 w-16">
+                                        <Image src="/Logo.jpg" alt="School Logo" layout="fill" objectFit="contain" />
+                                    </div>
+                                    <div 
+                                        className={cn('editable-region', {'outline-blue-500 outline-dashed outline-2 outline-offset-2': selectedElement === 'schoolName'})}
+                                        onClick={(e) => handleElementClick(e, 'schoolName')}
+                                    >
+                                        <div>
+                                            <h1 className="font-headline text-2xl font-bold">{schoolName}</h1>
+                                            <p className="text-sm">Katampe 2 Mpape Abuja</p>
+                                            <p className="text-sm font-semibold">Motto: Exceeding Great</p>
+                                        </div>
                                     </div>
                                 </div>
+                                <div className="text-right">
+                                <h2 className="font-bold text-lg">Student Report Card</h2>
+                                <p className="text-xs text-muted-foreground">
+                                    First Term, 2023/2024
+                                </p>
+                                </div>
                             </div>
-                            <div className="text-right">
-                            <h2 className="font-bold text-lg">Student Report Card</h2>
-                            <p className="text-xs text-muted-foreground">
-                                First Term, 2023/2024
-                            </p>
-                            </div>
-                        </div>
-                        <Separator className="my-4" />
-                    </header>
-                    )}
+                            <Separator className="my-4" />
+                        </header>
+                        )}
 
-                    {settings.studentInfo.visible && (
-                        <div
-                            className={cn('editable-region mb-4 p-4 border', {'outline-blue-500 outline-dashed outline-2 outline-offset-2': selectedElement === 'studentInfo'})}
-                            onClick={(e) => handleElementClick(e, 'studentInfo')}
-                            style={{ fontSize: `${settings.studentInfo.fontSize}px` }}
-                        >
-                            <table className="w-full">
-                                <tbody>
-                                    <tr>
-                                        <td className="font-semibold pr-2">Student Name:</td>
-                                        <td>John Doe</td>
-                                        <td className="font-semibold px-2">Admission No:</td>
-                                        <td>JKS-00123</td>
-                                    </tr>
-                                    <tr>
-                                        <td className="font-semibold pr-2">Class:</td>
-                                        <td>{selectedClassroom?.name || 'Primary 5'}</td>
-                                        <td className="font-semibold px-2">Attendance:</td>
-                                        <td>60/65 Days</td>
-                                    </tr>
-                                    <tr>
-                                        <td className="font-semibold pr-2">Class Teacher:</td>
-                                        <td colSpan={3}>Mrs. Ada</td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    )}
-                    
-                    <main className="mt-4">
-                        {settings.subjectsTable.visible && (
-                        <div 
-                            className={cn('editable-region p-4 border', {'outline-blue-500 outline-dashed outline-2 outline-offset-2': selectedElement === 'subjectsTable'})}
-                            onClick={(e) => handleElementClick(e, 'subjectsTable')}
-                        >
-                            <Table>
-                                <TableHeader>
-                                <TableRow>
-                                    <TableHead className="border">Subject</TableHead>
-                                    <TableHead className="text-center border"><div>CA1</div><div>(10)</div></TableHead>
-                                    <TableHead className="text-center border"><div>CA2</div><div>(10)</div></TableHead>
-                                    <TableHead className="text-center border"><div>CA3</div><div>(10)</div></TableHead>
-                                    <TableHead className="text-center border"><div>Exam</div><div>(70)</div></TableHead>
-                                    <TableHead className="text-center border"><div>Total</div><div>(100)</div></TableHead>
-                                    <TableHead className="border">Remark</TableHead>
-                                </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                {subjectsLoading ? (
-                                    <TableRow><TableCell colSpan={7} className="text-center border">Loading subjects...</TableCell></TableRow>
-                                ) : displayedSubjects.length > 0 ? (
-                                    displayedSubjects.map(subject => (
-                                    <TableRow key={subject.id}>
-                                        <TableCell className="border">{subject.name}</TableCell>
-                                        <TableCell className="text-center border">--</TableCell>
-                                        <TableCell className="text-center border">--</TableCell>
-                                        <TableCell className="text-center border">--</TableCell>
-                                        <TableCell className="text-center border">--</TableCell>
-                                        <TableCell className="text-center border">--</TableCell>
-                                        <TableCell className="border">--</TableCell>
+                        {settings.studentInfo.visible && (
+                            <div
+                                className={cn('editable-region mb-4 p-4 border', {'outline-blue-500 outline-dashed outline-2 outline-offset-2': selectedElement === 'studentInfo'})}
+                                onClick={(e) => handleElementClick(e, 'studentInfo')}
+                                style={{ fontSize: `${settings.studentInfo.fontSize}px` }}
+                            >
+                                <table className="w-full">
+                                    <tbody>
+                                        <tr>
+                                            <td className="font-semibold pr-2">Student Name:</td>
+                                            <td>John Doe</td>
+                                            <td className="font-semibold px-2">Admission No:</td>
+                                            <td>JKS-00123</td>
+                                        </tr>
+                                        <tr>
+                                            <td className="font-semibold pr-2">Class:</td>
+                                            <td>{selectedClassroom?.name || 'Primary 5'}</td>
+                                            <td className="font-semibold px-2">Attendance:</td>
+                                            <td>60/65 Days</td>
+                                        </tr>
+                                        <tr>
+                                            <td className="font-semibold pr-2">Class Teacher:</td>
+                                            <td colSpan={3}>Mrs. Ada</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        )}
+                        
+                        <main className="flex-grow flex flex-col mt-4">
+                            {settings.subjectsTable.visible && (
+                            <div 
+                                className={cn('editable-region p-4 border flex-grow', {'outline-blue-500 outline-dashed outline-2 outline-offset-2': selectedElement === 'subjectsTable'})}
+                                onClick={(e) => handleElementClick(e, 'subjectsTable')}
+                            >
+                                <Table>
+                                    <TableHeader>
+                                    <TableRow>
+                                        <TableHead className="border">Subject</TableHead>
+                                        <TableHead className="text-center border"><div>CA1</div><div>(10)</div></TableHead>
+                                        <TableHead className="text-center border"><div>CA2</div><div>(10)</div></TableHead>
+                                        <TableHead className="text-center border"><div>CA3</div><div>(10)</div></TableHead>
+                                        <TableHead className="text-center border"><div>Exam</div><div>(70)</div></TableHead>
+                                        <TableHead className="text-center border"><div>Total</div><div>(100)</div></TableHead>
+                                        <TableHead className="border">Remark</TableHead>
                                     </TableRow>
-                                    ))
-                                ) : (
-                                    Array.from({ length: 12 }).map((_, index) => (
-                                        <TableRow key={`placeholder-${index}`}>
-                                            <TableCell className="border">Subject Name</TableCell>
+                                    </TableHeader>
+                                    <TableBody>
+                                    {subjectsLoading ? (
+                                        <TableRow><TableCell colSpan={7} className="text-center border">Loading subjects...</TableCell></TableRow>
+                                    ) : displayedSubjects.length > 0 ? (
+                                        displayedSubjects.map(subject => (
+                                        <TableRow key={subject.id}>
+                                            <TableCell className="border">{subject.name}</TableCell>
                                             <TableCell className="text-center border">--</TableCell>
                                             <TableCell className="text-center border">--</TableCell>
                                             <TableCell className="text-center border">--</TableCell>
@@ -420,170 +411,179 @@ export default function TemplatesPage() {
                                             <TableCell className="text-center border">--</TableCell>
                                             <TableCell className="border">--</TableCell>
                                         </TableRow>
-                                    ))
-                                )}
-                                </TableBody>
-                            </Table>
-                        </div>
-                        )}
-                        {settings.summary.visible && (
-                        <div 
-                            className={cn('editable-region mt-4 flex justify-end', {'outline-blue-500 outline-dashed outline-2 outline-offset-2': selectedElement === 'summary'})}
-                            onClick={(e) => handleElementClick(e, 'summary')}
-                        >
-                            <div className="w-1/3 rounded-md border p-2 text-sm space-y-1">
-                                <div className="flex justify-between">
-                                    <span className="font-semibold">
-                                    Overall Average:
-                                    </span>
-                                    <span>75.5%</span>
-                                </div>
-                                <div className="flex justify-between">
-                                    <span className="font-semibold">Overall Grade:</span>
-                                    <span>B (Very Good)</span>
-                                </div>
-                                <div className="flex justify-between">
-                                    <span className="font-semibold">Remark:</span>
-                                    <span>Very Good</span>
-                                </div>
-                            </div>
-                        </div>
-                        )}
-                    </main>
-                    <footer 
-                        className={cn('editable-region mt-8 space-y-4 text-xs', {'outline-blue-500 outline-dashed outline-2 outline-offset-2': selectedElement === 'footer'})}
-                        onClick={(e) => handleElementClick(e, 'footer')}
-                    >
-                        {settings.softSkills.visible && (
-                        <div 
-                            className="space-y-2 p-4 border"
-                        >
-                            <h3 className="font-bold">Soft Skills Assessment</h3>
-                            <div className="grid grid-cols-2 gap-x-4">
-                            <Table>
-                                <TableBody>
-                                <TableRow>
-                                    <TableCell className="font-medium p-1">
-                                    Punctuality
-                                    </TableCell>
-                                    <TableCell className="text-right p-1">5</TableCell>
-                                </TableRow>
-                                <TableRow>
-                                    <TableCell className="font-medium p-1">
-                                    Neatness
-                                    </TableCell>
-                                    <TableCell className="text-right p-1">4</TableCell>
-                                </TableRow>
-                                <TableRow>
-                                    <TableCell className="font-medium p-1">
-                                    Honesty
-                                    </TableCell>
-                                    <TableCell className="text-right p-1">5</TableCell>
-                                </TableRow>
-                                </TableBody>
-                            </Table>
-                            <Table>
-                                <TableBody>
-                                <TableRow>
-                                    <TableCell className="font-medium p-1">
-                                    Communication
-                                    </TableCell>
-                                    <TableCell className="text-right p-1">5</TableCell>
-                                </TableRow>
-                                <TableRow>
-                                    <TableCell className="font-medium p-1">
-                                    Attentiveness
-                                    </TableCell>
-                                    <TableCell className="text-right p-1">4</TableCell>
-                                </TableRow>
-                                <TableRow>
-                                    <TableCell className="font-medium p-1">
-                                    Self Control
-                                    </TableCell>
-                                    <TableCell className="text-right p-1">5</TableCell>
-                                </TableRow>
-                                </TableBody>
-                            </Table>
-                            </div>
-                        </div>
-                        )}
-                        
-                        {settings.gradingKey.visible && (
-                            <div className="grid grid-cols-2 gap-x-8 pt-4 p-4 border">
-                                <div className="space-y-2">
-                                    <h3 className="font-bold">Grading Key</h3>
-                                    <Table>
-                                        <TableHeader>
-                                            <TableRow>
-                                                <TableHead className="p-1 h-auto">Score</TableHead>
-                                                <TableHead className="p-1 h-auto">Grade</TableHead>
-                                                <TableHead className="p-1 h-auto">Remark</TableHead>
+                                        ))
+                                    ) : (
+                                        Array.from({ length: 12 }).map((_, index) => (
+                                            <TableRow key={`placeholder-${index}`}>
+                                                <TableCell className="border">Subject Name</TableCell>
+                                                <TableCell className="text-center border">--</TableCell>
+                                                <TableCell className="text-center border">--</TableCell>
+                                                <TableCell className="text-center border">--</TableCell>
+                                                <TableCell className="text-center border">--</TableCell>
+                                                <TableCell className="text-center border">--</TableCell>
+                                                <TableCell className="border">--</TableCell>
                                             </TableRow>
-                                        </TableHeader>
-                                        <TableBody>
-                                            <TableRow><TableCell className="p-1">80 – 100</TableCell><TableCell className="p-1">A</TableCell><TableCell className="p-1">Excellent</TableCell></TableRow>
-                                            <TableRow><TableCell className="p-1">70 – 79</TableCell><TableCell className="p-1">B</TableCell><TableCell className="p-1">Very Good</TableCell></TableRow>
-                                            <TableRow><TableCell className="p-1">60 – 69</TableCell><TableCell className="p-1">C</TableCell><TableCell className="p-1">Good</TableCell></TableRow>
-                                            <TableRow><TableCell className="p-1">50 – 59</TableCell><TableCell className="p-1">D</TableCell><TableCell className="p-1">Fair</TableCell></TableRow>
-                                            <TableRow><TableCell className="p-1">0 – 49</TableCell><TableCell className="p-1">F</TableCell><TableCell className="p-1">Fail</TableCell></TableRow>
-                                        </TableBody>
-                                    </Table>
-                                </div>
-                                <div className="space-y-2">
-                                    <h3 className="font-bold">Skill Score Rating</h3>
-                                    <Table>
-                                        <TableHeader>
-                                            <TableRow>
-                                                <TableHead className="p-1 h-auto">Score</TableHead>
-                                                <TableHead className="p-1 h-auto">Remark</TableHead>
-                                            </TableRow>
-                                        </TableHeader>
-                                        <TableBody>
-                                            <TableRow><TableCell className="p-1">5</TableCell><TableCell className="p-1">Excellent</TableCell></TableRow>
-                                            <TableRow><TableCell className="p-1">4</TableCell><TableCell className="p-1">Very Good</TableCell></TableRow>
-                                            <TableRow><TableCell className="p-1">3</TableCell><TableCell className="p-1">Good</TableCell></TableRow>
-                                            <TableRow><TableCell className="p-1">2</TableCell><TableCell className="p-1">Fair</TableCell></TableRow>
-                                            <TableRow><TableCell className="p-1">1</TableCell><TableCell className="p-1">Poor</TableCell></TableRow>
-                                        </TableBody>
-                                    </Table>
+                                        ))
+                                    )}
+                                    </TableBody>
+                                </Table>
+                            </div>
+                            )}
+                            {settings.summary.visible && (
+                            <div 
+                                className={cn('editable-region mt-4 flex justify-end', {'outline-blue-500 outline-dashed outline-2 outline-offset-2': selectedElement === 'summary'})}
+                                onClick={(e) => handleElementClick(e, 'summary')}
+                            >
+                                <div className="w-1/3 rounded-md border p-2 text-sm space-y-1">
+                                    <div className="flex justify-between">
+                                        <span className="font-semibold">
+                                        Overall Average:
+                                        </span>
+                                        <span>75.5%</span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                        <span className="font-semibold">Overall Grade:</span>
+                                        <span>B (Very Good)</span>
+                                    </div>
                                 </div>
                             </div>
-                        )}
+                            )}
+                        </main>
+                        <footer 
+                            className={cn('editable-region mt-auto pt-4 space-y-4 text-xs', {'outline-blue-500 outline-dashed outline-2 outline-offset-2': selectedElement === 'footer'})}
+                            onClick={(e) => handleElementClick(e, 'footer')}
+                        >
+                            {settings.softSkills.visible && (
+                            <div 
+                                className="space-y-2 p-4 border"
+                            >
+                                <h3 className="font-bold">Soft Skills Assessment</h3>
+                                <div className="grid grid-cols-2 gap-x-4">
+                                <Table>
+                                    <TableBody>
+                                    <TableRow>
+                                        <TableCell className="font-medium p-1">
+                                        Punctuality
+                                        </TableCell>
+                                        <TableCell className="text-right p-1">5</TableCell>
+                                    </TableRow>
+                                    <TableRow>
+                                        <TableCell className="font-medium p-1">
+                                        Neatness
+                                        </TableCell>
+                                        <TableCell className="text-right p-1">4</TableCell>
+                                    </TableRow>
+                                    <TableRow>
+                                        <TableCell className="font-medium p-1">
+                                        Honesty
+                                        </TableCell>
+                                        <TableCell className="text-right p-1">5</TableCell>
+                                    </TableRow>
+                                    </TableBody>
+                                </Table>
+                                <Table>
+                                    <TableBody>
+                                    <TableRow>
+                                        <TableCell className="font-medium p-1">
+                                        Communication
+                                        </TableCell>
+                                        <TableCell className="text-right p-1">5</TableCell>
+                                    </TableRow>
+                                    <TableRow>
+                                        <TableCell className="font-medium p-1">
+                                        Attentiveness
+                                        </TableCell>
+                                        <TableCell className="text-right p-1">4</TableCell>
+                                    </TableRow>
+                                    <TableRow>
+                                        <TableCell className="font-medium p-1">
+                                        Self Control
+                                        </TableCell>
+                                        <TableCell className="text-right p-1">5</TableCell>
+                                    </TableRow>
+                                    </TableBody>
+                                </Table>
+                                </div>
+                            </div>
+                            )}
+                            
+                            {settings.gradingKey.visible && (
+                                <div className="grid grid-cols-2 gap-x-8 pt-4 p-4 border">
+                                    <div className="space-y-2">
+                                        <h3 className="font-bold">Grading Key</h3>
+                                        <Table>
+                                            <TableHeader>
+                                                <TableRow>
+                                                    <TableHead className="p-1 h-auto">Score</TableHead>
+                                                    <TableHead className="p-1 h-auto">Grade</TableHead>
+                                                    <TableHead className="p-1 h-auto">Remark</TableHead>
+                                                </TableRow>
+                                            </TableHeader>
+                                            <TableBody>
+                                                <TableRow><TableCell className="p-1">80 – 100</TableCell><TableCell className="p-1">A</TableCell><TableCell className="p-1">Excellent</TableCell></TableRow>
+                                                <TableRow><TableCell className="p-1">70 – 79</TableCell><TableCell className="p-1">B</TableCell><TableCell className="p-1">Very Good</TableCell></TableRow>
+                                                <TableRow><TableCell className="p-1">60 – 69</TableCell><TableCell className="p-1">C</TableCell><TableCell className="p-1">Good</TableCell></TableRow>
+                                                <TableRow><TableCell className="p-1">50 – 59</TableCell><TableCell className="p-1">D</TableCell><TableCell className="p-1">Fair</TableCell></TableRow>
+                                                <TableRow><TableCell className="p-1">0 – 49</TableCell><TableCell className="p-1">F</TableCell><TableCell className="p-1">Fail</TableCell></TableRow>
+                                            </TableBody>
+                                        </Table>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <h3 className="font-bold">Skill Score Rating</h3>
+                                        <Table>
+                                            <TableHeader>
+                                                <TableRow>
+                                                    <TableHead className="p-1 h-auto">Score</TableHead>
+                                                    <TableHead className="p-1 h-auto">Remark</TableHead>
+                                                </TableRow>
+                                            </TableHeader>
+                                            <TableBody>
+                                                <TableRow><TableCell className="p-1">5</TableCell><TableCell className="p-1">Excellent</TableCell></TableRow>
+                                                <TableRow><TableCell className="p-1">4</TableCell><TableCell className="p-1">Very Good</TableCell></TableRow>
+                                                <TableRow><TableCell className="p-1">3</TableCell><TableCell className="p-1">Good</TableCell></TableRow>
+                                                <TableRow><TableCell className="p-1">2</TableCell><TableCell className="p-1">Fair</TableCell></TableRow>
+                                                <TableRow><TableCell className="p-1">1</TableCell><TableCell className="p-1">Poor</TableCell></TableRow>
+                                            </TableBody>
+                                        </Table>
+                                    </div>
+                                </div>
+                            )}
 
-                        {settings.remarks.visible && (
-                        <div className="pt-4 space-y-4 p-4 border">
-                            <div>
-                                <h3 className="font-bold">Teacher's Remarks:</h3>
-                                <p className="min-h-[40px] rounded-md border-b p-1">
-                                A brilliant student...
-                                </p>
-                            </div>
-                            <div>
-                                <h3 className="font-bold">Head Teacher's Remarks:</h3>
-                                <p className="min-h-[40px] rounded-md border-b p-1">
-                                Excellent performance...
-                                </p>
-                            </div>
-                        </div>
-                        )}
-                        {settings.signatures.visible && (
-                        <div className="flex justify-between items-end pt-8 p-4 border">
-                            <div className="text-center w-36">
-                                <div className="border-t pt-1">
-                                Class Teacher's Signature
+                            {settings.remarks.visible && (
+                            <div className="pt-4 space-y-4 p-4 border">
+                                <div>
+                                    <h3 className="font-bold">Teacher's Remarks:</h3>
+                                    <p className="min-h-[40px] rounded-md border-b p-1">
+                                    A brilliant student...
+                                    </p>
+                                </div>
+                                <div>
+                                    <h3 className="font-bold">Head Teacher's Remarks:</h3>
+                                    <p className="min-h-[40px] rounded-md border-b p-1">
+                                    Excellent performance...
+                                    </p>
                                 </div>
                             </div>
-                            <div className="text-center w-36">
-                                <div className="border-t pt-1">
-                                Head Teacher's Signature
+                            )}
+                            {settings.signatures.visible && (
+                            <div className="flex justify-between items-end pt-8 p-4 border">
+                                <div className="text-center w-36">
+                                    <div className="border-t pt-1">
+                                    Class Teacher's Signature
+                                    </div>
+                                </div>
+                                <div className="text-center w-36">
+                                    <div className="border-t pt-1">
+                                    Head Teacher's Signature
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                        )}
-                    </footer>
+                            )}
+                        </footer>
+                    </div>
                 </div>
-            </div>
-        </main>
+            </main>
+        </div>
     </div>
   );
 }
