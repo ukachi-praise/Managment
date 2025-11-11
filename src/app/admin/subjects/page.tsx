@@ -10,14 +10,6 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -41,6 +33,12 @@ import {
 import { useMemoFirebase } from '@/firebase/provider';
 import { collection, query, doc } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion';
 
 type Subject = {
   id: string;
@@ -85,6 +83,29 @@ export default function SubjectsPage() {
   const isLoading = subjectsLoading || classroomsLoading || classroomSubjectsLoading;
 
   // --- Data Mapping ---
+    const subjectsMap = useMemo(
+    () => subjects?.reduce((acc, s) => ({ ...acc, [s.id]: s.name }), {} as Record<string, string>) || {},
+    [subjects]
+  );
+
+  const classSubjectMap = useMemo(() => {
+    const map: Record<string, Subject[]> = {};
+    if (!classrooms || !subjects || !classroomSubjects) return map;
+
+    classrooms.forEach(c => {
+      map[c.id] = [];
+    });
+
+    classroomSubjects.forEach(cs => {
+      const subject = subjects.find(s => s.id === cs.subjectId);
+      if (subject && map[cs.classroomId]) {
+        map[cs.classroomId].push(subject);
+      }
+    });
+
+    return map;
+  }, [classrooms, subjects, classroomSubjects]);
+
   const subjectAssignments = useMemo(() => {
     const assignments: Record<string, string[]> = {};
     if (!classroomSubjects) return assignments;
@@ -98,10 +119,6 @@ export default function SubjectsPage() {
     return assignments;
   }, [classroomSubjects]);
 
-  const classroomMap = useMemo(
-    () => classrooms?.reduce((acc, c) => ({ ...acc, [c.id]: c.name }), {} as Record<string, string>) || {},
-    [classrooms]
-  );
 
   // --- Dialog and Form Handling ---
   const handleOpenDialog = (subject: Subject | null = null) => {
@@ -142,7 +159,7 @@ export default function SubjectsPage() {
       subjectId = editingSubject.id;
       if (editingSubject.name !== subjectName) {
         const subjectRef = doc(firestore, 'subjects', subjectId);
-        updateDocumentNonBlocking(subjectRef, { name: subjectName });
+        await setDocumentNonBlocking(subjectRef, { name: subjectName }, { merge: true });
       }
     } else {
       // Add new subject
@@ -151,32 +168,36 @@ export default function SubjectsPage() {
     }
 
     // Now handle assignments
-    // This is a simplified approach. A more robust solution would use batched writes.
     const existingAssignments = classroomSubjects?.filter(cs => cs.subjectId === subjectId) || [];
+    const existingAssignmentMap = existingAssignments.reduce((acc, cs) => ({ ...acc, [cs.classroomId]: cs.id }), {} as Record<string, string>);
 
-    // Delete assignments that are no longer selected
-    existingAssignments.forEach(cs => {
-      if (!selectedClasses[cs.classroomId]) {
-        deleteDocumentNonBlocking(doc(firestore, 'classroomSubjects', cs.id));
-      }
-    });
-
-    // Add new assignments
     for (const classroomId in selectedClasses) {
-      if (selectedClasses[classroomId] && !existingAssignments.some(cs => cs.classroomId === classroomId)) {
-        addDocumentNonBlocking(collection(firestore, 'classroomSubjects'), { subjectId, classroomId });
-      }
+        const isSelected = selectedClasses[classroomId];
+        const hasExisting = !!existingAssignmentMap[classroomId];
+        
+        if (isSelected && !hasExisting) {
+            // Add new assignment
+            addDocumentNonBlocking(collection(firestore, 'classroomSubjects'), { subjectId, classroomId });
+        } else if (!isSelected && hasExisting) {
+            // Delete old assignment
+            deleteDocumentNonBlocking(doc(firestore, 'classroomSubjects', existingAssignmentMap[classroomId]));
+        }
     }
+    
+    // Also check for classes that were deselected but not in the initial loop (if they were not in selectedClasses at all)
+    existingAssignments.forEach(cs => {
+        if (!selectedClasses.hasOwnProperty(cs.classroomId)) {
+             deleteDocumentNonBlocking(doc(firestore, 'classroomSubjects', cs.id));
+        }
+    });
     
     handleCloseDialog();
   };
 
   const handleDelete = (subjectId: string) => {
     if(!firestore) return;
-    // This is a simplified delete. In a real app, you might want to confirm this action.
     deleteDocumentNonBlocking(doc(firestore, 'subjects', subjectId));
 
-    // Also delete related assignments
     const assignmentsToDelete = classroomSubjects?.filter(cs => cs.subjectId === subjectId) || [];
     assignmentsToDelete.forEach(cs => {
         deleteDocumentNonBlocking(doc(firestore, 'classroomSubjects', cs.id));
@@ -187,39 +208,40 @@ export default function SubjectsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold tracking-tight">Subjects</h1>
-        <Dialog open={open} onOpenChange={setOpen}>
+        <Dialog open={open} onOpenChange={handleCloseDialog}>
           <DialogTrigger asChild>
             <Button onClick={() => handleOpenDialog()}>
               <PlusCircle className="mr-2 h-4 w-4" />
-              Add Subject
+              Add/Edit Subject
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-[425px]">
+          <DialogContent className="sm:max-w-md">
             <DialogHeader>
               <DialogTitle>{editingSubject ? 'Edit' : 'Add New'} Subject</DialogTitle>
               <DialogDescription>
-                Enter the details for the subject and assign it to classes.
+                {editingSubject 
+                    ? 'Update the subject name and its class assignments.' 
+                    : 'Create a new subject and assign it to one or more classes.'}
               </DialogDescription>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="grid gap-4 py-4">
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="name" className="text-right">
-                  Name
+              <div className="space-y-2">
+                <Label htmlFor="name">
+                  Subject Name
                 </Label>
                 <Input
                   id="name"
                   name="name"
                   defaultValue={editingSubject?.name || ''}
                   placeholder="e.g. Creative Arts"
-                  className="col-span-3"
                   required
                 />
               </div>
-              <div className="grid grid-cols-4 items-start gap-4">
-                <Label className="text-right pt-2">Classes</Label>
-                <div className="col-span-3 space-y-2">
+              <div className="space-y-2">
+                <Label>Assign to Classes</Label>
+                <div className="space-y-2 rounded-md border p-4 max-h-60 overflow-y-auto">
                   {classroomsLoading ? (
-                     <p>Loading classes...</p>
+                     <p className="text-sm text-muted-foreground">Loading classes...</p>
                   ) : (
                     classrooms?.map((c) => (
                       <div key={c.id} className="flex items-center gap-2">
@@ -228,7 +250,7 @@ export default function SubjectsPage() {
                           checked={selectedClasses[c.id] || false}
                           onCheckedChange={(checked) => handleCheckboxChange(c.id, checked)}
                         />
-                        <Label htmlFor={`class-${c.id}`}>{c.name}</Label>
+                        <Label htmlFor={`class-${c.id}`} className="font-normal">{c.name}</Label>
                       </div>
                     ))
                   )}
@@ -242,64 +264,54 @@ export default function SubjectsPage() {
         </Dialog>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Existing Subjects</CardTitle>
-          <CardDescription>A list of all subjects offered.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Subject Name</TableHead>
-                <TableHead>Assigned Classes</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {isLoading ? (
-                Array.from({ length: 4 }).map((_, i) => (
-                  <TableRow key={i}>
-                    <TableCell><Skeleton className="h-5 w-32" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-48" /></TableCell>
-                    <TableCell className="text-right">
-                       <div className="flex justify-end gap-2">
-                        <Skeleton className="h-8 w-8" />
-                        <Skeleton className="h-8 w-8" />
+        {isLoading ? (
+             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                 {Array.from({ length: 3 }).map((_, i) => (
+                    <Card key={i}>
+                        <CardHeader><Skeleton className="h-6 w-1/2" /></CardHeader>
+                        <CardContent>
+                            <div className="space-y-2">
+                                <Skeleton className="h-5 w-3/4" />
+                                <Skeleton className="h-5 w-2/3" />
+                                <Skeleton className="h-5 w-1/2" />
+                            </div>
+                        </CardContent>
+                    </Card>
+                 ))}
+            </div>
+        ) : (
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {(classrooms || []).map((classroom) => (
+            <Card key={classroom.id}>
+              <CardHeader>
+                <CardTitle>{classroom.name}</CardTitle>
+                <CardDescription>Subjects taught in this class.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  {(classSubjectMap[classroom.id] || []).length > 0 ? (
+                    (classSubjectMap[classroom.id]).map((subject) => (
+                      <div key={subject.id} className="flex items-center justify-between rounded-md border p-2">
+                         <span className="font-medium text-sm">{subject.name}</span>
+                         <div>
+                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleOpenDialog(subject)}>
+                                <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => handleDelete(subject.id)}>
+                                <Trash2 className="h-4 w-4" />
+                            </Button>
+                         </div>
                       </div>
-                    </TableCell>
-                  </TableRow>
-                ))
-              ) : subjects && subjects.length > 0 ? (
-                subjects.map((subject) => (
-                  <TableRow key={subject.id}>
-                    <TableCell className="font-medium">{subject.name}</TableCell>
-                    <TableCell>
-                      <div className="flex flex-wrap gap-1">
-                        {(subjectAssignments[subject.id] || []).map((classId) => (
-                           <Badge key={classId} variant="secondary">{classroomMap[classId] || '...'}</Badge>
-                        ))}
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Button variant="ghost" size="icon" onClick={() => handleOpenDialog(subject)}>
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => handleDelete(subject.id)}>
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))
-              ) : (
-                <TableRow>
-                    <TableCell colSpan={3} className="h-24 text-center">No subjects found.</TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+                    ))
+                  ) : (
+                    <p className="text-sm text-muted-foreground text-center py-4">No subjects assigned.</p>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
