@@ -29,8 +29,9 @@ import {
   query,
   where,
   doc,
+  Timestamp,
 } from 'firebase/firestore';
-import { calculateGrade } from '@/lib/utils';
+import { calculateGrade, cn } from '@/lib/utils';
 import { Logo } from '../shared/logo';
 import { Separator } from '../ui/separator';
 import { useToast } from '@/hooks/use-toast';
@@ -40,12 +41,13 @@ import { Label } from '../ui/label';
 import { headTeacherRemarks } from '@/lib/data';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { Skeleton } from '../ui/skeleton';
+import { format } from 'date-fns';
+
 
 type Student = {
   id: string;
   name: string;
   dob?: string;
-  attendance?: string;
 };
 type Subject = { id: string; name: string };
 type Classroom = { id: string; name: string; teacher?: string };
@@ -56,6 +58,13 @@ type Result = {
   ca2: number;
   ca3: number;
   exam: number;
+  daysAttended: number;
+};
+type SchoolSettings = {
+    currentSession: string;
+    currentTermId: string;
+    daysSchoolOpened: number;
+    nextTermResumptionDate: Timestamp | Date | string;
 };
 type ResultEntry = {
   subject: Subject;
@@ -63,6 +72,12 @@ type ResultEntry = {
   total: number;
   grade: string;
   remark: string;
+};
+
+const termNames: Record<string, string> = {
+    term1: '1st Term',
+    term2: '2nd Term',
+    term3: '3rd Term',
 };
 
 export function ResultSheet({ studentId }: { studentId: string }) {
@@ -74,6 +89,9 @@ export function ResultSheet({ studentId }: { studentId: string }) {
   const [headTeacherRemark, setHeadTeacherRemark] = useState("Excellent Performance");
 
   // --- Data Fetching ---
+  const settingsRef = useMemoFirebase(() => (firestore ? doc(firestore, 'schoolSettings', 'current') : null), [firestore]);
+  const { data: schoolSettings, isLoading: settingsLoading } = useDoc<SchoolSettings>(settingsRef);
+
   const studentRef = useMemoFirebase(() => (firestore ? doc(firestore, 'students', studentId) : null), [firestore, studentId]);
   const { data: student, isLoading: studentLoading } = useDoc<Student>(studentRef);
 
@@ -86,10 +104,14 @@ export function ResultSheet({ studentId }: { studentId: string }) {
   const classroomRef = useMemoFirebase(() => (firestore && classroomId ? doc(firestore, 'classrooms', classroomId) : null), [firestore, classroomId]);
   const { data: classroom, isLoading: classroomLoading } = useDoc<Classroom>(classroomRef);
 
-  const resultsQuery = useMemoFirebase(() => (
-    firestore ? query(collection(firestore, 'results'), where('studentId', '==', studentId)) : null
-    // In a real app, you would also filter by termId and sessionId
-  ), [firestore, studentId]);
+  const resultsQuery = useMemoFirebase(() => {
+    if (!firestore || !schoolSettings) return null;
+    return query(collection(firestore, 'results'), 
+      where('studentId', '==', studentId),
+      where('sessionId', '==', schoolSettings.currentSession),
+      where('termId', '==', schoolSettings.currentTermId)
+    )
+  }, [firestore, studentId, schoolSettings]);
   const { data: studentResults, isLoading: resultsLoading } = useCollection<Result>(resultsQuery);
   
   const subjectsQuery = useMemoFirebase(() => (firestore ? collection(firestore, 'subjects') : null), [firestore]);
@@ -114,9 +136,11 @@ export function ResultSheet({ studentId }: { studentId: string }) {
       return { subject, scores: g, total, grade, remark };
     }).filter(Boolean) as ResultEntry[];
   }, [studentResults, allSubjects, subjectsMap]);
+  
+  const daysAttended = studentResults?.[0]?.daysAttended || 0;
 
 
-  const isLoading = studentLoading || enrollmentsLoading || classroomLoading || resultsLoading || subjectsLoading;
+  const isLoading = studentLoading || enrollmentsLoading || classroomLoading || resultsLoading || subjectsLoading || settingsLoading;
 
   const handlePrint = () => {
     window.print();
@@ -136,6 +160,18 @@ export function ResultSheet({ studentId }: { studentId: string }) {
       });
     }, 2500);
   };
+  
+    const formattedResumptionDate = useMemo(() => {
+    if (!schoolSettings?.nextTermResumptionDate) return 'N/A';
+    let date: Date;
+    if (schoolSettings.nextTermResumptionDate instanceof Timestamp) {
+      date = schoolSettings.nextTermResumptionDate.toDate();
+    } else {
+      date = new Date(schoolSettings.nextTermResumptionDate);
+    }
+    return format(date, 'PPP');
+  }, [schoolSettings]);
+
 
   const studentAvatar = PlaceHolderImages.find(p => p.id === '1');
 
@@ -203,7 +239,9 @@ export function ResultSheet({ studentId }: { studentId: string }) {
             <Logo className="text-3xl" />
             <div className="text-right">
               <h1 className="text-2xl font-bold">Student Report Card</h1>
-              <p className="text-muted-foreground">First Term, 2023/2024</p>
+              <p className="text-muted-foreground">
+                {schoolSettings?.currentTermId ? termNames[schoolSettings.currentTermId] : ''}, {schoolSettings?.currentSession}
+              </p>
             </div>
           </div>
           <Separator className="my-6" />
@@ -223,11 +261,15 @@ export function ResultSheet({ studentId }: { studentId: string }) {
                 <p>
                   <span className="font-semibold">Student ID:</span> {student.id.toUpperCase().substring(0,8)}
                 </p>
+                 <p>
+                  <span className="font-semibold">School Opened:</span> {schoolSettings?.daysSchoolOpened || 'N/A'}
+                </p>
               </div>
             </div>
             <div className="text-right">
-              <p><span className="font-semibold">Attendance:</span> {student.attendance || 'N/A'}</p>
+              <p><span className="font-semibold">Attendance:</span> {daysAttended}</p>
               <p><span className="font-semibold">Class Teacher:</span> {classroom?.teacher || 'N/A'}</p>
+               <p><span className="font-semibold">Next Term Begins:</span> {formattedResumptionDate}</p>
             </div>
           </div>
         </header>
