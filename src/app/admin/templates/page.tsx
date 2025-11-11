@@ -371,9 +371,10 @@ export default function TemplatesPage() {
                                     <StudentInfoDetail label="Class" value={selectedClassroom?.name || 'Primary 5'} />
                                     <StudentInfoDetail label="Term" value="First" />
                                     <StudentInfoDetail label="Session" value="2023/2024" />
-                                    <StudentInfoDetail label="School Open" value="65" />
                                     <StudentInfoDetail label="Days Attended" value="60" />
+                                    <StudentInfoDetail label="School Open" value="65" />
                                     <StudentInfoDetail label="Resumption" value="April 25, 2024" />
+                                    <div />
                                 </div>
                             </div>
                         )}
@@ -571,3 +572,4 @@ export default function TemplatesPage() {
     
 
     
+
