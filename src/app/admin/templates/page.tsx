@@ -119,9 +119,8 @@ export default function TemplatesPage() {
 
 
   return (
-    <div className="flex h-full flex-col gap-6 bg-muted p-4 sm:p-6 no-print">
-      {/* Top Section: Metadata and Actions */}
-      <div className="flex flex-wrap items-center justify-between gap-4">
+    <div className="h-full bg-muted print:bg-white no-print">
+      <div className="flex flex-wrap items-center justify-between gap-4 p-4 sm:p-6 no-print">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">
             Result Template Builder
@@ -162,7 +161,7 @@ export default function TemplatesPage() {
       </div>
 
       {/* Main Canvas: Preview */}
-        <div className="mx-auto aspect-[210/297] w-full max-w-[210mm] bg-white p-8 shadow-lg print:shadow-none print:m-0 print:p-0 print:max-w-none">
+        <div className="mx-auto aspect-[210/297] w-full max-w-[210mm] bg-white p-8 shadow-lg print:shadow-none print:m-0 print:p-0 print:max-w-none print:h-full">
           <header className="mb-4">
             <div className="flex items-start justify-between">
               <div className="flex items-center gap-2">
@@ -195,10 +194,10 @@ export default function TemplatesPage() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Subject</TableHead>
-                    <TableHead className="text-center">CA1 (10)</TableHead>
-                    <TableHead className="text-center">CA2 (10)</TableHead>
-                    <TableHead className="text-center">CA3 (10)</TableHead>
-                    <TableHead className="text-center">Exam (70)</TableHead>
+                    <TableHead className="text-center"><div>CA1</div><div>(10)</div></TableHead>
+                    <TableHead className="text-center"><div>CA2</div><div>(10)</div></TableHead>
+                    <TableHead className="text-center"><div>CA3</div><div>(10)</div></TableHead>
+                    <TableHead className="text-center"><div>Exam</div><div>(70)</div></TableHead>
                     <TableHead className="text-center">Total</TableHead>
                     <TableHead>Remark</TableHead>
                   </TableRow>
@@ -361,5 +360,8 @@ export default function TemplatesPage() {
         </div>
     </div>
   );
+
+    
+
 
     
