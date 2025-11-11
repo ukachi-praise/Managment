@@ -1,19 +1,17 @@
 
 'use client';
 
-import { notFound } from 'next/navigation';
+import { notFound, useParams } from 'next/navigation';
 import { ResultSheet } from '@/components/results/result-sheet';
 import { Button } from '@/components/ui/button';
 import { Printer } from 'lucide-react';
 
 
-export default function StudentResultsPage({
-  params,
-}: {
-  params: { studentId: string };
-}) {
+export default function StudentResultsPage() {
+  const params = useParams();
+  const studentId = params.studentId as string;
 
-  if (!params.studentId) {
+  if (!studentId) {
     notFound();
   }
 
@@ -37,7 +35,7 @@ export default function StudentResultsPage({
         </div>
       </div>
 
-      <ResultSheet studentId={params.studentId} />
+      <ResultSheet studentId={studentId} />
 
     </div>
   );
