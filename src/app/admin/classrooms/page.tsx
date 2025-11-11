@@ -28,23 +28,42 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { classrooms as initialClassrooms, Classroom } from '@/lib/data';
 import { PlusCircle, Edit, Trash2 } from 'lucide-react';
+import { useCollection, useFirestore, addDocumentNonBlocking } from '@/firebase';
+import { useMemoFirebase } from '@/firebase/provider';
+import { collection, query } from 'firebase/firestore';
+import { Skeleton } from '@/components/ui/skeleton';
+
+type Classroom = {
+  id: string;
+  name: string;
+  teacher?: string;
+};
 
 export default function ClassroomsPage() {
-  const [classrooms, setClassrooms] = useState<Classroom[]>(initialClassrooms);
   const [open, setOpen] = useState(false);
+  const firestore = useFirestore();
+
+  const classroomsQuery = useMemoFirebase(
+    () => (firestore ? query(collection(firestore, 'classrooms')) : null),
+    [firestore]
+  );
+  
+  const { data: classrooms, isLoading } = useCollection<Classroom>(classroomsQuery);
 
   const handleAddClassroom = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (!firestore) return;
+
     const formData = new FormData(event.currentTarget);
-    const newClassroom: Classroom = {
-      id: `c${classrooms.length + 1}`,
+    const newClassroom = {
       name: formData.get('name') as string,
       teacher: formData.get('teacher') as string,
     };
-    setClassrooms([...classrooms, newClassroom]);
+    
+    addDocumentNonBlocking(collection(firestore, 'classrooms'), newClassroom);
     setOpen(false);
+    event.currentTarget.reset();
   };
 
   return (
@@ -87,7 +106,6 @@ export default function ClassroomsPage() {
                   name="teacher"
                   placeholder="e.g. Mrs. Jane Doe"
                   className="col-span-3"
-                  required
                 />
               </div>
               <DialogFooter>
@@ -115,20 +133,39 @@ export default function ClassroomsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {classrooms.map((classroom) => (
-                <TableRow key={classroom.id}>
-                  <TableCell className="font-medium">{classroom.name}</TableCell>
-                  <TableCell>{classroom.teacher}</TableCell>
-                  <TableCell className="text-right">
-                    <Button variant="ghost" size="icon">
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
+              {isLoading ? (
+                Array.from({ length: 4 }).map((_, i) => (
+                  <TableRow key={i}>
+                    <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+                    <TableCell><Skeleton className="h-5 w-32" /></TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-2">
+                        <Skeleton className="h-8 w-8" />
+                        <Skeleton className="h-8 w-8" />
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : classrooms && classrooms.length > 0 ? (
+                classrooms.map((classroom) => (
+                  <TableRow key={classroom.id}>
+                    <TableCell className="font-medium">{classroom.name}</TableCell>
+                    <TableCell>{classroom.teacher || 'N/A'}</TableCell>
+                    <TableCell className="text-right">
+                      <Button variant="ghost" size="icon">
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : (
+                 <TableRow>
+                    <TableCell colSpan={3} className="text-center h-24">No classrooms found.</TableCell>
+                 </TableRow>
+              )}
             </TableBody>
           </Table>
         </CardContent>

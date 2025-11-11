@@ -15,9 +15,13 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { toast } from '@/hooks/use-toast';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Loader2 } from 'lucide-react';
 import Link from 'next/link';
+import { useAuth, useUser } from '@/firebase';
+import { initiateEmailSignIn } from '@/firebase/non-blocking-login';
+import { doc, getDoc } from 'firebase/firestore';
+import { useFirestore } from '@/firebase';
 
 const formSchema = z.object({
   email: z.string().email({ message: 'Please enter a valid email.' }),
@@ -27,6 +31,9 @@ const formSchema = z.object({
 export function AdminLoginForm() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
+  const auth = useAuth();
+  const { user, isUserLoading } = useUser();
+  const firestore = useFirestore();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -36,25 +43,37 @@ export function AdminLoginForm() {
     },
   });
 
+  useEffect(() => {
+    if (!isUserLoading && user) {
+      const checkAdmin = async () => {
+        const adminRoleRef = doc(firestore, 'roles_admin', user.uid);
+        const adminDoc = await getDoc(adminRoleRef);
+        if (adminDoc.exists()) {
+          toast({
+            title: 'Login Successful',
+            description: 'Welcome, Admin! Redirecting...',
+          });
+          router.push('/admin/dashboard');
+        } else {
+          // Not an admin, maybe sign out or show error
+           toast({
+            variant: 'destructive',
+            title: 'Permission Denied',
+            description: 'You do not have admin privileges.',
+          });
+          setIsLoading(false);
+        }
+      };
+      checkAdmin();
+    } else if (!isUserLoading) {
+      setIsLoading(false);
+    }
+  }, [user, isUserLoading, router, firestore]);
+  
+
   function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
-    // Simulate API call for admin
-    setTimeout(() => {
-      if (values.email === 'admin@justvision.com') {
-        toast({
-          title: 'Login Successful',
-          description: 'Welcome, Admin! Redirecting...',
-        });
-        router.push('/admin/dashboard');
-      } else {
-        toast({
-          variant: 'destructive',
-          title: 'Login Failed',
-          description: 'Invalid email or password for the admin role.',
-        });
-        setIsLoading(false);
-      }
-    }, 1000);
+    initiateEmailSignIn(auth, values.email, values.password);
   }
 
   return (
@@ -94,8 +113,8 @@ export function AdminLoginForm() {
             </FormItem>
           )}
         />
-        <Button type="submit" className="w-full" disabled={isLoading}>
-          {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+        <Button type="submit" className="w-full" disabled={isLoading || isUserLoading}>
+          {(isLoading || isUserLoading) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           Sign In
         </Button>
       </form>

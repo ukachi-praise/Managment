@@ -10,16 +10,24 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { LogOut, Settings, User } from 'lucide-react';
+import { LogOut, Settings, User as UserIcon } from 'lucide-react';
 import { SidebarTrigger } from '../ui/sidebar';
 import { useSidebar } from '../ui/sidebar';
 import { useRouter } from 'next/navigation';
-import { PlaceHolderImages } from '@/lib/placeholder-images';
+import { useAuth, useUser } from '@/firebase';
+import { signOut } from 'firebase/auth';
+import { Skeleton } from '../ui/skeleton';
 
 export function Header() {
   const { isMobile } = useSidebar();
   const router = useRouter();
-  const userAvatar = PlaceHolderImages[0];
+  const auth = useAuth();
+  const { user, isUserLoading } = useUser();
+
+  const handleLogout = async () => {
+    await signOut(auth);
+    router.push('/login');
+  };
 
   return (
     <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background/80 px-4 backdrop-blur md:px-6">
@@ -28,21 +36,24 @@ export function Header() {
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant="ghost" className="relative h-9 w-9 rounded-full">
-            <Avatar className="h-9 w-9">
-              <AvatarImage
-                src={userAvatar.imageUrl}
-                alt="User Avatar"
-                data-ai-hint={userAvatar.imageHint}
-              />
-              <AvatarFallback>U</AvatarFallback>
-            </Avatar>
+            {isUserLoading ? (
+              <Skeleton className="h-9 w-9 rounded-full" />
+            ) : (
+              <Avatar className="h-9 w-9">
+                <AvatarImage
+                  src={user?.photoURL || ''}
+                  alt={user?.displayName || 'User Avatar'}
+                />
+                <AvatarFallback>{user?.email?.charAt(0).toUpperCase() || 'U'}</AvatarFallback>
+              </Avatar>
+            )}
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent className="w-56" align="end">
-          <DropdownMenuLabel>My Account</DropdownMenuLabel>
+          <DropdownMenuLabel>{user?.displayName || user?.email}</DropdownMenuLabel>
           <DropdownMenuSeparator />
           <DropdownMenuItem>
-            <User className="mr-2" />
+            <UserIcon className="mr-2" />
             <span>Profile</span>
           </DropdownMenuItem>
           <DropdownMenuItem>
@@ -50,7 +61,7 @@ export function Header() {
             <span>Settings</span>
           </DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={() => router.push('/login')}>
+          <DropdownMenuItem onClick={handleLogout}>
             <LogOut className="mr-2" />
             <span>Log out</span>
           </DropdownMenuItem>
