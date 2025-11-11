@@ -265,7 +265,7 @@ export default function TemplatesPage() {
 
 
   const handleSaveTemplate = () => {
-    if (!firestore) return;
+    if (!firestore || !templateRef) return;
     setIsSaving(true);
     
     const templateData = {
@@ -684,6 +684,8 @@ export default function TemplatesPage() {
     </div>
   );
 }
+    
+
     
 
     
