@@ -51,6 +51,7 @@ import { useToast } from '@/hooks/use-toast';
 
 type User = {
   id: string;
+  name: string;
   email: string;
   role: 'Admin' | 'Teacher';
   assignedClassroomId?: string;
@@ -123,12 +124,13 @@ export default function StaffPage() {
 
     const formData = new FormData(event.currentTarget);
     const userId = formData.get('userId') as string;
+    const name = formData.get('name') as string;
     const email = formData.get('email') as string;
     const role = formData.get('role') as 'Admin' | 'Teacher';
     const assignedClassroomId = formData.get('assignedClassroomId') as string | undefined;
 
-    if (!userId || !email || !role) {
-        toast({ variant: 'destructive', title: 'Missing Fields', description: 'Please fill out User ID, Email, and Role.' });
+    if (!userId || !email || !role || !name) {
+        toast({ variant: 'destructive', title: 'Missing Fields', description: 'Please fill out all required fields.' });
         setIsSubmitting(false);
         return;
     }
@@ -136,12 +138,13 @@ export default function StaffPage() {
     try {
       const userDocRef = doc(firestore, 'users', userId);
       await setDocumentNonBlocking(userDocRef, {
+          name,
           email,
           role,
           assignedClassroomId: role === 'Teacher' ? assignedClassroomId : undefined,
       }, {merge: false});
 
-      toast({ title: 'Staff Added', description: `${email} has been added to the staff list.` });
+      toast({ title: 'Staff Added', description: `${name} has been added to the staff list.` });
       setAddDialogOpen(false);
       event.currentTarget.reset();
 
@@ -160,11 +163,13 @@ export default function StaffPage() {
 
     const formData = new FormData(event.currentTarget);
     const role = formData.get('role') as 'Admin' | 'Teacher';
+    const name = formData.get('name') as string;
     const assignedClassroomId = formData.get('assignedClassroomId') as string | undefined;
 
     const userDocRef = doc(firestore, 'users', editingUser.id);
     
     const updatedData = {
+        name,
         role,
         assignedClassroomId: role === 'Teacher' && assignedClassroomId !== 'unassigned' ? assignedClassroomId : undefined,
     };
@@ -217,6 +222,10 @@ export default function StaffPage() {
                         <Label htmlFor="userId">User ID</Label>
                         <Input name="userId" type="text" placeholder="Firebase User ID (uid)" required />
                     </div>
+                     <div className="space-y-2">
+                        <Label htmlFor="name">Full Name</Label>
+                        <Input name="name" type="text" placeholder="Jane Doe" required />
+                    </div>
                     <div className="space-y-2">
                         <Label htmlFor="email">Email</Label>
                         <Input name="email" type="email" placeholder="staff@example.com" required />
@@ -264,10 +273,14 @@ export default function StaffPage() {
             <DialogHeader>
               <DialogTitle>Edit Staff Member</DialogTitle>
               <DialogDescription>
-                Update the role and classroom assignment for {editingUser?.email}.
+                Update the role and classroom assignment for {editingUser?.name}.
               </DialogDescription>
             </DialogHeader>
             <form onSubmit={handleUpdateStaff} className="grid gap-4 py-4">
+               <div className="space-y-2">
+                <Label htmlFor="name">Full Name</Label>
+                <Input name="name" type="text" defaultValue={editingUser?.name} required />
+              </div>
               <div className="space-y-2">
                 <Label>Email</Label>
                 <Input value={editingUser?.email} disabled />
@@ -320,7 +333,7 @@ export default function StaffPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Email</TableHead>
+                <TableHead>Name</TableHead>
                 <TableHead>Role</TableHead>
                 <TableHead>Assigned Class</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
@@ -344,7 +357,7 @@ export default function StaffPage() {
               ) : users && users.length > 0 ? (
                 users.map((user) => (
                   <TableRow key={user.id}>
-                    <TableCell className="font-medium">{user.email}</TableCell>
+                    <TableCell className="font-medium">{user.name}</TableCell>
                     <TableCell><Badge variant={user.role === 'Admin' ? 'default' : 'secondary'}>{user.role}</Badge></TableCell>
                     <TableCell>{user.role === 'Teacher' && user.assignedClassroomId ? classroomMap[user.assignedClassroomId] || 'N/A' : 'N/A'}</TableCell>
                     <TableCell className="text-right">

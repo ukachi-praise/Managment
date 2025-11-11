@@ -7,12 +7,12 @@
       "description": "Represents a user in the system (Admin or Teacher).",
       "properties": {
         "id": { "type": "string", "description": "Unique identifier for the user." },
+        "name": { "type": "string", "description": "User's full name." },
         "email": { "type": "string", "description": "User's email for login." },
-        "username": { "type": "string", "description": "User's username for login." },
         "role": { "type": "string", "enum": ["Admin", "Teacher"], "description": "User's role in the system." },
         "assignedClassroomId": { "type": "string", "description": "For teachers, the ID of the classroom they are assigned to." }
       },
-      "required": ["id", "username", "role", "email"]
+      "required": ["id", "name", "role", "email"]
     },
     "Classroom": {
       "title": "Classroom",
