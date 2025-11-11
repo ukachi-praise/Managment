@@ -152,7 +152,7 @@ export function LoginForm() {
                 <FormLabel>Password</FormLabel>
                 <Link
                   href="/forgot-password"
-                  className="text-sm text-primary-foreground hover:underline"
+                  className="text-sm text-primary-foreground/80 hover:underline"
                 >
                   Forgot password?
                 </Link>
@@ -164,7 +164,7 @@ export function LoginForm() {
             </FormItem>
           )}
         />
-        <Button type="submit" className="w-full" disabled={isLoading}>
+        <Button variant="secondary" type="submit" className="w-full" disabled={isLoading}>
           {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           Sign In
         </Button>
