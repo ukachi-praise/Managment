@@ -99,12 +99,12 @@ export default function TemplatesPage() {
                                 <AvatarFallback>SN</AvatarFallback>
                             </Avatar>
                         </div>
-                        <div className="grid grid-cols-2 gap-x-8 gap-y-2 text-xs flex-1">
-                            {visibleFields.studentName && <div><strong>Student Name:</strong> John Doe</div>}
-                            {visibleFields.admissionNumber && <div><strong>Admission No:</strong> JKS-00123</div>}
-                            {visibleFields.classLevel && <div><strong>Class:</strong> Primary 5</div>}
-                            {visibleFields.attendance && <div><strong>Attendance:</strong> 60/65 Days</div>}
-                            {visibleFields.classTeacher && <div><strong>Class Teacher:</strong> Mrs. Ada</div>}
+                        <div className="grid grid-cols-[max-content_1fr_max-content_1fr] gap-x-4 gap-y-1 text-xs flex-1">
+                            {visibleFields.studentName && <><div className="font-semibold">Student Name:</div><div>John Doe</div></>}
+                            {visibleFields.admissionNumber && <><div className="font-semibold">Admission No:</div><div>JKS-00123</div></>}
+                            {visibleFields.classLevel && <><div className="font-semibold">Class:</div><div>Primary 5</div></>}
+                            {visibleFields.attendance && <><div className="font-semibold">Attendance:</div><div>60/65 Days</div></>}
+                            {visibleFields.classTeacher && <><div className="font-semibold">Class Teacher:</div><div>Mrs. Ada</div></>}
                         </div>
                     </div>
                 </header>
