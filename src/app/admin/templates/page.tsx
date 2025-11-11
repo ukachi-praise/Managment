@@ -1,6 +1,7 @@
 
 
 
+
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -402,7 +403,7 @@ export default function TemplatesPage() {
                                 onClick={(e) => handleElementClick(e, 'studentInfo')}
                                 style={{ fontSize: `${settings.studentInfo.fontSize}px` }}
                             >
-                                <div className="flex flex-col gap-1">
+                               <div className="flex flex-col gap-1">
                                     <div className="flex gap-4">
                                         <div className="w-1/3"><StudentInfoDetail label="Student Name" value="John Doe" /></div>
                                         <div className="w-1/3"><StudentInfoDetail label="Admission No" value="JKS-00123" /></div>
@@ -499,7 +500,7 @@ export default function TemplatesPage() {
                             <section className='border border-black p-2 flex flex-col gap-2'>
                                 {settings.softSkills.visible && (
                                 <div className="space-y-1">
-                                    <h3 className="font-bold">Soft Skills Assessment</h3>
+                                    <h3 className="font-bold text-foreground">Soft Skills Assessment</h3>
                                     <div className="grid grid-cols-3 gap-x-4">
                                         <div>
                                             <Table>
@@ -532,7 +533,7 @@ export default function TemplatesPage() {
                                 {settings.gradingKey.visible && (
                                     <div className="grid grid-cols-2 gap-x-4 pt-2">
                                         <div className="space-y-1">
-                                            <h3 className="font-bold">Grading Key</h3>
+                                            <h3 className="font-bold text-foreground">Grading Key</h3>
                                             <Table>
                                                 <TableHeader>
                                                     <TableRow>
@@ -551,7 +552,7 @@ export default function TemplatesPage() {
                                             </Table>
                                         </div>
                                         <div className="space-y-1">
-                                            <h3 className="font-bold">Skill Score Rating</h3>
+                                            <h3 className="font-bold text-foreground">Skill Score Rating</h3>
                                             <Table>
                                                 <TableHeader>
                                                     <TableRow>
@@ -574,13 +575,13 @@ export default function TemplatesPage() {
                                 {settings.remarks.visible && (
                                 <div className="pt-2 space-y-2">
                                     <div>
-                                        <h3 className="font-bold">Teacher's Remarks:</h3>
+                                        <h3 className="font-bold text-foreground">Teacher's Remarks:</h3>
                                         <p className="min-h-[25px] rounded-md border-b border-black p-1">
                                         A brilliant student...
                                         </p>
                                     </div>
                                     <div>
-                                        <h3 className="font-bold">Head Teacher's Remarks:</h3>
+                                        <h3 className="font-bold text-foreground">Head Teacher's Remarks:</h3>
                                         <p className="min-h-[25px] rounded-md border-b border-black p-1">
                                         Excellent performance...
                                         </p>
