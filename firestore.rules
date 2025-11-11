@@ -6,6 +6,18 @@ service cloud.firestore {
       return request.auth.uid == 'GOpbb9SsavhpATk1p0KNmPGGQ0S2';
     }
 
+    // A user's role is stored in their user document
+    function isTeacher() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Teacher';
+    }
+
+    // Check if the teacher is assigned to the classroom of the result they are trying to write.
+    // The result document must have a 'classroomId' field for this to work.
+    function isAssignedTeacher(classroomId) {
+      let userDoc = get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+      return isTeacher() && userDoc.assignedClassroomId == classroomId;
+    }
+
     // Admins can read the whole collection, users can read/write their own document
     match /users/{userId} {
       allow read, write: if request.auth.uid == userId;
@@ -22,6 +34,24 @@ service cloud.firestore {
 
     match /students/{docId} {
       allow read, write: if isAdmin();
+    }
+
+    match /enrollments/{docId} {
+        allow read, write: if isAdmin();
+    }
+
+    match /classroomSubjects/{docId} {
+        allow read, write: if isAdmin();
+    }
+    
+    match /headTeacherRemarks/{docId} {
+        allow read, write: if isAdmin();
+    }
+
+    match /results/{resultId} {
+      allow read, list: if isAdmin();
+      // Teachers can create/update results for their assigned class.
+      allow write: if isAssignedTeacher(request.resource.data.classroomId);
     }
   }
 }
