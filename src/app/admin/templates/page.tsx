@@ -4,9 +4,8 @@
 import { useState, useMemo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Eye, Save, RotateCcw, Upload, Settings, CaseUpper, CaseLower } from 'lucide-react';
+import { Eye, Save, RotateCcw, Upload, Settings, CaseUpper, CaseLower, BookOpenCheck } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
-import { Logo } from '@/components/shared/logo';
 import {
   Table,
   TableBody,
@@ -48,7 +47,7 @@ type ClassroomSubject = {
   subjectId: string;
 };
 
-type TemplateElement = 'header' | 'studentInfo' | 'subjectsTable' | 'summary' | 'softSkills' | 'remarks' | 'footer' | null;
+type TemplateElement = 'header' | 'studentInfo' | 'subjectsTable' | 'summary' | 'softSkills' | 'remarks' | 'footer' | 'schoolName' | null;
 
 type TemplateSettings = {
   studentInfo: {
@@ -109,6 +108,7 @@ const initialSettings: TemplateSettings = {
 
 export default function TemplatesPage() {
   const [templateName, setTemplateName] = useState('New Result Template');
+  const [schoolName, setSchoolName] = useState('JustVision Kiddies');
   const [selectedClassId, setSelectedClassId] = useState<string | null>(null);
   const [settings, setSettings] = useState<TemplateSettings>(initialSettings);
   const [selectedElement, setSelectedElement] = useState<TemplateElement>(null);
@@ -207,6 +207,22 @@ export default function TemplatesPage() {
         )
     }
 
+    if (selectedElement === 'schoolName') {
+      return (
+        <div className="p-4">
+            <h3 className="font-semibold text-lg mb-4 capitalize">School Name</h3>
+             <div className="space-y-2">
+                <Label htmlFor="school-name-input">School Name</Label>
+                <Input 
+                    id="school-name-input"
+                    value={schoolName}
+                    onChange={(e) => setSchoolName(e.target.value)}
+                />
+            </div>
+        </div>
+      )
+    }
+
     const currentSettings = settings[selectedElement];
 
     return (
@@ -287,11 +303,17 @@ export default function TemplatesPage() {
                         onClick={(e) => handleElementClick(e, 'header')}
                     >
                     <div className="flex items-start justify-between">
-                        <div className="flex items-center gap-2">
-                        <div className="flex h-16 w-16 items-center justify-center rounded-md border bg-gray-100">
-                            <Upload className="h-6 w-6 text-muted-foreground" />
-                        </div>
-                        <Logo className="text-xl" />
+                        <div 
+                            className={cn('flex items-center gap-2 text-lg font-bold editable-region', {'outline-blue-500 outline-dashed outline-2 outline-offset-2': selectedElement === 'schoolName'})}
+                            onClick={(e) => handleElementClick(e, 'schoolName')}
+                        >
+                            <div className="flex h-16 w-16 items-center justify-center rounded-md border bg-gray-100">
+                                <Upload className="h-6 w-6 text-muted-foreground" />
+                            </div>
+                            <div className="flex items-center gap-2 text-xl font-bold">
+                                <BookOpenCheck className="h-6 w-6 text-accent" />
+                                <span className="font-headline">{schoolName}</span>
+                            </div>
                         </div>
                         <div className="text-right">
                         <h1 className="font-bold text-lg">Student Report Card</h1>
