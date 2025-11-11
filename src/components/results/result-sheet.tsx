@@ -144,9 +144,9 @@ export function ResultSheet({ student, classroom }: ResultSheetProps) {
   }, [schoolSettings]);
 
   // The main loading state now correctly includes resultsLoading
-  const isLoading = resultsLoading || subjectsLoading || settingsLoading || classroomSubjectsLoading || templateLoading;
+  const isLoading = resultsLoading || subjectsLoading || settingsLoading || classroomSubjectsLoading || templateLoading || (!!resultsQuery && studentResults === null);
 
-  if (isLoading && !schoolSettings) {
+  if (isLoading) {
     return (
         <div className="relative mx-auto aspect-[210/297] w-full max-w-[210mm] bg-white p-6 shadow-lg">
             <Skeleton className="h-full w-full" />
@@ -287,5 +287,3 @@ export function ResultSheet({ student, classroom }: ResultSheetProps) {
     </div>
   );
 }
-
-    
