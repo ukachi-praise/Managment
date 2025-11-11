@@ -364,8 +364,8 @@ export default function TemplatesPage() {
   const isLoading = settingsLoading || templateLoading || classroomsLoading || subjectsLoading || classroomSubjectsLoading;
 
   return (
-    <div className="h-screen flex flex-col bg-muted print:bg-white no-print" onClick={() => setSelectedElement(null)}>
-      <header className="flex-shrink-0 bg-background border-b z-10 no-print">
+    <div className="flex h-screen flex-col bg-muted print:bg-white no-print" onClick={() => setSelectedElement(null)}>
+      <header className="flex-shrink-0 border-b bg-background z-10 no-print">
         <div className="flex flex-wrap items-center justify-between gap-4 p-4">
           <div className="flex items-center gap-2">
             <Button variant="ghost" size="icon" onClick={() => setSidebarOpen(!sidebarOpen)}>
@@ -416,7 +416,7 @@ export default function TemplatesPage() {
         </div>
       </header>
 
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex flex-1 overflow-hidden">
         {/* Settings Sidebar */}
         <aside className={cn("flex-shrink-0 bg-background border-r transition-all duration-300 overflow-y-auto no-print", sidebarOpen ? "w-72" : "w-0")}>
           {sidebarOpen && <div className="h-full">{renderSettingsPanel()}</div>}
@@ -425,7 +425,7 @@ export default function TemplatesPage() {
         {/* Preview Area */}
         <main className="flex-1 p-4 sm:p-6 overflow-auto">
           {/* A4 Preview Canvas */}
-          <div className="relative mx-auto aspect-[210/297] w-full max-w-[210mm] bg-white p-6 shadow-lg print:shadow-none print:m-0 print:p-0 print:max-w-none print:h-full text-black">
+          <div className="relative mx-auto aspect-[210/297] w-full bg-white p-6 shadow-lg print:shadow-none print:m-0 print:p-0 print:max-w-none print:h-full text-black">
             <div className="absolute inset-0 z-0 flex items-center justify-center">
               <Image
                 src="/Logo.jpg"
