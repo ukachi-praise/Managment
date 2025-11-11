@@ -226,12 +226,14 @@ export default function TemplatesPage() {
     }
 
     const currentSettings = settings[selectedElement as keyof TemplateSettings];
+    
+    if (!currentSettings) return null;
 
     return (
         <div className="p-4">
             <h3 className="font-semibold text-lg mb-4 capitalize">{selectedElement.replace(/([A-Z])/g, ' $1')} Settings</h3>
              <div className="space-y-4">
-                {currentSettings && 'fontSize' in currentSettings && (
+                {'fontSize' in currentSettings && (
                     <div className="space-y-2">
                         <Label>Font Size: {currentSettings.fontSize}px</Label>
                         <Slider 
@@ -376,7 +378,7 @@ export default function TemplatesPage() {
                             </div>
                         )}
                         
-                        <main className="flex-grow flex flex-col mt-4">
+                        <div className="flex-grow flex flex-col mt-4">
                             {settings.subjectsTable.visible && (
                             <div 
                                 className={cn('editable-region p-4 border flex-grow', {'outline-blue-500 outline-dashed outline-2 outline-offset-2': selectedElement === 'subjectsTable'})}
@@ -445,137 +447,110 @@ export default function TemplatesPage() {
                                 </div>
                             </div>
                             )}
-                        </main>
+                        </div>
                         <footer 
-                            className={cn('editable-region mt-auto pt-4 space-y-4 text-xs', {'outline-blue-500 outline-dashed outline-2 outline-offset-2': selectedElement === 'footer'})}
+                            className={cn('editable-region mt-auto pt-4 text-xs', {'outline-blue-500 outline-dashed outline-2 outline-offset-2': selectedElement === 'footer'})}
                             onClick={(e) => handleElementClick(e, 'footer')}
                         >
-                            {settings.softSkills.visible && (
-                            <div 
-                                className="space-y-2 p-4 border"
-                            >
-                                <h3 className="font-bold">Soft Skills Assessment</h3>
-                                <div className="grid grid-cols-2 gap-x-4">
-                                <Table>
-                                    <TableBody>
-                                    <TableRow>
-                                        <TableCell className="font-medium p-1">
-                                        Punctuality
-                                        </TableCell>
-                                        <TableCell className="text-right p-1">5</TableCell>
-                                    </TableRow>
-                                    <TableRow>
-                                        <TableCell className="font-medium p-1">
-                                        Neatness
-                                        </TableCell>
-                                        <TableCell className="text-right p-1">4</TableCell>
-                                    </TableRow>
-                                    <TableRow>
-                                        <TableCell className="font-medium p-1">
-                                        Honesty
-                                        </TableCell>
-                                        <TableCell className="text-right p-1">5</TableCell>
-                                    </TableRow>
-                                    </TableBody>
-                                </Table>
-                                <Table>
-                                    <TableBody>
-                                    <TableRow>
-                                        <TableCell className="font-medium p-1">
-                                        Communication
-                                        </TableCell>
-                                        <TableCell className="text-right p-1">5</TableCell>
-                                    </TableRow>
-                                    <TableRow>
-                                        <TableCell className="font-medium p-1">
-                                        Attentiveness
-                                        </TableCell>
-                                        <TableCell className="text-right p-1">4</TableCell>
-                                    </TableRow>
-                                    <TableRow>
-                                        <TableCell className="font-medium p-1">
-                                        Self Control
-                                        </TableCell>
-                                        <TableCell className="text-right p-1">5</TableCell>
-                                    </TableRow>
-                                    </TableBody>
-                                </Table>
-                                </div>
-                            </div>
-                            )}
-                            
-                            {settings.gradingKey.visible && (
-                                <div className="grid grid-cols-2 gap-x-8 pt-4 p-4 border">
-                                    <div className="space-y-2">
-                                        <h3 className="font-bold">Grading Key</h3>
+                            <section className='border p-4 flex flex-col gap-4'>
+                                {settings.softSkills.visible && (
+                                <div className="grid grid-cols-2 gap-x-8">
+                                    <div>
+                                        <h3 className="font-bold mb-2">Soft Skills Assessment</h3>
                                         <Table>
-                                            <TableHeader>
-                                                <TableRow>
-                                                    <TableHead className="p-1 h-auto">Score</TableHead>
-                                                    <TableHead className="p-1 h-auto">Grade</TableHead>
-                                                    <TableHead className="p-1 h-auto">Remark</TableHead>
-                                                </TableRow>
-                                            </TableHeader>
                                             <TableBody>
-                                                <TableRow><TableCell className="p-1">80 – 100</TableCell><TableCell className="p-1">A</TableCell><TableCell className="p-1">Excellent</TableCell></TableRow>
-                                                <TableRow><TableCell className="p-1">70 – 79</TableCell><TableCell className="p-1">B</TableCell><TableCell className="p-1">Very Good</TableCell></TableRow>
-                                                <TableRow><TableCell className="p-1">60 – 69</TableCell><TableCell className="p-1">C</TableCell><TableCell className="p-1">Good</TableCell></TableRow>
-                                                <TableRow><TableCell className="p-1">50 – 59</TableCell><TableCell className="p-1">D</TableCell><TableCell className="p-1">Fair</TableCell></TableRow>
-                                                <TableRow><TableCell className="p-1">0 – 49</TableCell><TableCell className="p-1">F</TableCell><TableCell className="p-1">Fail</TableCell></TableRow>
+                                                <TableRow><TableCell className="font-medium p-1">Punctuality</TableCell><TableCell className="text-right p-1">5</TableCell></TableRow>
+                                                <TableRow><TableCell className="font-medium p-1">Neatness</TableCell><TableCell className="text-right p-1">4</TableCell></TableRow>
+                                                <TableRow><TableCell className="font-medium p-1">Honesty</TableCell><TableCell className="text-right p-1">5</TableCell></TableRow>
                                             </TableBody>
                                         </Table>
                                     </div>
-                                    <div className="space-y-2">
-                                        <h3 className="font-bold">Skill Score Rating</h3>
-                                        <Table>
-                                            <TableHeader>
-                                                <TableRow>
-                                                    <TableHead className="p-1 h-auto">Score</TableHead>
-                                                    <TableHead className="p-1 h-auto">Remark</TableHead>
-                                                </TableRow>
-                                            </TableHeader>
-                                            <TableBody>
-                                                <TableRow><TableCell className="p-1">5</TableCell><TableCell className="p-1">Excellent</TableCell></TableRow>
-                                                <TableRow><TableCell className="p-1">4</TableCell><TableCell className="p-1">Very Good</TableCell></TableRow>
-                                                <TableRow><TableCell className="p-1">3</TableCell><TableCell className="p-1">Good</TableCell></TableRow>
-                                                <TableRow><TableCell className="p-1">2</TableCell><TableCell className="p-1">Fair</TableCell></TableRow>
-                                                <TableRow><TableCell className="p-1">1</TableCell><TableCell className="p-1">Poor</TableCell></TableRow>
-                                            </TableBody>
-                                        </Table>
+                                    <div>
+                                    <h3 className="font-bold mb-2 text-white">.</h3>
+                                    <Table>
+                                        <TableBody>
+                                            <TableRow><TableCell className="font-medium p-1">Communication</TableCell><TableCell className="text-right p-1">5</TableCell></TableRow>
+                                            <TableRow><TableCell className="font-medium p-1">Attentiveness</TableCell><TableCell className="text-right p-1">4</TableCell></TableRow>
+                                            <TableRow><TableCell className="font-medium p-1">Self Control</TableCell><TableCell className="text-right p-1">5</TableCell></TableRow>
+                                        </TableBody>
+                                    </Table>
                                     </div>
                                 </div>
-                            )}
+                                )}
+                                
+                                {settings.gradingKey.visible && (
+                                    <div className="grid grid-cols-2 gap-x-8 pt-4">
+                                        <div className="space-y-2">
+                                            <h3 className="font-bold">Grading Key</h3>
+                                            <Table>
+                                                <TableHeader>
+                                                    <TableRow>
+                                                        <TableHead className="p-1 h-auto">Score</TableHead>
+                                                        <TableHead className="p-1 h-auto">Grade</TableHead>
+                                                        <TableHead className="p-1 h-auto">Remark</TableHead>
+                                                    </TableRow>
+                                                </TableHeader>
+                                                <TableBody>
+                                                    <TableRow><TableCell className="p-1">80 – 100</TableCell><TableCell className="p-1">A</TableCell><TableCell className="p-1">Excellent</TableCell></TableRow>
+                                                    <TableRow><TableCell className="p-1">70 – 79</TableCell><TableCell className="p-1">B</TableCell><TableCell className="p-1">Very Good</TableCell></TableRow>
+                                                    <TableRow><TableCell className="p-1">60 – 69</TableCell><TableCell className="p-1">C</TableCell><TableCell className="p-1">Good</TableCell></TableRow>
+                                                    <TableRow><TableCell className="p-1">50 – 59</TableCell><TableCell className="p-1">D</TableCell><TableCell className="p-1">Fair</TableCell></TableRow>
+                                                    <TableRow><TableCell className="p-1">0 – 49</TableCell><TableCell className="p-1">F</TableCell><TableCell className="p-1">Fail</TableCell></TableRow>
+                                                </TableBody>
+                                            </Table>
+                                        </div>
+                                        <div className="space-y-2">
+                                            <h3 className="font-bold">Skill Score Rating</h3>
+                                            <Table>
+                                                <TableHeader>
+                                                    <TableRow>
+                                                        <TableHead className="p-1 h-auto">Score</TableHead>
+                                                        <TableHead className="p-1 h-auto">Remark</TableHead>
+                                                    </TableRow>
+                                                </TableHeader>
+                                                <TableBody>
+                                                    <TableRow><TableCell className="p-1">5</TableCell><TableCell className="p-1">Excellent</TableCell></TableRow>
+                                                    <TableRow><TableCell className="p-1">4</TableCell><TableCell className="p-1">Very Good</TableCell></TableRow>
+                                                    <TableRow><TableCell className="p-1">3</TableCell><TableCell className="p-1">Good</TableCell></TableRow>
+                                                    <TableRow><TableCell className="p-1">2</TableCell><TableCell className="p-1">Fair</TableCell></TableRow>
+                                                    <TableRow><TableCell className="p-1">1</TableCell><TableCell className="p-1">Poor</TableCell></TableRow>
+                                                </TableBody>
+                                            </Table>
+                                        </div>
+                                    </div>
+                                )}
 
-                            {settings.remarks.visible && (
-                            <div className="pt-4 space-y-4 p-4 border">
-                                <div>
-                                    <h3 className="font-bold">Teacher's Remarks:</h3>
-                                    <p className="min-h-[40px] rounded-md border-b p-1">
-                                    A brilliant student...
-                                    </p>
-                                </div>
-                                <div>
-                                    <h3 className="font-bold">Head Teacher's Remarks:</h3>
-                                    <p className="min-h-[40px] rounded-md border-b p-1">
-                                    Excellent performance...
-                                    </p>
-                                </div>
-                            </div>
-                            )}
-                            {settings.signatures.visible && (
-                            <div className="flex justify-between items-end pt-8 p-4 border">
-                                <div className="text-center w-36">
-                                    <div className="border-t pt-1">
-                                    Class Teacher's Signature
+                                {settings.remarks.visible && (
+                                <div className="pt-4 space-y-4">
+                                    <div>
+                                        <h3 className="font-bold">Teacher's Remarks:</h3>
+                                        <p className="min-h-[40px] rounded-md border-b p-1">
+                                        A brilliant student...
+                                        </p>
+                                    </div>
+                                    <div>
+                                        <h3 className="font-bold">Head Teacher's Remarks:</h3>
+                                        <p className="min-h-[40px] rounded-md border-b p-1">
+                                        Excellent performance...
+                                        </p>
                                     </div>
                                 </div>
-                                <div className="text-center w-36">
-                                    <div className="border-t pt-1">
-                                    Head Teacher's Signature
+                                )}
+                                {settings.signatures.visible && (
+                                <div className="flex justify-between items-end pt-8">
+                                    <div className="text-center w-36">
+                                        <div className="border-t pt-1">
+                                        Class Teacher's Signature
+                                        </div>
+                                    </div>
+                                    <div className="text-center w-36">
+                                        <div className="border-t pt-1">
+                                        Head Teacher's Signature
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                            )}
+                                )}
+                            </section>
                         </footer>
                     </div>
                 </div>
