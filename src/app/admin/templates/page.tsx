@@ -349,7 +349,7 @@ export default function TemplatesPage() {
                                     </div>
                                 </div>
                                 <div className="text-right">
-                                <h2 className="font-bold text-lg">Student Report Card</h2>
+                                <h2 className="font-bold text-base">Student Report Card</h2>
                                 <p className="text-xs text-muted-foreground">
                                     First Term, 2023/2024
                                 </p>
@@ -387,40 +387,40 @@ export default function TemplatesPage() {
                                 <Table>
                                     <TableHeader>
                                     <TableRow>
-                                        <TableHead className="border p-1 h-auto">Subject</TableHead>
-                                        <TableHead className="text-center border p-1 h-auto"><div>CA1</div><div>(10)</div></TableHead>
-                                        <TableHead className="text-center border p-1 h-auto"><div>CA2</div><div>(10)</div></TableHead>
-                                        <TableHead className="text-center border p-1 h-auto"><div>CA3</div><div>(10)</div></TableHead>
-                                        <TableHead className="text-center border p-1 h-auto"><div>Exam</div><div>(70)</div></TableHead>
-                                        <TableHead className="text-center border p-1 h-auto"><div>Total</div><div>(100)</div></TableHead>
-                                        <TableHead className="border p-1 h-auto">Remark</TableHead>
+                                        <TableHead className="border p-1 h-auto text-xs">Subject</TableHead>
+                                        <TableHead className="text-center border p-1 h-auto text-xs"><div>CA1</div><div>(10)</div></TableHead>
+                                        <TableHead className="text-center border p-1 h-auto text-xs"><div>CA2</div><div>(10)</div></TableHead>
+                                        <TableHead className="text-center border p-1 h-auto text-xs"><div>CA3</div><div>(10)</div></TableHead>
+                                        <TableHead className="text-center border p-1 h-auto text-xs"><div>Exam</div><div>(70)</div></TableHead>
+                                        <TableHead className="text-center border p-1 h-auto text-xs"><div>Total</div><div>(100)</div></TableHead>
+                                        <TableHead className="border p-1 h-auto text-xs">Remark</TableHead>
                                     </TableRow>
                                     </TableHeader>
                                     <TableBody>
                                     {subjectsLoading ? (
-                                        <TableRow><TableCell colSpan={7} className="text-center border p-1">Loading subjects...</TableCell></TableRow>
+                                        <TableRow><TableCell colSpan={7} className="text-center border p-1 text-xs">Loading subjects...</TableCell></TableRow>
                                     ) : displayedSubjects.length > 0 ? (
                                         displayedSubjects.map(subject => (
                                         <TableRow key={subject.id}>
-                                            <TableCell className="border p-1">{subject.name}</TableCell>
-                                            <TableCell className="text-center border p-1">--</TableCell>
-                                            <TableCell className="text-center border p-1">--</TableCell>
-                                            <TableCell className="text-center border p-1">--</TableCell>
-                                            <TableCell className="text-center border p-1">--</TableCell>
-                                            <TableCell className="text-center border p-1">--</TableCell>
-                                            <TableCell className="border p-1">--</TableCell>
+                                            <TableCell className="border p-1 text-xs">{subject.name}</TableCell>
+                                            <TableCell className="text-center border p-1 text-xs">--</TableCell>
+                                            <TableCell className="text-center border p-1 text-xs">--</TableCell>
+                                            <TableCell className="text-center border p-1 text-xs">--</TableCell>
+                                            <TableCell className="text-center border p-1 text-xs">--</TableCell>
+                                            <TableCell className="text-center border p-1 text-xs">--</TableCell>
+                                            <TableCell className="border p-1 text-xs">--</TableCell>
                                         </TableRow>
                                         ))
                                     ) : (
                                         Array.from({ length: 12 }).map((_, index) => (
                                             <TableRow key={`placeholder-${index}`}>
-                                                <TableCell className="border p-1">Subject Name</TableCell>
-                                                <TableCell className="text-center border p-1">--</TableCell>
-                                                <TableCell className="text-center border p-1">--</TableCell>
-                                                <TableCell className="text-center border p-1">--</TableCell>
-                                                <TableCell className="text-center border p-1">--</TableCell>
-                                                <TableCell className="text-center border p-1">--</TableCell>
-                                                <TableCell className="border p-1">--</TableCell>
+                                                <TableCell className="border p-1 text-xs">Subject Name</TableCell>
+                                                <TableCell className="text-center border p-1 text-xs">--</TableCell>
+                                                <TableCell className="text-center border p-1 text-xs">--</TableCell>
+                                                <TableCell className="text-center border p-1 text-xs">--</TableCell>
+                                                <TableCell className="text-center border p-1 text-xs">--</TableCell>
+                                                <TableCell className="text-center border p-1 text-xs">--</TableCell>
+                                                <TableCell className="border p-1 text-xs">--</TableCell>
                                             </TableRow>
                                         ))
                                     )}
@@ -485,17 +485,17 @@ export default function TemplatesPage() {
                                             <Table>
                                                 <TableHeader>
                                                     <TableRow>
-                                                        <TableHead className="p-1 h-auto">Score</TableHead>
-                                                        <TableHead className="p-1 h-auto">Grade</TableHead>
-                                                        <TableHead className="p-1 h-auto">Remark</TableHead>
+                                                        <TableHead className="p-1 h-auto text-[10px]">Score</TableHead>
+                                                        <TableHead className="p-1 h-auto text-[10px]">Grade</TableHead>
+                                                        <TableHead className="p-1 h-auto text-[10px]">Remark</TableHead>
                                                     </TableRow>
                                                 </TableHeader>
                                                 <TableBody>
-                                                    <TableRow><TableCell className="p-1 h-auto">80 – 100</TableCell><TableCell className="p-1 h-auto">A</TableCell><TableCell className="p-1 h-auto">Excellent</TableCell></TableRow>
-                                                    <TableRow><TableCell className="p-1 h-auto">70 – 79</TableCell><TableCell className="p-1 h-auto">B</TableCell><TableCell className="p-1 h-auto">Very Good</TableCell></TableRow>
-                                                    <TableRow><TableCell className="p-1 h-auto">60 – 69</TableCell><TableCell className="p-1 h-auto">C</TableCell><TableCell className="p-1 h-auto">Good</TableCell></TableRow>
-                                                    <TableRow><TableCell className="p-1 h-auto">50 – 59</TableCell><TableCell className="p-1 h-auto">D</TableCell><TableCell className="p-1 h-auto">Fair</TableCell></TableRow>
-                                                    <TableRow><TableCell className="p-1 h-auto">0 – 49</TableCell><TableCell className="p-1 h-auto">F</TableCell><TableCell className="p-1 h-auto">Fail</TableCell></TableRow>
+                                                    <TableRow><TableCell className="p-1 h-auto text-[10px]">80 – 100</TableCell><TableCell className="p-1 h-auto text-[10px]">A</TableCell><TableCell className="p-1 h-auto text-[10px]">Excellent</TableCell></TableRow>
+                                                    <TableRow><TableCell className="p-1 h-auto text-[10px]">70 – 79</TableCell><TableCell className="p-1 h-auto text-[10px]">B</TableCell><TableCell className="p-1 h-auto text-[10px]">Very Good</TableCell></TableRow>
+                                                    <TableRow><TableCell className="p-1 h-auto text-[10px]">60 – 69</TableCell><TableCell className="p-1 h-auto text-[10px]">C</TableCell><TableCell className="p-1 h-auto text-[10px]">Good</TableCell></TableRow>
+                                                    <TableRow><TableCell className="p-1 h-auto text-[10px]">50 – 59</TableCell><TableCell className="p-1 h-auto text-[10px]">D</TableCell><TableCell className="p-1 h-auto text-[10px]">Fair</TableCell></TableRow>
+                                                    <TableRow><TableCell className="p-1 h-auto text-[10px]">0 – 49</TableCell><TableCell className="p-1 h-auto text-[10px]">F</TableCell><TableCell className="p-1 h-auto text-[10px]">Fail</TableCell></TableRow>
                                                 </TableBody>
                                             </Table>
                                         </div>
@@ -504,16 +504,16 @@ export default function TemplatesPage() {
                                             <Table>
                                                 <TableHeader>
                                                     <TableRow>
-                                                        <TableHead className="p-1 h-auto">Score</TableHead>
-                                                        <TableHead className="p-1 h-auto">Remark</TableHead>
+                                                        <TableHead className="p-1 h-auto text-[10px]">Score</TableHead>
+                                                        <TableHead className="p-1 h-auto text-[10px]">Remark</TableHead>
                                                     </TableRow>
                                                 </TableHeader>
                                                 <TableBody>
-                                                    <TableRow><TableCell className="p-1 h-auto">5</TableCell><TableCell className="p-1 h-auto">Excellent</TableCell></TableRow>
-                                                    <TableRow><TableCell className="p-1 h-auto">4</TableCell><TableCell className="p-1 h-auto">Very Good</TableCell></TableRow>
-                                                    <TableRow><TableCell className="p-1 h-auto">3</TableCell><TableCell className="p-1 h-auto">Good</TableCell></TableRow>
-                                                    <TableRow><TableCell className="p-1 h-auto">2</TableCell><TableCell className="p-1 h-auto">Fair</TableCell></TableRow>
-                                                    <TableRow><TableCell className="p-1 h-auto">1</TableCell><TableCell className="p-1 h-auto">Poor</TableCell></TableRow>
+                                                    <TableRow><TableCell className="p-1 h-auto text-[10px]">5</TableCell><TableCell className="p-1 h-auto text-[10px]">Excellent</TableCell></TableRow>
+                                                    <TableRow><TableCell className="p-1 h-auto text-[10px]">4</TableCell><TableCell className="p-1 h-auto text-[10px]">Very Good</TableCell></TableRow>
+                                                    <TableRow><TableCell className="p-1 h-auto text-[10px]">3</TableCell><TableCell className="p-1 h-auto text-[10px]">Good</TableCell></TableRow>
+                                                    <TableRow><TableCell className="p-1 h-auto text-[10px]">2</TableCell><TableCell className="p-1 h-auto text-[10px]">Fair</TableCell></TableRow>
+                                                    <TableRow><TableCell className="p-1 h-auto text-[10px]">1</TableCell><TableCell className="p-1 h-auto text-[10px]">Poor</TableCell></TableRow>
                                                 </TableBody>
                                             </Table>
                                         </div>
@@ -559,6 +559,8 @@ export default function TemplatesPage() {
     </div>
   );
 }
+    
+
     
 
     
