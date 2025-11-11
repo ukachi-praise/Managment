@@ -161,24 +161,44 @@ export default function TemplatesPage() {
                             </div>
                         </div>
                     }
-                    <div className="space-y-2 pt-4">
-                        <h3 className="font-bold">Grading Key</h3>
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead className="p-1 h-auto">Score</TableHead>
-                                    <TableHead className="p-1 h-auto">Grade</TableHead>
-                                    <TableHead className="p-1 h-auto">Remark</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                <TableRow><TableCell className="p-1">80 – 100</TableCell><TableCell className="p-1">A</TableCell><TableCell className="p-1">Excellent</TableCell></TableRow>
-                                <TableRow><TableCell className="p-1">70 – 79</TableCell><TableCell className="p-1">B</TableCell><TableCell className="p-1">Very Good</TableCell></TableRow>
-                                <TableRow><TableCell className="p-1">60 – 69</TableCell><TableCell className="p-1">C</TableCell><TableCell className="p-1">Good</TableCell></TableRow>
-                                <TableRow><TableCell className="p-1">50 – 59</TableCell><TableCell className="p-1">D</TableCell><TableCell className="p-1">Fair</TableCell></TableRow>
-                                <TableRow><TableCell className="p-1">0 – 49</TableCell><TableCell className="p-1">F</TableCell><TableCell className="p-1">Fail</TableCell></TableRow>
-                            </TableBody>
-                        </Table>
+                    <div className="grid grid-cols-2 gap-x-8 pt-4">
+                        <div className="space-y-2">
+                            <h3 className="font-bold">Grading Key</h3>
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead className="p-1 h-auto">Score</TableHead>
+                                        <TableHead className="p-1 h-auto">Grade</TableHead>
+                                        <TableHead className="p-1 h-auto">Remark</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    <TableRow><TableCell className="p-1">80 – 100</TableCell><TableCell className="p-1">A</TableCell><TableCell className="p-1">Excellent</TableCell></TableRow>
+                                    <TableRow><TableCell className="p-1">70 – 79</TableCell><TableCell className="p-1">B</TableCell><TableCell className="p-1">Very Good</TableCell></TableRow>
+                                    <TableRow><TableCell className="p-1">60 – 69</TableCell><TableCell className="p-1">C</TableCell><TableCell className="p-1">Good</TableCell></TableRow>
+                                    <TableRow><TableCell className="p-1">50 – 59</TableCell><TableCell className="p-1">D</TableCell><TableCell className="p-1">Fair</TableCell></TableRow>
+                                    <TableRow><TableCell className="p-1">0 – 49</TableCell><TableCell className="p-1">F</TableCell><TableCell className="p-1">Fail</TableCell></TableRow>
+                                </TableBody>
+                            </Table>
+                        </div>
+                        <div className="space-y-2">
+                            <h3 className="font-bold">Skill Score Rating</h3>
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead className="p-1 h-auto">Score</TableHead>
+                                        <TableHead className="p-1 h-auto">Remark</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    <TableRow><TableCell className="p-1">5</TableCell><TableCell className="p-1">Excellent</TableCell></TableRow>
+                                    <TableRow><TableCell className="p-1">4</TableCell><TableCell className="p-1">Very Good</TableCell></TableRow>
+                                    <TableRow><TableCell className="p-1">3</TableCell><TableCell className="p-1">Good</TableCell></TableRow>
+                                    <TableRow><TableCell className="p-1">2</TableCell><TableCell className="p-1">Fair</TableCell></TableRow>
+                                    <TableRow><TableCell className="p-1">1</TableCell><TableCell className="p-1">Poor</TableCell></TableRow>
+                                </TableBody>
+                            </Table>
+                        </div>
                     </div>
                     {visibleFields.teacherRemark &&
                         <div className="pt-4">
