@@ -143,8 +143,9 @@ export function ResultSheet({ student, classroom }: ResultSheetProps) {
     return format(date, 'PPP');
   }, [schoolSettings]);
 
-  // The main loading state now correctly includes resultsLoading
-  const isLoading = resultsLoading || subjectsLoading || settingsLoading || classroomSubjectsLoading || templateLoading || (!!resultsQuery && studentResults === null);
+  // The main loading state now correctly includes all dependencies.
+  const isLoading = settingsLoading || templateLoading || classroomSubjectsLoading || subjectsLoading || resultsLoading || !resultsQuery;
+
 
   if (isLoading) {
     return (
@@ -287,3 +288,5 @@ export function ResultSheet({ student, classroom }: ResultSheetProps) {
     </div>
   );
 }
+
+    
