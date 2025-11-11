@@ -365,7 +365,7 @@ export default function TemplatesPage() {
                                 onClick={(e) => handleElementClick(e, 'studentInfo')}
                                 style={{ fontSize: `${settings.studentInfo.fontSize}px` }}
                             >
-                                <div className="grid grid-cols-2 gap-x-8 gap-y-1">
+                                <div className="grid grid-cols-3 gap-x-8 gap-y-1">
                                     <StudentInfoDetail label="Student Name" value="John Doe" />
                                     <StudentInfoDetail label="Admission No" value="JKS-00123" />
                                     <StudentInfoDetail label="Class" value={selectedClassroom?.name || 'Primary 5'} />
@@ -559,5 +559,6 @@ export default function TemplatesPage() {
     </div>
   );
 }
+    
 
     
