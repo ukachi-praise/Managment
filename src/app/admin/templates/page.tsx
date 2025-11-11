@@ -94,12 +94,7 @@ export default function TemplatesPage() {
                     </div>
                      <Separator className="my-4" />
                       <div className="flex items-start justify-between">
-                        <div className="flex items-center gap-4">
-                            <Avatar className="h-20 w-20 border">
-                                <AvatarFallback>SN</AvatarFallback>
-                            </Avatar>
-                        </div>
-                        <div className="grid grid-cols-[max-content_1fr_max-content_1fr] gap-x-4 gap-y-1 text-xs flex-1">
+                        <div className="grid grid-cols-[max-content_1fr] gap-x-4 gap-y-1 text-xs flex-1 ml-4">
                             {visibleFields.studentName && <><div className="font-semibold">Student Name:</div><div>John Doe</div></>}
                             {visibleFields.admissionNumber && <><div className="font-semibold">Admission No:</div><div>JKS-00123</div></>}
                             {visibleFields.classLevel && <><div className="font-semibold">Class:</div><div>Primary 5</div></>}
