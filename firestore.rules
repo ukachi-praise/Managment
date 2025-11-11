@@ -8,18 +8,20 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Helper Functions
+    // --- Helper Functions ---
     function isSignedIn() {
       return request.auth != null;
     }
 
     function getUserData() {
+        // Safely get user data. Returns null if the document doesn't exist.
         return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
     }
 
     function isAdmin() {
-      // Grant admin if the UID is the hardcoded admin UID OR if their user document has the 'Admin' role.
-      return request.auth.uid == 'GOpbb9SsavhpATk1p0KNmPGGQ0S2' || getUserData().role == 'Admin';
+      // An admin is either the hardcoded super-admin UID or a user whose document
+      // in the /users collection has the role property set to 'Admin'.
+      return request.auth.uid == 'GOpbb9SsavhpATk1p0KNmPGGQ0S2' || (isSignedIn() && getUserData().role == 'Admin');
     }
 
     function isTeacher() {
@@ -39,16 +41,17 @@ service cloud.firestore {
         return isTeacher() && teacherClassroomId() == classroomId;
     }
 
-    // User profiles
+    // --- Collection Rules ---
+
+    // User profiles can be read or updated by the owner or an admin.
+    // Only admins can list or delete users.
     match /users/{userId} {
-      allow get: if isOwner(userId) || isAdmin();
-      allow list: if isAdmin();
+      allow get, update: if isOwner(userId) || isAdmin();
+      allow list, delete: if isAdmin();
       // Allow users to create their own profile, or admins to create any profile.
       allow create: if isOwner(userId) || isAdmin();
-      allow update: if isOwner(userId) || isAdmin();
-      allow delete: if isAdmin();
     }
-
+    
     // This single rule covers all collections that should be exclusively managed by Admins.
     // It is much cleaner and less error-prone than individual rules for each.
     match /{collection}/{docId} where collection in ['classrooms', 'subjects', 'classroomSubjects', 'sessions', 'enrollments', 'students', 'nextTermInfo', 'resultTemplates', 'headTeacherRemarks', 'auditLogs', 'roles_admin'] {
@@ -67,6 +70,7 @@ service cloud.firestore {
     match /results/{resultId} {
       allow get: if isAdmin() || (isTeacher() && resource.data.classroomId == teacherClassroomId());
       // A teacher can only list results that match their assigned classroom ID.
+      // This requires the client to include a `where('classroomId', '==', classroomId)` clause.
       allow list: if isAdmin() || (isTeacher() && request.query.where[0][2] == teacherClassroomId());
       // Only the assigned teacher can create or update results for their classroom.
       allow write: if isTeacher() && request.resource.data.classroomId == teacherClassroomId();
@@ -74,8 +78,8 @@ service cloud.firestore {
     }
     
     // Result summaries follow the same rules as results.
+    // Requires classroomId to be denormalized on the record for teacher access.
     match /resultSummaries/{summaryId} {
-        // Denormalize classroomId onto this record for this rule to work for teachers.
         allow get: if isAdmin() || (isTeacher() && resource.data.classroomId == teacherClassroomId());
         allow list: if isAdmin() || (isTeacher() && request.query.where[0][2] == teacherClassroomId());
         allow write: if isTeacher() && request.resource.data.classroomId == teacherClassroomId();
@@ -83,8 +87,8 @@ service cloud.firestore {
     }
 
     // Soft skill results follow the same rules as results.
+    // Requires classroomId to be denormalized on the record for teacher access.
     match /softSkillResults/{softSkillResultId} {
-        // Denormalize classroomId onto this record for this rule to work for teachers.
         allow get: if isAdmin() || (isTeacher() && resource.data.classroomId == teacherClassroomId());
         allow list: if isAdmin() || (isTeacher() && request.query.where[0][2] == teacherClassroomId());
         allow write: if isTeacher() && request.resource.data.classroomId == teacherClassroomId();
