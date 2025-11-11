@@ -39,19 +39,15 @@ import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import {
   useFirestore,
-  useCollection,
   useDoc,
   setDocumentNonBlocking,
 } from '@/firebase';
 import { useMemoFirebase } from '@/firebase/provider';
-import { doc, collection, query } from 'firebase/firestore';
+import { doc } from 'firebase/firestore';
 import { useEffect } from 'react';
 
-type AcademicSession = { id: string; name: string };
-type Term = { id: string; name: string };
-
 const formSchema = z.object({
-  currentSessionId: z.string().min(1, 'Please select a session.'),
+  currentSession: z.string().min(1, 'Please enter a session name.'),
   currentTermId: z.string().min(1, 'Please select a term.'),
   daysSchoolOpened: z.coerce.number().min(0, 'Must be a positive number.'),
   nextTermResumptionDate: z.date({
@@ -73,17 +69,11 @@ export default function InfoPage() {
   const { data: settingsData, isLoading: settingsLoading } =
     useDoc<SchoolSettings>(settingsRef);
 
-  const sessionsQuery = useMemoFirebase(
-    () => (firestore ? query(collection(firestore, 'sessions')) : null),
-    [firestore]
-  );
-  const { data: sessions, isLoading: sessionsLoading } =
-    useCollection<AcademicSession>(sessionsQuery);
 
   const form = useForm<SchoolSettings>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-        currentSessionId: '',
+        currentSession: '',
         currentTermId: '',
         daysSchoolOpened: 0,
     },
@@ -109,7 +99,7 @@ export default function InfoPage() {
     });
   };
 
-  const isLoading = form.formState.isSubmitting || settingsLoading || sessionsLoading;
+  const isLoading = form.formState.isSubmitting || settingsLoading;
 
   return (
     <div className="space-y-6">
@@ -128,28 +118,13 @@ export default function InfoPage() {
               <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                 <FormField
                   control={form.control}
-                  name="currentSessionId"
+                  name="currentSession"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Current Academic Session</FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        value={field.value}
-                        disabled={sessionsLoading}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select a session" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {sessions?.map((session) => (
-                            <SelectItem key={session.id} value={session.id}>
-                              {session.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <FormControl>
+                        <Input placeholder="e.g. 2025/2026" {...field} />
+                      </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}

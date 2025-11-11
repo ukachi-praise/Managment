@@ -191,12 +191,12 @@
       "type": "object",
       "description": "Global settings for the school, like current term and session.",
       "properties": {
-        "currentSessionId": { "type": "string" },
+        "currentSession": { "type": "string" },
         "currentTermId": { "type": "string" },
         "daysSchoolOpened": { "type": "number" },
         "nextTermResumptionDate": { "type": "string", "format": "date" }
       },
-      "required": ["currentSessionId", "currentTermId"]
+      "required": ["currentSession", "currentTermId"]
     }
   },
   "auth": {
