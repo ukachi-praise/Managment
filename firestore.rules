@@ -1,3 +1,4 @@
+
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -33,7 +34,9 @@ service cloud.firestore {
     }
 
     match /students/{docId} {
-      allow read, write: if isAdmin();
+      allow write: if isAdmin();
+      // Admins and teachers can read student data.
+      allow read: if request.auth != null;
     }
 
     match /enrollments/{docId} {
