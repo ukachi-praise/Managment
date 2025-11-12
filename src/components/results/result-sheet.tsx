@@ -211,7 +211,7 @@ export function ResultSheet({ student, classroom }: ResultSheetProps) {
             </div>
         )}
         
-        <div>
+        <div className="flex-grow">
             {settings.subjectsTable.visible && (
                 <div className="border border-black">
                     <Table>
@@ -266,7 +266,7 @@ export function ResultSheet({ student, classroom }: ResultSheetProps) {
             )}
         </div>
         
-        <footer className="mt-auto pt-2 text-xs">
+        <footer className="pt-2 text-xs">
             <section className='border border-black p-2 flex flex-col gap-2'>
                 {settings.softSkills.visible && (
                   <div className="space-y-1">

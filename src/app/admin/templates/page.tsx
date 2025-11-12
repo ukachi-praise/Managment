@@ -499,7 +499,7 @@ export default function TemplatesPage() {
                 </div>
               )}
 
-              <div>
+              <div className="flex-grow">
                 {settings.subjectsTable.visible && (
                   <div
                     className={cn('editable-region border border-black', { 'outline-blue-500 outline-dashed outline-2 outline-offset-2': selectedElement === 'subjectsTable' })}
@@ -570,7 +570,7 @@ export default function TemplatesPage() {
                 )}
               </div>
               <footer
-                className={cn('editable-region mt-auto pt-2 text-xs', { 'outline-blue-500 outline-dashed outline-2 outline-offset-2': selectedElement === 'footer' })}
+                className={cn('editable-region pt-2 text-xs', { 'outline-blue-500 outline-dashed outline-2 outline-offset-2': selectedElement === 'footer' })}
                 onClick={(e) => handleElementClick(e, 'footer')}
               >
                 <section className='border border-black p-2 flex flex-col gap-2'>
