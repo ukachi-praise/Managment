@@ -98,7 +98,7 @@ type SavedTemplateData = {
 
 const initialSettings: TemplateSettings = {
   studentInfo: {
-    fontSize: 12,
+    fontSize: 10,
     visible: true,
   },
   header: {
@@ -499,7 +499,7 @@ export default function TemplatesPage() {
                 </div>
               )}
 
-              <div className="flex flex-col flex-grow">
+              <div>
                 {settings.subjectsTable.visible && (
                   <div
                     className={cn('editable-region border border-black', { 'outline-blue-500 outline-dashed outline-2 outline-offset-2': selectedElement === 'subjectsTable' })}

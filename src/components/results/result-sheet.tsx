@@ -42,7 +42,7 @@ type ResultEntry = { subjectName: string; ca1: number; ca2: number; ca3: number;
 
 const termNames: Record<string, string> = { term1: '1st Term', term2: '2nd Term', term3: '3rd Term' };
 
-const initialSettings: TemplateSettings = { studentInfo: { fontSize: 12, visible: true }, header: { visible: true }, subjectsTable: { visible: true }, summary: { visible: true }, softSkills: { visible: true }, gradingKey: { visible: true }, remarks: { visible: true }, signatures: { visible: true } };
+const initialSettings: TemplateSettings = { studentInfo: { fontSize: 10, visible: true }, header: { visible: true }, subjectsTable: { visible: true }, summary: { visible: true }, softSkills: { visible: true }, gradingKey: { visible: true }, remarks: { visible: true }, signatures: { visible: true } };
 
 // --- HELPER COMPONENTS ---
 const StudentInfoDetail = ({ label, value, isLoading = false }: { label: string, value?: string | React.ReactNode, isLoading?: boolean }) => (
@@ -211,7 +211,7 @@ export function ResultSheet({ student, classroom }: ResultSheetProps) {
             </div>
         )}
         
-        <div className="flex flex-col flex-grow">
+        <div>
             {settings.subjectsTable.visible && (
                 <div className="border border-black">
                     <Table>
