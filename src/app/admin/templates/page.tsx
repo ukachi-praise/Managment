@@ -443,7 +443,7 @@ export default function TemplatesPage() {
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex items-center gap-4">
-                      <div className="relative h-16 w-16">
+                      <div className="relative h-20 w-20">
                         <Image src="/Logo.jpg" alt="School Logo" layout="fill" objectFit="contain" />
                       </div>
                       <div
@@ -451,18 +451,18 @@ export default function TemplatesPage() {
                         onClick={(e) => handleElementClick(e, 'schoolName')}
                       >
                         <div className="text-black">
-                          <h1 className="font-headline text-xl font-bold text-black">{templateLoading ? <Skeleton className="h-6 w-48" /> : schoolName}</h1>
-                          <p className="text-sm text-black">Katampe 2 Mpape Abuja</p>
-                          <p className="text-sm font-semibold text-black">Motto: Exceeding Great</p>
+                          <h1 className="font-headline text-2xl font-bold text-black">{templateLoading ? <Skeleton className="h-6 w-48" /> : schoolName}</h1>
+                          <p className="text-base text-black">Katampe 2 Mpape Abuja</p>
+                          <p className="text-base font-semibold text-black">Motto: Exceeding Great</p>
                         </div>
                       </div>
                     </div>
                     <div className="text-right">
-                      <h2 className="font-bold text-base text-black">Student Report Card</h2>
+                      <h2 className="font-bold text-lg text-black">Student Report Card</h2>
                       {settingsLoading ? (
                         <Skeleton className="h-4 w-28 mt-1" />
                       ) : (
-                        <p className="text-xs text-zinc-600">
+                        <p className="text-sm text-zinc-600">
                           {schoolSettings?.currentTermId ? termNames[schoolSettings.currentTermId] : 'N/A'}, {schoolSettings?.currentSession}
                         </p>
                       )}
@@ -689,5 +689,7 @@ export default function TemplatesPage() {
     </div>
   );
 }
+
+    
 
     
