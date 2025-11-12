@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -41,11 +42,11 @@ type ResultEntry = { subjectName: string; ca1: number; ca2: number; ca3: number;
 
 const termNames: Record<string, string> = { term1: '1st Term', term2: '2nd Term', term3: '3rd Term' };
 
-const initialSettings: TemplateSettings = { studentInfo: { fontSize: 10, visible: true }, header: { visible: true }, subjectsTable: { visible: true }, summary: { visible: true }, softSkills: { visible: true }, gradingKey: { visible: true }, remarks: { visible: true }, signatures: { visible: true } };
+const initialSettings: TemplateSettings = { studentInfo: { fontSize: 12, visible: true }, header: { visible: true }, subjectsTable: { visible: true }, summary: { visible: true }, softSkills: { visible: true }, gradingKey: { visible: true }, remarks: { visible: true }, signatures: { visible: true } };
 
 // --- HELPER COMPONENTS ---
 const StudentInfoDetail = ({ label, value, isLoading = false }: { label: string, value?: string | React.ReactNode, isLoading?: boolean }) => (
-    <div className="flex text-xs">
+    <div className="flex text-sm">
         <span className="font-semibold w-[80px] shrink-0">{label}:</span>
         <span className="flex-1 border-b border-dotted border-black">
             {isLoading ? <Skeleton className="h-4 w-24" /> : value}
@@ -210,7 +211,7 @@ export function ResultSheet({ student, classroom }: ResultSheetProps) {
             </div>
         )}
         
-        <div className="flex flex-col">
+        <div className="flex flex-col flex-grow">
             {settings.subjectsTable.visible && (
                 <div className="border border-black">
                     <Table>
@@ -226,17 +227,31 @@ export function ResultSheet({ student, classroom }: ResultSheetProps) {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {resultEntries.map(entry => (
-                                <TableRow key={entry.subjectName}>
-                                    <TableCell className="border-b border-r border-black p-1 text-sm">{entry.subjectName}</TableCell>
-                                    <TableCell className="text-center border-b border-r border-black p-1 text-sm">{entry.ca1}</TableCell>
-                                    <TableCell className="text-center border-b border-r border-black p-1 text-sm">{entry.ca2}</TableCell>
-                                    <TableCell className="text-center border-b border-r border-black p-1 text-sm">{entry.ca3}</TableCell>
-                                    <TableCell className="text-center border-b border-r border-black p-1 text-sm">{entry.exam}</TableCell>
-                                    <TableCell className="text-center border-b border-r border-black p-1 text-sm">{entry.total}</TableCell>
-                                    <TableCell className="border-b border-black p-1 text-sm">{entry.remark}</TableCell>
-                                </TableRow>
-                            ))}
+                           {resultEntries.length > 0 ? (
+                                resultEntries.map(entry => (
+                                    <TableRow key={entry.subjectName}>
+                                        <TableCell className="border-b border-r border-black p-1 text-sm">{entry.subjectName}</TableCell>
+                                        <TableCell className="text-center border-b border-r border-black p-1 text-sm">{entry.ca1}</TableCell>
+                                        <TableCell className="text-center border-b border-r border-black p-1 text-sm">{entry.ca2}</TableCell>
+                                        <TableCell className="text-center border-b border-r border-black p-1 text-sm">{entry.ca3}</TableCell>
+                                        <TableCell className="text-center border-b border-r border-black p-1 text-sm">{entry.exam}</TableCell>
+                                        <TableCell className="text-center border-b border-r border-black p-1 text-sm">{entry.total}</TableCell>
+                                        <TableCell className="border-b border-black p-1 text-sm">{entry.remark}</TableCell>
+                                    </TableRow>
+                                ))
+                            ) : (
+                                Array.from({ length: 12 }).map((_, index) => (
+                                    <TableRow key={`placeholder-${index}`}>
+                                      <TableCell className="border-b border-r border-black p-1 text-sm">&nbsp;</TableCell>
+                                      <TableCell className="text-center border-b border-r border-black p-1 text-sm">&nbsp;</TableCell>
+                                      <TableCell className="text-center border-b border-r border-black p-1 text-sm">&nbsp;</TableCell>
+                                      <TableCell className="text-center border-b border-r border-black p-1 text-sm">&nbsp;</TableCell>
+                                      <TableCell className="text-center border-b border-r border-black p-1 text-sm">&nbsp;</TableCell>
+                                      <TableCell className="text-center border-b border-r border-black p-1 text-sm">&nbsp;</TableCell>
+                                      <TableCell className="border-b border-black p-1 text-sm">&nbsp;</TableCell>
+                                    </TableRow>
+                                ))
+                            )}
                         </TableBody>
                     </Table>
                 </div>

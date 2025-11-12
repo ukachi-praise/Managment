@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -97,7 +98,7 @@ type SavedTemplateData = {
 
 const initialSettings: TemplateSettings = {
   studentInfo: {
-    fontSize: 10,
+    fontSize: 12,
     visible: true,
   },
   header: {
@@ -353,7 +354,7 @@ export default function TemplatesPage() {
   }
 
   const StudentInfoDetail = ({ label, value, isLoading = false }: { label: string, value?: string | React.ReactNode, isLoading?: boolean }) => (
-    <div className="flex text-xs">
+    <div className="flex text-sm">
         <span className="font-semibold w-[80px] shrink-0">{label}:</span>
         <span className="flex-1 border-b border-dotted border-black">
             {isLoading ? <Skeleton className="h-4 w-24" /> : value}
@@ -498,7 +499,7 @@ export default function TemplatesPage() {
                 </div>
               )}
 
-              <div className="flex flex-col">
+              <div className="flex flex-col flex-grow">
                 {settings.subjectsTable.visible && (
                   <div
                     className={cn('editable-region border border-black', { 'outline-blue-500 outline-dashed outline-2 outline-offset-2': selectedElement === 'subjectsTable' })}
