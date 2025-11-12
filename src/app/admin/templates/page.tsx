@@ -354,7 +354,7 @@ export default function TemplatesPage() {
   }
 
   const StudentInfoDetail = ({ label, value, isLoading = false }: { label: string, value?: string | React.ReactNode, isLoading?: boolean }) => (
-    <div className="flex text-sm">
+    <div className="flex text-xs">
         <span className="font-semibold w-[80px] shrink-0">{label}:</span>
         <span className="flex-1 border-b border-dotted border-black">
             {isLoading ? <Skeleton className="h-4 w-24" /> : value}
@@ -426,7 +426,7 @@ export default function TemplatesPage() {
         {/* Preview Area */}
         <main className="flex-1 p-4 sm:p-6 overflow-auto">
           {/* A4 Preview Canvas */}
-          <div className="relative mx-auto aspect-[210/297] w-full bg-white p-6 shadow-lg print:shadow-none print:m-0 print:p-0 print:max-w-none print:h-full text-black">
+          <div className="relative mx-auto aspect-[210/297] w-full max-w-[210mm] bg-white p-6 shadow-lg print:shadow-none print:m-0 print:p-0 print:max-w-none print:h-full text-black">
             <div className="absolute inset-0 z-0 flex items-center justify-center">
               <Image
                 src="/Logo.jpg"
@@ -690,7 +690,3 @@ export default function TemplatesPage() {
     </div>
   );
 }
-
-    
-
-    
