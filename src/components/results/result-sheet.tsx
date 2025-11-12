@@ -162,11 +162,11 @@ export function ResultSheet({ student, classroom }: ResultSheetProps) {
 
   // --- RENDER ---
   return (
-    <div className="relative mx-auto aspect-[210/297] w-full max-w-[210mm] bg-white p-6 shadow-lg print:shadow-none print:m-0 print:p-0 print:max-w-none print:h-full text-black">
+    <div className="relative mx-auto aspect-[210/297] w-full max-w-[210mm] bg-white shadow-lg print:shadow-none print:m-0 print:p-0 print:max-w-none print:h-full text-black">
       <div className="absolute inset-0 z-0 flex items-center justify-center">
           <Image src="/Logo.jpg" alt="School Watermark" width={400} height={400} className="opacity-10" />
       </div>
-      <div className="relative z-10 flex flex-col h-full">
+      <div className="relative z-10 flex h-full flex-col p-6">
         {settings.header.visible && (
             <header className="mb-4 p-2 border border-black">
                 <div className="flex items-start justify-between">
@@ -189,81 +189,83 @@ export function ResultSheet({ student, classroom }: ResultSheetProps) {
             </header>
         )}
 
-        {settings.studentInfo.visible && (
-            <div className="mb-4 p-2 border border-black" style={{ fontSize: `${settings.studentInfo.fontSize}px` }}>
-                <div className="flex flex-col gap-1">
-                    <div className="flex gap-4">
-                        <div className="w-1/3"><StudentInfoDetail label="Student Name" value={student.name} /></div>
-                        <div className="w-1/3"><StudentInfoDetail label="Admission No" value={student.admissionNumber} /></div>
-                        <div className="w-1/3"><StudentInfoDetail label="Class" value={classroom?.name} /></div>
+        <div className="flex-grow flex flex-col overflow-hidden">
+            <div className="overflow-auto">
+                {settings.studentInfo.visible && (
+                    <div className="mb-4 p-2 border border-black" style={{ fontSize: `${settings.studentInfo.fontSize}px` }}>
+                        <div className="flex flex-col gap-1">
+                            <div className="flex gap-4">
+                                <div className="w-1/3"><StudentInfoDetail label="Student Name" value={student.name} /></div>
+                                <div className="w-1/3"><StudentInfoDetail label="Admission No" value={student.admissionNumber} /></div>
+                                <div className="w-1/3"><StudentInfoDetail label="Class" value={classroom?.name} /></div>
+                            </div>
+                            <div className="flex gap-4">
+                                <div className="w-1/3"><StudentInfoDetail label="Term" value={schoolSettings?.currentTermId ? termNames[schoolSettings.currentTermId] : undefined} /></div>
+                                <div className="w-1/3"><StudentInfoDetail label="Session" value={schoolSettings?.currentSession} /></div>
+                                <div className="w-1/3"><StudentInfoDetail label="Days Attended" value={studentResults?.[0]?.daysAttended?.toString() || '0'} /></div>
+                            </div>
+                            <div className="flex gap-4">
+                                <div className="w-1/3"><StudentInfoDetail label="School Open" value={schoolSettings?.daysSchoolOpened.toString()} /></div>
+                                <div className="w-1/3"><StudentInfoDetail label="Resumption" value={formattedResumptionDate} /></div>
+                                <div className="w-1/3"><StudentInfoDetail label="Class Teacher" value={classroom?.teacherName || 'N/A'} /></div>
+                            </div>
+                        </div>
                     </div>
-                    <div className="flex gap-4">
-                        <div className="w-1/3"><StudentInfoDetail label="Term" value={schoolSettings?.currentTermId ? termNames[schoolSettings.currentTermId] : undefined} /></div>
-                        <div className="w-1/3"><StudentInfoDetail label="Session" value={schoolSettings?.currentSession} /></div>
-                        <div className="w-1/3"><StudentInfoDetail label="Days Attended" value={studentResults?.[0]?.daysAttended?.toString() || '0'} /></div>
+                )}
+                
+                {settings.subjectsTable.visible && (
+                    <div className="border border-black">
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead className="border border-black p-1 h-auto text-sm text-black">Subject</TableHead>
+                                    <TableHead className="text-center border border-black p-1 h-auto text-sm text-black">CA1 (10)</TableHead>
+                                    <TableHead className="text-center border border-black p-1 h-auto text-sm text-black">CA2 (10)</TableHead>
+                                    <TableHead className="text-center border border-black p-1 h-auto text-sm text-black">CA3 (10)</TableHead>
+                                    <TableHead className="text-center border border-black p-1 h-auto text-sm text-black">Exam (70)</TableHead>
+                                    <TableHead className="text-center border border-black p-1 h-auto text-sm text-black">Total (100)</TableHead>
+                                    <TableHead className="border border-black p-1 h-auto text-sm text-black">Remark</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                            {resultEntries.length > 0 ? (
+                                    resultEntries.map(entry => (
+                                        <TableRow key={entry.subjectName}>
+                                            <TableCell className="border-b border-r border-black p-1 text-sm">{entry.subjectName}</TableCell>
+                                            <TableCell className="text-center border-b border-r border-black p-1 text-sm">{entry.ca1}</TableCell>
+                                            <TableCell className="text-center border-b border-r border-black p-1 text-sm">{entry.ca2}</TableCell>
+                                            <TableCell className="text-center border-b border-r border-black p-1 text-sm">{entry.ca3}</TableCell>
+                                            <TableCell className="text-center border-b border-r border-black p-1 text-sm">{entry.exam}</TableCell>
+                                            <TableCell className="text-center border-b border-r border-black p-1 text-sm">{entry.total}</TableCell>
+                                            <TableCell className="border-b border-black p-1 text-sm">{entry.remark}</TableCell>
+                                        </TableRow>
+                                    ))
+                                ) : (
+                                    Array.from({ length: 12 }).map((_, index) => (
+                                        <TableRow key={`placeholder-${index}`}>
+                                        <TableCell className="border-b border-r border-black p-1 text-sm">&nbsp;</TableCell>
+                                        <TableCell className="text-center border-b border-r border-black p-1 text-sm">&nbsp;</TableCell>
+                                        <TableCell className="text-center border-b border-r border-black p-1 text-sm">&nbsp;</TableCell>
+                                        <TableCell className="text-center border-b border-r border-black p-1 text-sm">&nbsp;</TableCell>
+                                        <TableCell className="text-center border-b border-r border-black p-1 text-sm">&nbsp;</TableCell>
+                                        <TableCell className="text-center border-b border-r border-black p-1 text-sm">&nbsp;</TableCell>
+                                        <TableCell className="border-b border-black p-1 text-sm">&nbsp;</TableCell>
+                                        </TableRow>
+                                    ))
+                                )}
+                            </TableBody>
+                        </Table>
                     </div>
-                    <div className="flex gap-4">
-                        <div className="w-1/3"><StudentInfoDetail label="School Open" value={schoolSettings?.daysSchoolOpened.toString()} /></div>
-                        <div className="w-1/3"><StudentInfoDetail label="Resumption" value={formattedResumptionDate} /></div>
-                        <div className="w-1/3"><StudentInfoDetail label="Class Teacher" value={classroom?.teacherName || 'N/A'} /></div>
+                )}
+                {settings.summary.visible && (
+                    <div className="mt-2 flex justify-end">
+                        <div className="w-1/2 rounded-md border border-black p-2 text-xs space-y-1">
+                            <div className="flex justify-between"><span className="font-semibold text-black">Overall Average:</span><span className="text-black">{overall.average}%</span></div>
+                            <div className="flex justify-between"><span className="font-semibold text-black">Overall Grade:</span><span className="text-black">{overall.grade}</span></div>
+                        </div>
                     </div>
-                </div>
+                )}
             </div>
-        )}
-        
-        <div className="flex-grow">
-            {settings.subjectsTable.visible && (
-                <div className="border border-black">
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead className="border border-black p-1 h-auto text-sm text-black">Subject</TableHead>
-                                <TableHead className="text-center border border-black p-1 h-auto text-sm text-black">CA1 (10)</TableHead>
-                                <TableHead className="text-center border border-black p-1 h-auto text-sm text-black">CA2 (10)</TableHead>
-                                <TableHead className="text-center border border-black p-1 h-auto text-sm text-black">CA3 (10)</TableHead>
-                                <TableHead className="text-center border border-black p-1 h-auto text-sm text-black">Exam (70)</TableHead>
-                                <TableHead className="text-center border border-black p-1 h-auto text-sm text-black">Total (100)</TableHead>
-                                <TableHead className="border border-black p-1 h-auto text-sm text-black">Remark</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                           {resultEntries.length > 0 ? (
-                                resultEntries.map(entry => (
-                                    <TableRow key={entry.subjectName}>
-                                        <TableCell className="border-b border-r border-black p-1 text-sm">{entry.subjectName}</TableCell>
-                                        <TableCell className="text-center border-b border-r border-black p-1 text-sm">{entry.ca1}</TableCell>
-                                        <TableCell className="text-center border-b border-r border-black p-1 text-sm">{entry.ca2}</TableCell>
-                                        <TableCell className="text-center border-b border-r border-black p-1 text-sm">{entry.ca3}</TableCell>
-                                        <TableCell className="text-center border-b border-r border-black p-1 text-sm">{entry.exam}</TableCell>
-                                        <TableCell className="text-center border-b border-r border-black p-1 text-sm">{entry.total}</TableCell>
-                                        <TableCell className="border-b border-black p-1 text-sm">{entry.remark}</TableCell>
-                                    </TableRow>
-                                ))
-                            ) : (
-                                Array.from({ length: 12 }).map((_, index) => (
-                                    <TableRow key={`placeholder-${index}`}>
-                                      <TableCell className="border-b border-r border-black p-1 text-sm">&nbsp;</TableCell>
-                                      <TableCell className="text-center border-b border-r border-black p-1 text-sm">&nbsp;</TableCell>
-                                      <TableCell className="text-center border-b border-r border-black p-1 text-sm">&nbsp;</TableCell>
-                                      <TableCell className="text-center border-b border-r border-black p-1 text-sm">&nbsp;</TableCell>
-                                      <TableCell className="text-center border-b border-r border-black p-1 text-sm">&nbsp;</TableCell>
-                                      <TableCell className="text-center border-b border-r border-black p-1 text-sm">&nbsp;</TableCell>
-                                      <TableCell className="border-b border-black p-1 text-sm">&nbsp;</TableCell>
-                                    </TableRow>
-                                ))
-                            )}
-                        </TableBody>
-                    </Table>
-                </div>
-            )}
-            {settings.summary.visible && (
-                <div className="mt-2 flex justify-end">
-                    <div className="w-1/2 rounded-md border border-black p-2 text-xs space-y-1">
-                        <div className="flex justify-between"><span className="font-semibold text-black">Overall Average:</span><span className="text-black">{overall.average}%</span></div>
-                        <div className="flex justify-between"><span className="font-semibold text-black">Overall Grade:</span><span className="text-black">{overall.grade}</span></div>
-                    </div>
-                </div>
-            )}
         </div>
         
         <footer className="pt-2 text-xs">

@@ -417,276 +417,270 @@ export default function TemplatesPage() {
         </div>
       </header>
 
-      <div className="flex flex-1 overflow-hidden">
-        {/* Settings Sidebar */}
-        <aside className={cn("flex-shrink-0 bg-background border-r transition-all duration-300 overflow-y-auto no-print", sidebarOpen ? "w-72" : "w-0")}>
-          {sidebarOpen && <div className="h-full">{renderSettingsPanel()}</div>}
-        </aside>
-
-        {/* Preview Area */}
-        <main className="flex-1 p-4 sm:p-6 overflow-auto">
-          {/* A4 Preview Canvas */}
-          <div className="relative mx-auto aspect-[210/297] w-full max-w-[210mm] bg-white p-6 shadow-lg print:shadow-none print:m-0 print:p-0 print:max-w-none print:h-full text-black">
-            <div className="absolute inset-0 z-0 flex items-center justify-center">
-              <Image
-                src="/Logo.jpg"
-                alt="School Watermark"
-                width={400}
-                height={400}
-                className="opacity-10"
-              />
-            </div>
-            <div className="relative z-10 flex flex-col h-full">
-              {settings.header.visible && (
-                <header
-                  className={cn('mb-4 p-2 border border-black editable-region', { 'outline-blue-500 outline-dashed outline-2 outline-offset-2': selectedElement === 'header' })}
-                  onClick={(e) => handleElementClick(e, 'header')}
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-4">
-                      <div className="relative h-20 w-20">
-                        <Image src="/Logo.jpg" alt="School Logo" layout="fill" objectFit="contain" />
-                      </div>
-                      <div
-                        className={cn('editable-region text-left', { 'outline-blue-500 outline-dashed outline-2 outline-offset-2': selectedElement === 'schoolName' })}
-                        onClick={(e) => handleElementClick(e, 'schoolName')}
-                      >
-                        <div className="text-black">
-                          <h1 className="font-headline text-2xl font-bold text-black">{templateLoading ? <Skeleton className="h-6 w-48" /> : schoolName}</h1>
-                          <p className="text-base text-black">Katampe 2 Mpape Abuja</p>
-                          <p className="text-base font-semibold text-black">Motto: Exceeding Great</p>
-                        </div>
-                      </div>
+      <main className="flex-1 p-4 sm:p-6 overflow-auto">
+        <div className="relative mx-auto aspect-[210/297] w-full max-w-[210mm] bg-white shadow-lg print:shadow-none print:m-0 print:p-0 print:max-w-none print:h-full text-black">
+          <div className="absolute inset-0 z-0 flex items-center justify-center">
+            <Image
+              src="/Logo.jpg"
+              alt="School Watermark"
+              width={400}
+              height={400}
+              className="opacity-10"
+            />
+          </div>
+          <div className="relative z-10 flex h-full flex-col p-6">
+            {settings.header.visible && (
+              <header
+                className={cn('mb-4 p-2 border border-black editable-region', { 'outline-blue-500 outline-dashed outline-2 outline-offset-2': selectedElement === 'header' })}
+                onClick={(e) => handleElementClick(e, 'header')}
+              >
+                <div className="flex items-start justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="relative h-20 w-20">
+                      <Image src="/Logo.jpg" alt="School Logo" layout="fill" objectFit="contain" />
                     </div>
-                    <div className="text-right">
-                      <h2 className="font-bold text-lg text-black">Student Report Card</h2>
-                      {settingsLoading ? (
-                        <Skeleton className="h-4 w-28 mt-1" />
-                      ) : (
-                        <p className="text-sm text-zinc-600">
-                          {schoolSettings?.currentTermId ? termNames[schoolSettings.currentTermId] : 'N/A'}, {schoolSettings?.currentSession}
-                        </p>
-                      )}
+                    <div
+                      className={cn('editable-region text-left', { 'outline-blue-500 outline-dashed outline-2 outline-offset-2': selectedElement === 'schoolName' })}
+                      onClick={(e) => handleElementClick(e, 'schoolName')}
+                    >
+                      <div className="text-black">
+                        <h1 className="font-headline text-2xl font-bold text-black">{templateLoading ? <Skeleton className="h-6 w-48" /> : schoolName}</h1>
+                        <p className="text-base text-black">Katampe 2 Mpape Abuja</p>
+                        <p className="text-base font-semibold text-black">Motto: Exceeding Great</p>
+                      </div>
                     </div>
                   </div>
-                  <Separator className="my-2 bg-black" />
-                </header>
-              )}
-
-              {settings.studentInfo.visible && (
-                <div
-                  className={cn('editable-region mb-4 p-2 border border-black', { 'outline-blue-500 outline-dashed outline-2 outline-offset-2': selectedElement === 'studentInfo' })}
-                  onClick={(e) => handleElementClick(e, 'studentInfo')}
-                  style={{ fontSize: `${settings.studentInfo.fontSize}px` }}
-                >
-                  <div className="flex flex-col gap-1">
-                    <div className="flex gap-4">
-                      <div className="w-1/3"><StudentInfoDetail label="Student Name" value="John Doe" /></div>
-                      <div className="w-1/3"><StudentInfoDetail label="Admission No" value="JKS-00123" /></div>
-                      <div className="w-1/3"><StudentInfoDetail label="Class" value={selectedClassroom?.name || 'Primary 5'} /></div>
-                    </div>
-                    <div className="flex gap-4">
-                      <div className="w-1/3"><StudentInfoDetail label="Term" value={schoolSettings?.currentTermId ? termNames[schoolSettings.currentTermId] : undefined} isLoading={settingsLoading} /></div>
-                      <div className="w-1/3"><StudentInfoDetail label="Session" value={schoolSettings?.currentSession} isLoading={settingsLoading} /></div>
-                      <div className="w-1/3"><StudentInfoDetail label="Days Attended" value="60" /></div>
-                    </div>
-                    <div className="flex gap-4">
-                      <div className="w-1/3"><StudentInfoDetail label="School Open" value={schoolSettings?.daysSchoolOpened.toString()} isLoading={settingsLoading} /></div>
-                      <div className="w-1/3"><StudentInfoDetail label="Resumption" value={formattedResumptionDate} isLoading={settingsLoading} /></div>
-                      <div className="w-1/3"><StudentInfoDetail label="Class Teacher" value={selectedClassroom?.teacherName || 'Mrs. Doe'} /></div>
-                    </div>
+                  <div className="text-right">
+                    <h2 className="font-bold text-lg text-black">Student Report Card</h2>
+                    {settingsLoading ? (
+                      <Skeleton className="h-4 w-28 mt-1" />
+                    ) : (
+                      <p className="text-sm text-zinc-600">
+                        {schoolSettings?.currentTermId ? termNames[schoolSettings.currentTermId] : 'N/A'}, {schoolSettings?.currentSession}
+                      </p>
+                    )}
                   </div>
                 </div>
-              )}
+                <Separator className="my-2 bg-black" />
+              </header>
+            )}
 
-              <div className="flex-grow">
-                {settings.subjectsTable.visible && (
-                  <div
-                    className={cn('editable-region border border-black', { 'outline-blue-500 outline-dashed outline-2 outline-offset-2': selectedElement === 'subjectsTable' })}
-                    onClick={(e) => handleElementClick(e, 'subjectsTable')}
-                  >
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead className="border border-black p-1 h-auto text-sm text-black">Subject</TableHead>
-                          <TableHead className="text-center border border-black p-1 h-auto text-sm text-black">CA1 (10)</TableHead>
-                          <TableHead className="text-center border border-black p-1 h-auto text-sm text-black">CA2 (10)</TableHead>
-                          <TableHead className="text-center border border-black p-1 h-auto text-sm text-black">CA3 (10)</TableHead>
-                          <TableHead className="text-center border border-black p-1 h-auto text-sm text-black">Exam (70)</TableHead>
-                          <TableHead className="text-center border border-black p-1 h-auto text-sm text-black">Total (100)</TableHead>
-                          <TableHead className="border border-black p-1 h-auto text-sm text-black">Remark</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {isLoading ? (
-                          <TableRow><TableCell colSpan={7} className="text-center border-b border-black p-1 text-sm">Loading subjects...</TableCell></TableRow>
-                        ) : displayedSubjects.length > 0 ? (
-                          displayedSubjects.map(subject => (
-                            <TableRow key={subject.id}>
-                              <TableCell className="border-b border-r border-black p-1 text-sm">{subject.name}</TableCell>
-                              <TableCell className="text-center border-b border-r border-black p-1 text-sm">--</TableCell>
-                              <TableCell className="text-center border-b border-r border-black p-1 text-sm">--</TableCell>
-                              <TableCell className="text-center border-b border-r border-black p-1 text-sm">--</TableCell>
-                              <TableCell className="text-center border-b border-r border-black p-1 text-sm">--</TableCell>
-                              <TableCell className="text-center border-b border-r border-black p-1 text-sm">--</TableCell>
-                              <TableCell className="border-b border-black p-1 text-sm">--</TableCell>
-                            </TableRow>
-                          ))
-                        ) : (
-                          Array.from({ length: 12 }).map((_, index) => (
-                            <TableRow key={`placeholder-${index}`}>
-                              <TableCell className="border-b border-r border-black p-1 text-sm">Subject Name</TableCell>
-                              <TableCell className="text-center border-b border-r border-black p-1 text-sm">--</TableCell>
-                              <TableCell className="text-center border-b border-r border-black p-1 text-sm">--</TableCell>
-                              <TableCell className="text-center border-b border-r border-black p-1 text-sm">--</TableCell>
-                              <TableCell className="text-center border-b border-r border-black p-1 text-sm">--</TableCell>
-                              <TableCell className="text-center border-b border-r border-black p-1 text-sm">--</TableCell>
-                              <TableCell className="border-b border-black p-1 text-sm">--</TableCell>
-                            </TableRow>
-                          ))
-                        )}
-                      </TableBody>
-                    </Table>
-                  </div>
-                )}
-                {settings.summary.visible && (
-                  <div
-                    className={cn('editable-region mt-2 flex justify-end', { 'outline-blue-500 outline-dashed outline-2 outline-offset-2': selectedElement === 'summary' })}
-                    onClick={(e) => handleElementClick(e, 'summary')}
-                  >
-                    <div className="w-1/2 rounded-md border border-black p-2 text-xs space-y-1">
-                      <div className="flex justify-between">
-                        <span className="font-semibold text-black">
-                          Overall Average:
-                        </span>
-                        <span className="text-black">75.5%</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="font-semibold text-black">Overall Grade:</span>
-                        <span className="text-black">B (Very Good)</span>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-              <footer
-                className={cn('editable-region pt-2 text-xs', { 'outline-blue-500 outline-dashed outline-2 outline-offset-2': selectedElement === 'footer' })}
-                onClick={(e) => handleElementClick(e, 'footer')}
-              >
-                <section className='border border-black p-2 flex flex-col gap-2'>
-                  {settings.softSkills.visible && (
-                    <div className="space-y-1">
-                      <h3 className="font-bold text-black">Soft Skills Assessment</h3>
-                      <div className="grid grid-cols-3 gap-x-4">
-                        <div>
-                          <Table>
-                            <TableBody>
-                              <TableRow><TableCell className="font-medium p-1 h-auto text-[10px] border border-black text-black">Punctuality</TableCell><TableCell className="text-right p-1 h-auto text-[10px] border border-black">5</TableCell></TableRow>
-                              <TableRow><TableCell className="font-medium p-1 h-auto text-[10px] border border-black text-black">Neatness</TableCell><TableCell className="text-right p-1 h-auto text-[10px] border border-black">4</TableCell></TableRow>
-                              <TableRow><TableCell className="font-medium p-1 h-auto text-[10px] border border-black text-black">Creativity</TableCell><TableCell className="text-right p-1 h-auto text-[10px] border border-black">5</TableCell></TableRow>
-                            </TableBody>
-                          </Table>
+            <div className="flex-grow flex flex-col overflow-hidden">
+                <div className="overflow-auto">
+                    {settings.studentInfo.visible && (
+                        <div
+                        className={cn('editable-region mb-4 p-2 border border-black', { 'outline-blue-500 outline-dashed outline-2 outline-offset-2': selectedElement === 'studentInfo' })}
+                        onClick={(e) => handleElementClick(e, 'studentInfo')}
+                        style={{ fontSize: `${settings.studentInfo.fontSize}px` }}
+                        >
+                        <div className="flex flex-col gap-1">
+                            <div className="flex gap-4">
+                            <div className="w-1/3"><StudentInfoDetail label="Student Name" value="John Doe" /></div>
+                            <div className="w-1/3"><StudentInfoDetail label="Admission No" value="JKS-00123" /></div>
+                            <div className="w-1/3"><StudentInfoDetail label="Class" value={selectedClassroom?.name || 'Primary 5'} /></div>
+                            </div>
+                            <div className="flex gap-4">
+                            <div className="w-1/3"><StudentInfoDetail label="Term" value={schoolSettings?.currentTermId ? termNames[schoolSettings.currentTermId] : undefined} isLoading={settingsLoading} /></div>
+                            <div className="w-1/3"><StudentInfoDetail label="Session" value={schoolSettings?.currentSession} isLoading={settingsLoading} /></div>
+                            <div className="w-1/3"><StudentInfoDetail label="Days Attended" value="60" /></div>
+                            </div>
+                            <div className="flex gap-4">
+                            <div className="w-1/3"><StudentInfoDetail label="School Open" value={schoolSettings?.daysSchoolOpened.toString()} isLoading={settingsLoading} /></div>
+                            <div className="w-1/3"><StudentInfoDetail label="Resumption" value={formattedResumptionDate} isLoading={settingsLoading} /></div>
+                            <div className="w-1/3"><StudentInfoDetail label="Class Teacher" value={selectedClassroom?.teacherName || 'Mrs. Doe'} /></div>
+                            </div>
                         </div>
-                        <div>
-                          <Table>
-                            <TableBody>
-                              <TableRow><TableCell className="font-medium p-1 h-auto text-[10px] border border-black text-black">Honesty</TableCell><TableCell className="text-right p-1 h-auto text-[10px] border border-black">5</TableCell></TableRow>
-                              <TableRow><TableCell className="font-medium p-1 h-auto text-[10px] border border-black text-black">Communication</TableCell><TableCell className="text-right p-1 h-auto text-[10px] border border-black">5</TableCell></TableRow>
-                              <TableRow><TableCell className="font-medium p-1 h-auto text-[10px] border border-black text-black">Teamwork</TableCell><TableCell className="text-right p-1 h-auto text-[10px] border border-black">4</TableCell></TableRow>
-                            </TableBody>
-                          </Table>
                         </div>
-                        <div>
-                          <Table>
-                            <TableBody>
-                              <TableRow><TableCell className="font-medium p-1 h-auto text-[10px] border border-black text-black">Attentiveness</TableCell><TableCell className="text-right p-1 h-auto text-[10px] border border-black">4</TableCell></TableRow>
-                              <TableRow><TableCell className="font-medium p-1 h-auto text-[10px] border border-black text-black">Self Control</TableCell><TableCell className="text-right p-1 h-auto text-[10px] border border-black">5</TableCell></TableRow>
-                              <TableRow><TableCell className="font-medium p-1 h-auto text-[10px] border border-black text-black">Leadership</TableCell><TableCell className="text-right p-1 h-auto text-[10px] border border-black">5</TableCell></TableRow>
-                            </TableBody>
-                          </Table>
-                        </div>
-                      </div>
-                    </div>
-                  )}
+                    )}
 
-                  {settings.gradingKey.visible && (
-                    <div className="grid grid-cols-2 gap-x-4 pt-2">
-                      <div className="space-y-1">
-                        <h3 className="font-bold text-black">Grading Key</h3>
+                    {settings.subjectsTable.visible && (
+                        <div
+                        className={cn('editable-region border border-black', { 'outline-blue-500 outline-dashed outline-2 outline-offset-2': selectedElement === 'subjectsTable' })}
+                        onClick={(e) => handleElementClick(e, 'subjectsTable')}
+                        >
                         <Table>
-                          <TableHeader>
+                            <TableHeader>
                             <TableRow>
-                              <TableHead className="p-1 h-auto text-[10px] border border-black text-black">Score</TableHead>
-                              <TableHead className="p-1 h-auto text-[10px] border border-black text-black">Grade</TableHead>
-                              <TableHead className="p-1 h-auto text-[10px] border border-black text-black">Remark</TableHead>
+                                <TableHead className="border border-black p-1 h-auto text-sm text-black">Subject</TableHead>
+                                <TableHead className="text-center border border-black p-1 h-auto text-sm text-black">CA1 (10)</TableHead>
+                                <TableHead className="text-center border border-black p-1 h-auto text-sm text-black">CA2 (10)</TableHead>
+                                <TableHead className="text-center border border-black p-1 h-auto text-sm text-black">CA3 (10)</TableHead>
+                                <TableHead className="text-center border border-black p-1 h-auto text-sm text-black">Exam (70)</TableHead>
+                                <TableHead className="text-center border border-black p-1 h-auto text-sm text-black">Total (100)</TableHead>
+                                <TableHead className="border border-black p-1 h-auto text-sm text-black">Remark</TableHead>
                             </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                            <TableRow><TableCell className="p-1 h-auto text-[10px] border border-black">80 – 100</TableCell><TableCell className="p-1 h-auto text-[10px] border border-black">A</TableCell><TableCell className="p-1 h-auto text-[10px] border border-black">Excellent</TableCell></TableRow>
-                            <TableRow><TableCell className="p-1 h-auto text-[10px] border border-black">70 – 79</TableCell><TableCell className="p-1 h-auto text-[10px] border border-black">B</TableCell><TableCell className="p-1 h-auto text-[10px] border border-black">Very Good</TableCell></TableRow>
-                            <TableRow><TableCell className="p-1 h-auto text-[10px] border border-black">60 – 69</TableCell><TableCell className="p-1 h-auto text-[10px] border border-black">C</TableCell><TableCell className="p-1 h-auto text-[10px] border border-black">Good</TableCell></TableRow>
-                            <TableRow><TableCell className="p-1 h-auto text-[10px] border border-black">50 – 59</TableCell><TableCell className="p-1 h-auto text-[10px] border border-black">D</TableCell><TableCell className="p-1 h-auto text-[10px] border border-black">Fair</TableCell></TableRow>
-                            <TableRow><TableCell className="p-1 h-auto text-[10px] border border-black">0 – 49</TableCell><TableCell className="p-1 h-auto text-[10px] border border-black">F</TableCell><TableCell className="p-1 h-auto text-[10px] border border-black">Fail</TableCell></TableRow>
-                          </TableBody>
+                            </TableHeader>
+                            <TableBody>
+                            {isLoading ? (
+                                <TableRow><TableCell colSpan={7} className="text-center border-b border-black p-1 text-sm">Loading subjects...</TableCell></TableRow>
+                            ) : displayedSubjects.length > 0 ? (
+                                displayedSubjects.map(subject => (
+                                <TableRow key={subject.id}>
+                                    <TableCell className="border-b border-r border-black p-1 text-sm">{subject.name}</TableCell>
+                                    <TableCell className="text-center border-b border-r border-black p-1 text-sm">--</TableCell>
+                                    <TableCell className="text-center border-b border-r border-black p-1 text-sm">--</TableCell>
+                                    <TableCell className="text-center border-b border-r border-black p-1 text-sm">--</TableCell>
+                                    <TableCell className="text-center border-b border-r border-black p-1 text-sm">--</TableCell>
+                                    <TableCell className="text-center border-b border-r border-black p-1 text-sm">--</TableCell>
+                                    <TableCell className="border-b border-black p-1 text-sm">--</TableCell>
+                                </TableRow>
+                                ))
+                            ) : (
+                                Array.from({ length: 12 }).map((_, index) => (
+                                <TableRow key={`placeholder-${index}`}>
+                                    <TableCell className="border-b border-r border-black p-1 text-sm">Subject Name</TableCell>
+                                    <TableCell className="text-center border-b border-r border-black p-1 text-sm">--</TableCell>
+                                    <TableCell className="text-center border-b border-r border-black p-1 text-sm">--</TableCell>
+                                    <TableCell className="text-center border-b border-r border-black p-1 text-sm">--</TableCell>
+                                    <TableCell className="text-center border-b border-r border-black p-1 text-sm">--</TableCell>
+                                    <TableCell className="text-center border-b border-r border-black p-1 text-sm">--</TableCell>
+                                    <TableCell className="border-b border-black p-1 text-sm">--</TableCell>
+                                </TableRow>
+                                ))
+                            )}
+                            </TableBody>
                         </Table>
-                      </div>
-                      <div className="space-y-1">
-                        <h3 className="font-bold text-black">Skill Score Rating</h3>
-                        <Table>
-                          <TableHeader>
-                            <TableRow>
-                              <TableHead className="p-1 h-auto text-[10px] border border-black text-black">Score</TableHead>
-                              <TableHead className="p-1 h-auto text-[10px] border border-black text-black">Remark</TableHead>
-                            </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                            <TableRow><TableCell className="p-1 h-auto text-[10px] border border-black">5</TableCell><TableCell className="p-1 h-auto text-[10px] border border-black">Excellent</TableCell></TableRow>
-                            <TableRow><TableCell className="p-1 h-auto text-[10px] border border-black">4</TableCell><TableCell className="p-1 h-auto text-[10px] border border-black">Very Good</TableCell></TableRow>
-                            <TableRow><TableCell className="p-1 h-auto text-[10px] border border-black">3</TableCell><TableCell className="p-1 h-auto text-[10px] border border-black">Good</TableCell></TableRow>
-                            <TableRow><TableCell className="p-1 h-auto text-[10px] border border-black">2</TableCell><TableCell className="p-1 h-auto text-[10px] border border-black">Fair</TableCell></TableRow>
-                            <TableRow><TableCell className="p-1 h-auto text-[10px] border border-black">1</TableCell><TableCell className="p-1 h-auto text-[10px] border border-black">Poor</TableCell></TableRow>
-                          </TableBody>
-                        </Table>
-                      </div>
-                    </div>
-                  )}
-
-                  {settings.remarks.visible && (
-                    <div className="pt-2 space-y-2">
-                      <div>
-                        <h3 className="font-bold text-black">Teacher's Remarks:</h3>
-                        <p className="min-h-[25px] rounded-md border-b border-black p-1">
-                          A brilliant student...
-                        </p>
-                      </div>
-                      <div>
-                        <h3 className="font-bold text-black">Head Teacher's Remarks:</h3>
-                        <p className="min-h-[25px] rounded-md border-b border-black p-1">
-                          Excellent performance...
-                        </p>
-                      </div>
-                    </div>
-                  )}
-                  {settings.signatures.visible && (
-                    <div className="flex justify-between items-end pt-4">
-                      <div className="text-center w-36">
-                        <div className="border-t border-black pt-1">
-                          Class Teacher's Signature
                         </div>
-                      </div>
-                      <div className="text-center w-36">
-                        <div className="border-t border-black pt-1">
-                          Head Teacher's Signature
+                    )}
+                    {settings.summary.visible && (
+                        <div
+                        className={cn('editable-region mt-2 flex justify-end', { 'outline-blue-500 outline-dashed outline-2 outline-offset-2': selectedElement === 'summary' })}
+                        onClick={(e) => handleElementClick(e, 'summary')}
+                        >
+                        <div className="w-1/2 rounded-md border border-black p-2 text-xs space-y-1">
+                            <div className="flex justify-between">
+                            <span className="font-semibold text-black">
+                                Overall Average:
+                            </span>
+                            <span className="text-black">75.5%</span>
+                            </div>
+                            <div className="flex justify-between">
+                            <span className="font-semibold text-black">Overall Grade:</span>
+                            <span className="text-black">B (Very Good)</span>
+                            </div>
                         </div>
-                      </div>
-                    </div>
-                  )}
-                </section>
-              </footer>
+                        </div>
+                    )}
+                </div>
             </div>
+
+            <footer
+              className={cn('editable-region pt-2 text-xs', { 'outline-blue-500 outline-dashed outline-2 outline-offset-2': selectedElement === 'footer' })}
+              onClick={(e) => handleElementClick(e, 'footer')}
+            >
+              <section className='border border-black p-2 flex flex-col gap-2'>
+                {settings.softSkills.visible && (
+                  <div className="space-y-1">
+                    <h3 className="font-bold text-black">Soft Skills Assessment</h3>
+                    <div className="grid grid-cols-3 gap-x-4">
+                      <div>
+                        <Table>
+                          <TableBody>
+                            <TableRow><TableCell className="font-medium p-1 h-auto text-[10px] border border-black text-black">Punctuality</TableCell><TableCell className="text-right p-1 h-auto text-[10px] border border-black">5</TableCell></TableRow>
+                            <TableRow><TableCell className="font-medium p-1 h-auto text-[10px] border border-black text-black">Neatness</TableCell><TableCell className="text-right p-1 h-auto text-[10px] border border-black">4</TableCell></TableRow>
+                            <TableRow><TableCell className="font-medium p-1 h-auto text-[10px] border border-black text-black">Creativity</TableCell><TableCell className="text-right p-1 h-auto text-[10px] border border-black">5</TableCell></TableRow>
+                          </TableBody>
+                        </Table>
+                      </div>
+                      <div>
+                        <Table>
+                          <TableBody>
+                            <TableRow><TableCell className="font-medium p-1 h-auto text-[10px] border border-black text-black">Honesty</TableCell><TableCell className="text-right p-1 h-auto text-[10px] border border-black">5</TableCell></TableRow>
+                            <TableRow><TableCell className="font-medium p-1 h-auto text-[10px] border border-black text-black">Communication</TableCell><TableCell className="text-right p-1 h-auto text-[10px] border border-black">5</TableCell></TableRow>
+                            <TableRow><TableCell className="font-medium p-1 h-auto text-[10px] border border-black text-black">Teamwork</TableCell><TableCell className="text-right p-1 h-auto text-[10px] border border-black">4</TableCell></TableRow>
+                          </TableBody>
+                        </Table>
+                      </div>
+                      <div>
+                        <Table>
+                          <TableBody>
+                            <TableRow><TableCell className="font-medium p-1 h-auto text-[10px] border border-black text-black">Attentiveness</TableCell><TableCell className="text-right p-1 h-auto text-[10px] border border-black">4</TableCell></TableRow>
+                            <TableRow><TableCell className="font-medium p-1 h-auto text-[10px] border border-black text-black">Self Control</TableCell><TableCell className="text-right p-1 h-auto text-[10px] border border-black">5</TableCell></TableRow>
+                            <TableRow><TableCell className="font-medium p-1 h-auto text-[10px] border border-black text-black">Leadership</TableCell><TableCell className="text-right p-1 h-auto text-[10px] border border-black">5</TableCell></TableRow>
+                          </TableBody>
+                        </Table>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {settings.gradingKey.visible && (
+                  <div className="grid grid-cols-2 gap-x-4 pt-2">
+                    <div className="space-y-1">
+                      <h3 className="font-bold text-black">Grading Key</h3>
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead className="p-1 h-auto text-[10px] border border-black text-black">Score</TableHead>
+                            <TableHead className="p-1 h-auto text-[10px] border border-black text-black">Grade</TableHead>
+                            <TableHead className="p-1 h-auto text-[10px] border border-black text-black">Remark</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          <TableRow><TableCell className="p-1 h-auto text-[10px] border border-black">80 – 100</TableCell><TableCell className="p-1 h-auto text-[10px] border border-black">A</TableCell><TableCell className="p-1 h-auto text-[10px] border border-black">Excellent</TableCell></TableRow>
+                          <TableRow><TableCell className="p-1 h-auto text-[10px] border border-black">70 – 79</TableCell><TableCell className="p-1 h-auto text-[10px] border border-black">B</TableCell><TableCell className="p-1 h-auto text-[10px] border border-black">Very Good</TableCell></TableRow>
+                          <TableRow><TableCell className="p-1 h-auto text-[10px] border border-black">60 – 69</TableCell><TableCell className="p-1 h-auto text-[10px] border border-black">C</TableCell><TableCell className="p-1 h-auto text-[10px] border border-black">Good</TableCell></TableRow>
+                          <TableRow><TableCell className="p-1 h-auto text-[10px] border border-black">50 – 59</TableCell><TableCell className="p-1 h-auto text-[10px] border border-black">D</TableCell><TableCell className="p-1 h-auto text-[10px] border border-black">Fair</TableCell></TableRow>
+                          <TableRow><TableCell className="p-1 h-auto text-[10px] border border-black">0 – 49</TableCell><TableCell className="p-1 h-auto text-[10px] border border-black">F</TableCell><TableCell className="p-1 h-auto text-[10px] border border-black">Fail</TableCell></TableRow>
+                        </TableBody>
+                      </Table>
+                    </div>
+                    <div className="space-y-1">
+                      <h3 className="font-bold text-black">Skill Score Rating</h3>
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead className="p-1 h-auto text-[10px] border border-black text-black">Score</TableHead>
+                            <TableHead className="p-1 h-auto text-[10px] border border-black text-black">Remark</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          <TableRow><TableCell className="p-1 h-auto text-[10px] border border-black">5</TableCell><TableCell className="p-1 h-auto text-[10px] border border-black">Excellent</TableCell></TableRow>
+                          <TableRow><TableCell className="p-1 h-auto text-[10px] border border-black">4</TableCell><TableCell className="p-1 h-auto text-[10px] border border-black">Very Good</TableCell></TableRow>
+                          <TableRow><TableCell className="p-1 h-auto text-[10px] border border-black">3</TableCell><TableCell className="p-1 h-auto text-[10px] border border-black">Good</TableCell></TableRow>
+                          <TableRow><TableCell className="p-1 h-auto text-[10px] border border-black">2</TableCell><TableCell className="p-1 h-auto text-[10px] border border-black">Fair</TableCell></TableRow>
+                          <TableRow><TableCell className="p-1 h-auto text-[10px] border border-black">1</TableCell><TableCell className="p-1 h-auto text-[10px] border border-black">Poor</TableCell></TableRow>
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </div>
+                )}
+
+                {settings.remarks.visible && (
+                  <div className="pt-2 space-y-2">
+                    <div>
+                      <h3 className="font-bold text-black">Teacher's Remarks:</h3>
+                      <p className="min-h-[25px] rounded-md border-b border-black p-1">
+                        A brilliant student...
+                      </p>
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-black">Head Teacher's Remarks:</h3>
+                      <p className="min-h-[25px] rounded-md border-b border-black p-1">
+                        Excellent performance...
+                      </p>
+                    </div>
+                  </div>
+                )}
+                {settings.signatures.visible && (
+                  <div className="flex justify-between items-end pt-4">
+                    <div className="text-center w-36">
+                      <div className="border-t border-black pt-1">
+                        Class Teacher's Signature
+                      </div>
+                    </div>
+                    <div className="text-center w-36">
+                      <div className="border-t border-black pt-1">
+                        Head Teacher's Signature
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </section>
+            </footer>
           </div>
-        </main>
-      </div>
+        </div>
+      </main>
     </div>
   );
 }
