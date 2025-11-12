@@ -498,7 +498,7 @@ export default function TemplatesPage() {
                 </div>
               )}
 
-              <div className="flex-grow flex flex-col">
+              <div className="flex flex-col">
                 {settings.subjectsTable.visible && (
                   <div
                     className={cn('editable-region border border-black', { 'outline-blue-500 outline-dashed outline-2 outline-offset-2': selectedElement === 'subjectsTable' })}
@@ -582,6 +582,7 @@ export default function TemplatesPage() {
                             <TableBody>
                               <TableRow><TableCell className="font-medium p-1 h-auto text-[10px] border border-black text-black">Punctuality</TableCell><TableCell className="text-right p-1 h-auto text-[10px] border border-black">5</TableCell></TableRow>
                               <TableRow><TableCell className="font-medium p-1 h-auto text-[10px] border border-black text-black">Neatness</TableCell><TableCell className="text-right p-1 h-auto text-[10px] border border-black">4</TableCell></TableRow>
+                              <TableRow><TableCell className="font-medium p-1 h-auto text-[10px] border border-black text-black">Creativity</TableCell><TableCell className="text-right p-1 h-auto text-[10px] border border-black">5</TableCell></TableRow>
                             </TableBody>
                           </Table>
                         </div>
@@ -590,6 +591,7 @@ export default function TemplatesPage() {
                             <TableBody>
                               <TableRow><TableCell className="font-medium p-1 h-auto text-[10px] border border-black text-black">Honesty</TableCell><TableCell className="text-right p-1 h-auto text-[10px] border border-black">5</TableCell></TableRow>
                               <TableRow><TableCell className="font-medium p-1 h-auto text-[10px] border border-black text-black">Communication</TableCell><TableCell className="text-right p-1 h-auto text-[10px] border border-black">5</TableCell></TableRow>
+                              <TableRow><TableCell className="font-medium p-1 h-auto text-[10px] border border-black text-black">Teamwork</TableCell><TableCell className="text-right p-1 h-auto text-[10px] border border-black">4</TableCell></TableRow>
                             </TableBody>
                           </Table>
                         </div>
@@ -598,6 +600,7 @@ export default function TemplatesPage() {
                             <TableBody>
                               <TableRow><TableCell className="font-medium p-1 h-auto text-[10px] border border-black text-black">Attentiveness</TableCell><TableCell className="text-right p-1 h-auto text-[10px] border border-black">4</TableCell></TableRow>
                               <TableRow><TableCell className="font-medium p-1 h-auto text-[10px] border border-black text-black">Self Control</TableCell><TableCell className="text-right p-1 h-auto text-[10px] border border-black">5</TableCell></TableRow>
+                              <TableRow><TableCell className="font-medium p-1 h-auto text-[10px] border border-black text-black">Leadership</TableCell><TableCell className="text-right p-1 h-auto text-[10px] border border-black">5</TableCell></TableRow>
                             </TableBody>
                           </Table>
                         </div>
@@ -686,3 +689,5 @@ export default function TemplatesPage() {
     </div>
   );
 }
+
+    
