@@ -42,7 +42,7 @@ type ResultEntry = { subjectName: string; ca1: number; ca2: number; ca3: number;
 
 const termNames: Record<string, string> = { term1: '1st Term', term2: '2nd Term', term3: '3rd Term' };
 
-const initialSettings: TemplateSettings = { studentInfo: { fontSize: 10, visible: true }, header: { visible: true }, subjectsTable: { visible: true }, summary: { visible: true }, softSkills: { visible: true }, gradingKey: { visible: true }, remarks: { visible: true }, signatures: { visible: true } };
+const initialSettings: TemplateSettings = { studentInfo: { fontSize: 12, visible: true }, header: { visible: true }, subjectsTable: { visible: true }, summary: { visible: true }, softSkills: { visible: true }, gradingKey: { visible: true }, remarks: { visible: true }, signatures: { visible: true } };
 
 // --- HELPER COMPONENTS ---
 const StudentInfoDetail = ({ label, value, isLoading = false }: { label: string, value?: string | React.ReactNode, isLoading?: boolean }) => (
@@ -189,8 +189,8 @@ export function ResultSheet({ student, classroom }: ResultSheetProps) {
             </header>
         )}
 
-        <div className="flex-grow flex flex-col overflow-hidden">
-            <div className="overflow-auto">
+        <div className="flex-grow overflow-hidden">
+            <div className="overflow-auto h-full">
                 {settings.studentInfo.visible && (
                     <div className="mb-4 p-2 border border-black" style={{ fontSize: `${settings.studentInfo.fontSize}px` }}>
                         <div className="flex flex-col gap-1">
@@ -277,27 +277,27 @@ export function ResultSheet({ student, classroom }: ResultSheetProps) {
                       <div>
                         <Table>
                           <TableBody>
-                            <TableRow><TableCell className="font-medium p-1 h-auto text-[10px] border border-black text-black">Punctuality</TableCell><TableCell className="text-right p-1 h-auto text-[10px] border border-black">5</TableCell></TableRow>
-                            <TableRow><TableCell className="font-medium p-1 h-auto text-[10px] border border-black text-black">Neatness</TableCell><TableCell className="text-right p-1 h-auto text-[10px] border border-black">4</TableCell></TableRow>
-                            <TableRow><TableCell className="font-medium p-1 h-auto text-[10px] border border-black text-black">Creativity</TableCell><TableCell className="text-right p-1 h-auto text-[10px] border border-black">5</TableCell></TableRow>
+                            <TableRow><TableCell className="font-medium p-0.5 h-auto text-[9px] border border-black text-black">Punctuality</TableCell><TableCell className="text-right p-0.5 h-auto text-[9px] border border-black">5</TableCell></TableRow>
+                            <TableRow><TableCell className="font-medium p-0.5 h-auto text-[9px] border border-black text-black">Neatness</TableCell><TableCell className="text-right p-0.5 h-auto text-[9px] border border-black">4</TableCell></TableRow>
+                            <TableRow><TableCell className="font-medium p-0.5 h-auto text-[9px] border border-black text-black">Creativity</TableCell><TableCell className="text-right p-0.5 h-auto text-[9px] border border-black">5</TableCell></TableRow>
                           </TableBody>
                         </Table>
                       </div>
                       <div>
                         <Table>
                           <TableBody>
-                            <TableRow><TableCell className="font-medium p-1 h-auto text-[10px] border border-black text-black">Honesty</TableCell><TableCell className="text-right p-1 h-auto text-[10px] border border-black">5</TableCell></TableRow>
-                            <TableRow><TableCell className="font-medium p-1 h-auto text-[10px] border border-black text-black">Communication</TableCell><TableCell className="text-right p-1 h-auto text-[10px] border border-black">5</TableCell></TableRow>
-                            <TableRow><TableCell className="font-medium p-1 h-auto text-[10px] border border-black text-black">Teamwork</TableCell><TableCell className="text-right p-1 h-auto text-[10px] border border-black">4</TableCell></TableRow>
+                            <TableRow><TableCell className="font-medium p-0.5 h-auto text-[9px] border border-black text-black">Honesty</TableCell><TableCell className="text-right p-0.5 h-auto text-[9px] border border-black">5</TableCell></TableRow>
+                            <TableRow><TableCell className="font-medium p-0.5 h-auto text-[9px] border border-black text-black">Communication</TableCell><TableCell className="text-right p-0.5 h-auto text-[9px] border border-black">5</TableCell></TableRow>
+                            <TableRow><TableCell className="font-medium p-0.5 h-auto text-[9px] border border-black text-black">Teamwork</TableCell><TableCell className="text-right p-0.5 h-auto text-[9px] border border-black">4</TableCell></TableRow>
                           </TableBody>
                         </Table>
                       </div>
                       <div>
                         <Table>
                           <TableBody>
-                            <TableRow><TableCell className="font-medium p-1 h-auto text-[10px] border border-black text-black">Attentiveness</TableCell><TableCell className="text-right p-1 h-auto text-[10px] border border-black">4</TableCell></TableRow>
-                            <TableRow><TableCell className="font-medium p-1 h-auto text-[10px] border border-black text-black">Self Control</TableCell><TableCell className="text-right p-1 h-auto text-[10px] border border-black">5</TableCell></TableRow>
-                            <TableRow><TableCell className="font-medium p-1 h-auto text-[10px] border border-black text-black">Leadership</TableCell><TableCell className="text-right p-1 h-auto text-[10px] border border-black">5</TableCell></TableRow>
+                            <TableRow><TableCell className="font-medium p-0.5 h-auto text-[9px] border border-black text-black">Attentiveness</TableCell><TableCell className="text-right p-0.5 h-auto text-[9px] border border-black">4</TableCell></TableRow>
+                            <TableRow><TableCell className="font-medium p-0.5 h-auto text-[9px] border border-black text-black">Self Control</TableCell><TableCell className="text-right p-0.5 h-auto text-[9px] border border-black">5</TableCell></TableRow>
+                            <TableRow><TableCell className="font-medium p-0.5 h-auto text-[9px] border border-black text-black">Leadership</TableCell><TableCell className="text-right p-0.5 h-auto text-[9px] border border-black">5</TableCell></TableRow>
                           </TableBody>
                         </Table>
                       </div>

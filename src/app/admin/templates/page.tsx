@@ -98,7 +98,7 @@ type SavedTemplateData = {
 
 const initialSettings: TemplateSettings = {
   studentInfo: {
-    fontSize: 10,
+    fontSize: 12,
     visible: true,
   },
   header: {
@@ -431,7 +431,7 @@ export default function TemplatesPage() {
           <div className="relative z-10 flex h-full flex-col p-6">
             {settings.header.visible && (
               <header
-                className={cn('mb-4 p-2 border border-black editable-region', { 'outline-blue-500 outline-dashed outline-2 outline-offset-2': selectedElement === 'header' })}
+                className={cn('mb-4 p-2 border border-black', { 'outline-blue-500 outline-dashed outline-2 outline-offset-2': selectedElement === 'header' })}
                 onClick={(e) => handleElementClick(e, 'header')}
               >
                 <div className="flex items-start justify-between">
@@ -465,11 +465,11 @@ export default function TemplatesPage() {
               </header>
             )}
 
-            <div className="flex-grow flex flex-col overflow-hidden">
-                <div className="overflow-auto">
+            <div className="flex-grow overflow-hidden">
+                <div className="overflow-auto h-full">
                     {settings.studentInfo.visible && (
                         <div
-                        className={cn('editable-region mb-4 p-2 border border-black', { 'outline-blue-500 outline-dashed outline-2 outline-offset-2': selectedElement === 'studentInfo' })}
+                        className={cn('mb-4 p-2 border border-black', { 'outline-blue-500 outline-dashed outline-2 outline-offset-2': selectedElement === 'studentInfo' })}
                         onClick={(e) => handleElementClick(e, 'studentInfo')}
                         style={{ fontSize: `${settings.studentInfo.fontSize}px` }}
                         >
@@ -495,7 +495,7 @@ export default function TemplatesPage() {
 
                     {settings.subjectsTable.visible && (
                         <div
-                        className={cn('editable-region border border-black', { 'outline-blue-500 outline-dashed outline-2 outline-offset-2': selectedElement === 'subjectsTable' })}
+                        className={cn('border border-black', { 'outline-blue-500 outline-dashed outline-2 outline-offset-2': selectedElement === 'subjectsTable' })}
                         onClick={(e) => handleElementClick(e, 'subjectsTable')}
                         >
                         <Table>
@@ -565,7 +565,7 @@ export default function TemplatesPage() {
             </div>
 
             <footer
-              className={cn('editable-region pt-2 text-xs', { 'outline-blue-500 outline-dashed outline-2 outline-offset-2': selectedElement === 'footer' })}
+              className={cn('pt-2 text-xs', { 'outline-blue-500 outline-dashed outline-2 outline-offset-2': selectedElement === 'footer' })}
               onClick={(e) => handleElementClick(e, 'footer')}
             >
               <section className='border border-black p-2 flex flex-col gap-2'>
@@ -576,27 +576,27 @@ export default function TemplatesPage() {
                       <div>
                         <Table>
                           <TableBody>
-                            <TableRow><TableCell className="font-medium p-1 h-auto text-[10px] border border-black text-black">Punctuality</TableCell><TableCell className="text-right p-1 h-auto text-[10px] border border-black">5</TableCell></TableRow>
-                            <TableRow><TableCell className="font-medium p-1 h-auto text-[10px] border border-black text-black">Neatness</TableCell><TableCell className="text-right p-1 h-auto text-[10px] border border-black">4</TableCell></TableRow>
-                            <TableRow><TableCell className="font-medium p-1 h-auto text-[10px] border border-black text-black">Creativity</TableCell><TableCell className="text-right p-1 h-auto text-[10px] border border-black">5</TableCell></TableRow>
+                            <TableRow><TableCell className="font-medium p-0.5 h-auto text-[9px] border border-black text-black">Punctuality</TableCell><TableCell className="text-right p-0.5 h-auto text-[9px] border border-black">5</TableCell></TableRow>
+                            <TableRow><TableCell className="font-medium p-0.5 h-auto text-[9px] border border-black text-black">Neatness</TableCell><TableCell className="text-right p-0.5 h-auto text-[9px] border border-black">4</TableCell></TableRow>
+                            <TableRow><TableCell className="font-medium p-0.5 h-auto text-[9px] border border-black text-black">Creativity</TableCell><TableCell className="text-right p-0.5 h-auto text-[9px] border border-black">5</TableCell></TableRow>
                           </TableBody>
                         </Table>
                       </div>
                       <div>
                         <Table>
                           <TableBody>
-                            <TableRow><TableCell className="font-medium p-1 h-auto text-[10px] border border-black text-black">Honesty</TableCell><TableCell className="text-right p-1 h-auto text-[10px] border border-black">5</TableCell></TableRow>
-                            <TableRow><TableCell className="font-medium p-1 h-auto text-[10px] border border-black text-black">Communication</TableCell><TableCell className="text-right p-1 h-auto text-[10px] border border-black">5</TableCell></TableRow>
-                            <TableRow><TableCell className="font-medium p-1 h-auto text-[10px] border border-black text-black">Teamwork</TableCell><TableCell className="text-right p-1 h-auto text-[10px] border border-black">4</TableCell></TableRow>
+                            <TableRow><TableCell className="font-medium p-0.5 h-auto text-[9px] border border-black text-black">Honesty</TableCell><TableCell className="text-right p-0.5 h-auto text-[9px] border border-black">5</TableCell></TableRow>
+                            <TableRow><TableCell className="font-medium p-0.5 h-auto text-[9px] border border-black text-black">Communication</TableCell><TableCell className="text-right p-0.5 h-auto text-[9px] border border-black">5</TableCell></TableRow>
+                            <TableRow><TableCell className="font-medium p-0.5 h-auto text-[9px] border border-black text-black">Teamwork</TableCell><TableCell className="text-right p-0.5 h-auto text-[9px] border border-black">4</TableCell></TableRow>
                           </TableBody>
                         </Table>
                       </div>
                       <div>
                         <Table>
                           <TableBody>
-                            <TableRow><TableCell className="font-medium p-1 h-auto text-[10px] border border-black text-black">Attentiveness</TableCell><TableCell className="text-right p-1 h-auto text-[10px] border border-black">4</TableCell></TableRow>
-                            <TableRow><TableCell className="font-medium p-1 h-auto text-[10px] border border-black text-black">Self Control</TableCell><TableCell className="text-right p-1 h-auto text-[10px] border border-black">5</TableCell></TableRow>
-                            <TableRow><TableCell className="font-medium p-1 h-auto text-[10px] border border-black text-black">Leadership</TableCell><TableCell className="text-right p-1 h-auto text-[10px] border border-black">5</TableCell></TableRow>
+                            <TableRow><TableCell className="font-medium p-0.5 h-auto text-[9px] border border-black text-black">Attentiveness</TableCell><TableCell className="text-right p-0.5 h-auto text-[9px] border border-black">4</TableCell></TableRow>
+                            <TableRow><TableCell className="font-medium p-0.5 h-auto text-[9px] border border-black text-black">Self Control</TableCell><TableCell className="text-right p-0.5 h-auto text-[9px] border border-black">5</TableCell></TableRow>
+                            <TableRow><TableCell className="font-medium p-0.5 h-auto text-[9px] border border-black text-black">Leadership</TableCell><TableCell className="text-right p-0.5 h-auto text-[9px] border border-black">5</TableCell></TableRow>
                           </TableBody>
                         </Table>
                       </div>
