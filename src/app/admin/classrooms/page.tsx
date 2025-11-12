@@ -27,12 +27,24 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { PlusCircle, Edit, Trash2, Loader2 } from 'lucide-react';
-import { useCollection, useFirestore, addDocumentNonBlocking } from '@/firebase';
+import { useCollection, useFirestore, addDocumentNonBlocking, setDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase';
 import { useMemoFirebase } from '@/firebase/provider';
-import { collection, query } from 'firebase/firestore';
+import { collection, query, doc } from 'firebase/firestore';
+import { useToast } from '@/hooks/use-toast';
+
 
 type Classroom = {
   id: string;
@@ -41,7 +53,13 @@ type Classroom = {
 };
 
 export default function ClassroomsPage() {
-  const [open, setOpen] = useState(false);
+  const [addDialogOpen, setAddDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [editingClassroom, setEditingClassroom] = useState<Classroom | null>(null);
+  const [classroomToDelete, setClassroomToDelete] = useState<Classroom | null>(null);
+  const { toast } = useToast();
+
   const firestore = useFirestore();
 
   const classroomsQuery = useMemoFirebase(
@@ -61,15 +79,48 @@ export default function ClassroomsPage() {
     };
     
     addDocumentNonBlocking(collection(firestore, 'classrooms'), newClassroom);
-    setOpen(false);
+    toast({ title: "Classroom Added", description: `${newClassroom.name} has been created.` });
+    setAddDialogOpen(false);
     event.currentTarget.reset();
   };
+
+  const handleUpdateClassroom = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!firestore || !editingClassroom) return;
+
+    const formData = new FormData(event.currentTarget);
+    const updatedName = formData.get('name') as string;
+    
+    setDocumentNonBlocking(doc(firestore, 'classrooms', editingClassroom.id), { name: updatedName }, { merge: true });
+    toast({ title: "Classroom Updated", description: `Classroom name has been changed to ${updatedName}.` });
+    setEditDialogOpen(false);
+    setEditingClassroom(null);
+  }
+
+  const handleDeleteClassroom = () => {
+    if (!firestore || !classroomToDelete) return;
+    deleteDocumentNonBlocking(doc(firestore, 'classrooms', classroomToDelete.id));
+    toast({ variant: 'destructive', title: "Classroom Deleted", description: `${classroomToDelete.name} has been removed.` });
+    setDeleteDialogOpen(false);
+    setClassroomToDelete(null);
+  }
+
+  const openEditDialog = (classroom: Classroom) => {
+    setEditingClassroom(classroom);
+    setEditDialogOpen(true);
+  }
+
+  const openDeleteDialog = (classroom: Classroom) => {
+    setClassroomToDelete(classroom);
+    setDeleteDialogOpen(true);
+  }
+
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold tracking-tight">Classrooms</h1>
-        <Dialog open={open} onOpenChange={setOpen}>
+        <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
           <DialogTrigger asChild>
             <Button>
               <PlusCircle className="mr-2 h-4 w-4" />
@@ -104,6 +155,52 @@ export default function ClassroomsPage() {
         </Dialog>
       </div>
 
+       {/* Edit Dialog */}
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle>Edit Classroom</DialogTitle>
+              <DialogDescription>
+                Update the classroom name.
+              </DialogDescription>
+            </DialogHeader>
+            <form onSubmit={handleUpdateClassroom} className="grid gap-4 py-4">
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="name" className="text-right">
+                  Name
+                </Label>
+                <Input
+                  id="name"
+                  name="name"
+                  defaultValue={editingClassroom?.name}
+                  className="col-span-3"
+                  required
+                />
+              </div>
+              <DialogFooter>
+                <Button type="submit">Save Changes</Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+      </Dialog>
+      
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+            <AlertDialogHeader>
+                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                <AlertDialogDescription>
+                    This action cannot be undone. This will permanently delete the classroom <span className="font-semibold">{classroomToDelete?.name}</span>.
+                </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={handleDeleteClassroom} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Delete</AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
+    </AlertDialog>
+
+
       <Card>
         <CardHeader>
           <CardTitle>Existing Classrooms</CardTitle>
@@ -132,10 +229,10 @@ export default function ClassroomsPage() {
                       <TableCell className="font-medium">{classroom.name}</TableCell>
                       <TableCell>{classroom.teacherName || 'N/A'}</TableCell>
                       <TableCell className="text-right">
-                        <Button variant="ghost" size="icon">
+                        <Button variant="ghost" size="icon" onClick={() => openEditDialog(classroom)}>
                           <Edit className="h-4 w-4" />
                         </Button>
-                        <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
+                        <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => openDeleteDialog(classroom)}>
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </TableCell>

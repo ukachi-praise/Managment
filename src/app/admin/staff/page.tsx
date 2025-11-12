@@ -77,6 +77,8 @@ type Classroom = {
 export default function StaffPage() {
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [userToDelete, setUserToDelete] = useState<User | null>(null);
   const [resetDialogOpen, setResetDialogOpen] = useState(false);
   const [userToReset, setUserToReset] = useState<User | null>(null);
   const [editingUser, setEditingUser] = useState<User | null>(null);
@@ -129,6 +131,11 @@ export default function StaffPage() {
     setEditDialogOpen(false);
   };
   
+  const handleOpenDeleteDialog = (user: User) => {
+    setUserToDelete(user);
+    setDeleteDialogOpen(true);
+  };
+
   const handleOpenResetDialog = (user: User) => {
     setUserToReset(user);
     setResetDialogOpen(true);
@@ -209,18 +216,19 @@ export default function StaffPage() {
     setIsSubmitting(false);
   };
   
-  const handleDeleteStaff = (user: User) => {
-      if (!firestore) return;
-
-      // Optionally, add a confirmation dialog here
+  const handleDeleteStaff = () => {
+      if (!firestore || !userToDelete) return;
       
-      deleteDocumentNonBlocking(doc(firestore, 'users', user.id));
+      deleteDocumentNonBlocking(doc(firestore, 'users', userToDelete.id));
       
       toast({
           variant: 'destructive',
           title: 'Staff Removed',
-          description: `${user.name} has been removed from the staff list.`,
+          description: `${userToDelete.name} has been removed from the staff list.`,
       });
+
+      setDeleteDialogOpen(false);
+      setUserToDelete(null);
   };
 
   const handlePasswordReset = async () => {
@@ -382,6 +390,23 @@ export default function StaffPage() {
             </AlertDialogContent>
         </AlertDialog>
 
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+            <AlertDialogHeader>
+                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                <AlertDialogDescription>
+                    This action cannot be undone. This will permanently delete the staff member <span className="font-semibold">{userToDelete?.name}</span>.
+                </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={handleDeleteStaff} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Delete</AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
+    </AlertDialog>
+
+
       <Card>
         <CardHeader>
           <CardTitle>Staff List</CardTitle>
@@ -420,7 +445,7 @@ export default function StaffPage() {
                         <Button variant="ghost" size="icon" onClick={() => handleOpenEditDialog(user)}>
                           <Edit className="h-4 w-4" />
                         </Button>
-                        <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => handleDeleteStaff(user)}>
+                        <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => handleOpenDeleteDialog(user)}>
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </TableCell>
