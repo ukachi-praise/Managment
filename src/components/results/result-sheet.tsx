@@ -212,29 +212,29 @@ export function ResultSheet({ student, classroom }: ResultSheetProps) {
         
         <div className="flex-grow flex flex-col">
             {settings.subjectsTable.visible && (
-                <div className="border border-black flex-grow">
+                <div className="border border-black">
                     <Table>
                         <TableHeader>
                             <TableRow>
-                                <TableHead className="border border-black p-1 h-auto text-xs text-black">Subject</TableHead>
-                                <TableHead className="text-center border border-black p-1 h-auto text-[10px] text-black"><div>CA1</div><div>(10)</div></TableHead>
-                                <TableHead className="text-center border border-black p-1 h-auto text-[10px] text-black"><div>CA2</div><div>(10)</div></TableHead>
-                                <TableHead className="text-center border border-black p-1 h-auto text-[10px] text-black"><div>CA3</div><div>(10)</div></TableHead>
-                                <TableHead className="text-center border border-black p-1 h-auto text-[10px] text-black"><div>Exam</div><div>(70)</div></TableHead>
-                                <TableHead className="text-center border border-black p-1 h-auto text-[10px] text-black"><div>Total</div><div>(100)</div></TableHead>
-                                <TableHead className="border border-black p-1 h-auto text-xs text-black">Remark</TableHead>
+                                <TableHead className="border border-black p-1 h-auto text-sm text-black">Subject</TableHead>
+                                <TableHead className="text-center border border-black p-1 h-auto text-sm text-black">CA1 (10)</TableHead>
+                                <TableHead className="text-center border border-black p-1 h-auto text-sm text-black">CA2 (10)</TableHead>
+                                <TableHead className="text-center border border-black p-1 h-auto text-sm text-black">CA3 (10)</TableHead>
+                                <TableHead className="text-center border border-black p-1 h-auto text-sm text-black">Exam (70)</TableHead>
+                                <TableHead className="text-center border border-black p-1 h-auto text-sm text-black">Total (100)</TableHead>
+                                <TableHead className="border border-black p-1 h-auto text-sm text-black">Remark</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
                             {resultEntries.map(entry => (
                                 <TableRow key={entry.subjectName}>
-                                    <TableCell className="border-b border-r border-black p-1 text-xs">{entry.subjectName}</TableCell>
-                                    <TableCell className="text-center border-b border-r border-black p-1 text-xs">{entry.ca1}</TableCell>
-                                    <TableCell className="text-center border-b border-r border-black p-1 text-xs">{entry.ca2}</TableCell>
-                                    <TableCell className="text-center border-b border-r border-black p-1 text-xs">{entry.ca3}</TableCell>
-                                    <TableCell className="text-center border-b border-r border-black p-1 text-xs">{entry.exam}</TableCell>
-                                    <TableCell className="text-center border-b border-r border-black p-1 text-xs">{entry.total}</TableCell>
-                                    <TableCell className="border-b border-black p-1 text-xs">{entry.remark}</TableCell>
+                                    <TableCell className="border-b border-r border-black p-1 text-sm">{entry.subjectName}</TableCell>
+                                    <TableCell className="text-center border-b border-r border-black p-1 text-sm">{entry.ca1}</TableCell>
+                                    <TableCell className="text-center border-b border-r border-black p-1 text-sm">{entry.ca2}</TableCell>
+                                    <TableCell className="text-center border-b border-r border-black p-1 text-sm">{entry.ca3}</TableCell>
+                                    <TableCell className="text-center border-b border-r border-black p-1 text-sm">{entry.exam}</TableCell>
+                                    <TableCell className="text-center border-b border-r border-black p-1 text-sm">{entry.total}</TableCell>
+                                    <TableCell className="border-b border-black p-1 text-sm">{entry.remark}</TableCell>
                                 </TableRow>
                             ))}
                         </TableBody>

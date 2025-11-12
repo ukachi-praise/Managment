@@ -501,46 +501,46 @@ export default function TemplatesPage() {
               <div className="flex-grow flex flex-col">
                 {settings.subjectsTable.visible && (
                   <div
-                    className={cn('editable-region border border-black flex-grow', { 'outline-blue-500 outline-dashed outline-2 outline-offset-2': selectedElement === 'subjectsTable' })}
+                    className={cn('editable-region border border-black', { 'outline-blue-500 outline-dashed outline-2 outline-offset-2': selectedElement === 'subjectsTable' })}
                     onClick={(e) => handleElementClick(e, 'subjectsTable')}
                   >
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead className="border border-black p-1 h-auto text-xs text-black">Subject</TableHead>
-                          <TableHead className="text-center border border-black p-1 h-auto text-[10px] text-black"><div>CA1</div><div>(10)</div></TableHead>
-                          <TableHead className="text-center border border-black p-1 h-auto text-[10px] text-black"><div>CA2</div><div>(10)</div></TableHead>
-                          <TableHead className="text-center border border-black p-1 h-auto text-[10px] text-black"><div>CA3</div><div>(10)</div></TableHead>
-                          <TableHead className="text-center border border-black p-1 h-auto text-[10px] text-black"><div>Exam</div><div>(70)</div></TableHead>
-                          <TableHead className="text-center border border-black p-1 h-auto text-[10px] text-black"><div>Total</div><div>(100)</div></TableHead>
-                          <TableHead className="border border-black p-1 h-auto text-xs text-black">Remark</TableHead>
+                          <TableHead className="border border-black p-1 h-auto text-sm text-black">Subject</TableHead>
+                          <TableHead className="text-center border border-black p-1 h-auto text-sm text-black">CA1 (10)</TableHead>
+                          <TableHead className="text-center border border-black p-1 h-auto text-sm text-black">CA2 (10)</TableHead>
+                          <TableHead className="text-center border border-black p-1 h-auto text-sm text-black">CA3 (10)</TableHead>
+                          <TableHead className="text-center border border-black p-1 h-auto text-sm text-black">Exam (70)</TableHead>
+                          <TableHead className="text-center border border-black p-1 h-auto text-sm text-black">Total (100)</TableHead>
+                          <TableHead className="border border-black p-1 h-auto text-sm text-black">Remark</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {isLoading ? (
-                          <TableRow><TableCell colSpan={7} className="text-center border-b border-black p-1 text-xs">Loading subjects...</TableCell></TableRow>
+                          <TableRow><TableCell colSpan={7} className="text-center border-b border-black p-1 text-sm">Loading subjects...</TableCell></TableRow>
                         ) : displayedSubjects.length > 0 ? (
                           displayedSubjects.map(subject => (
                             <TableRow key={subject.id}>
-                              <TableCell className="border-b border-r border-black p-1 text-xs">{subject.name}</TableCell>
-                              <TableCell className="text-center border-b border-r border-black p-1 text-xs">--</TableCell>
-                              <TableCell className="text-center border-b border-r border-black p-1 text-xs">--</TableCell>
-                              <TableCell className="text-center border-b border-r border-black p-1 text-xs">--</TableCell>
-                              <TableCell className="text-center border-b border-r border-black p-1 text-xs">--</TableCell>
-                              <TableCell className="text-center border-b border-r border-black p-1 text-xs">--</TableCell>
-                              <TableCell className="border-b border-black p-1 text-xs">--</TableCell>
+                              <TableCell className="border-b border-r border-black p-1 text-sm">{subject.name}</TableCell>
+                              <TableCell className="text-center border-b border-r border-black p-1 text-sm">--</TableCell>
+                              <TableCell className="text-center border-b border-r border-black p-1 text-sm">--</TableCell>
+                              <TableCell className="text-center border-b border-r border-black p-1 text-sm">--</TableCell>
+                              <TableCell className="text-center border-b border-r border-black p-1 text-sm">--</TableCell>
+                              <TableCell className="text-center border-b border-r border-black p-1 text-sm">--</TableCell>
+                              <TableCell className="border-b border-black p-1 text-sm">--</TableCell>
                             </TableRow>
                           ))
                         ) : (
                           Array.from({ length: 12 }).map((_, index) => (
                             <TableRow key={`placeholder-${index}`}>
-                              <TableCell className="border-b border-r border-black p-1 text-xs">Subject Name</TableCell>
-                              <TableCell className="text-center border-b border-r border-black p-1 text-xs">--</TableCell>
-                              <TableCell className="text-center border-b border-r border-black p-1 text-xs">--</TableCell>
-                              <TableCell className="text-center border-b border-r border-black p-1 text-xs">--</TableCell>
-                              <TableCell className="text-center border-b border-r border-black p-1 text-xs">--</TableCell>
-                              <TableCell className="text-center border-b border-r border-black p-1 text-xs">--</TableCell>
-                              <TableCell className="border-b border-black p-1 text-xs">--</TableCell>
+                              <TableCell className="border-b border-r border-black p-1 text-sm">Subject Name</TableCell>
+                              <TableCell className="text-center border-b border-r border-black p-1 text-sm">--</TableCell>
+                              <TableCell className="text-center border-b border-r border-black p-1 text-sm">--</TableCell>
+                              <TableCell className="text-center border-b border-r border-black p-1 text-sm">--</TableCell>
+                              <TableCell className="text-center border-b border-r border-black p-1 text-sm">--</TableCell>
+                              <TableCell className="text-center border-b border-r border-black p-1 text-sm">--</TableCell>
+                              <TableCell className="border-b border-black p-1 text-sm">--</TableCell>
                             </TableRow>
                           ))
                         )}
