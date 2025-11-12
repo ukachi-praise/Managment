@@ -27,10 +27,10 @@ import {
 } from '@/firebase';
 import { useMemoFirebase } from '@/firebase/provider';
 import { collection, query, where, doc } from 'firebase/firestore';
-import { Skeleton } from '@/components/ui/skeleton';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
+import { Loader2 } from 'lucide-react';
 
 type Student = { id: string; name: string };
 type Classroom = { id: string; name: string };
@@ -51,7 +51,7 @@ export default function TeacherClassPage() {
 
   const enrollmentsQuery = useMemoFirebase(
     () =>
-      classroomId
+      classroomId && firestore
         ? query(
             collection(firestore, 'enrollments'),
             where('classroomId', '==', classroomId)
@@ -79,7 +79,7 @@ export default function TeacherClassPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-            {classroomLoading ? <Skeleton className="h-9 w-48" /> : <h1 className="text-3xl font-bold tracking-tight">{classroom?.name}</h1>}
+            {classroomLoading ? <h1 className="text-3xl font-bold tracking-tight">Loading...</h1> : <h1 className="text-3xl font-bold tracking-tight">{classroom?.name}</h1>}
             <p className="text-muted-foreground">
                 Your assigned class dashboard. View students and manage results.
             </p>
@@ -97,67 +97,56 @@ export default function TeacherClassPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Student</TableHead>
-                <TableHead>Admission Number</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {isLoading ? (
-                Array.from({ length: 5 }).map((_, i) => (
-                  <TableRow key={i}>
-                    <TableCell>
-                      <div className="flex items-center gap-3">
-                        <Skeleton className="h-10 w-10 rounded-full" />
-                        <Skeleton className="h-5 w-32" />
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Skeleton className="h-5 w-24" />
-                    </TableCell>
-                    <TableCell className="text-right">
-                        <Skeleton className="h-8 w-24" />
+          {isLoading ? (
+            <div className="flex h-64 items-center justify-center">
+              <Loader2 className="h-12 w-12 animate-spin text-primary" />
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Student</TableHead>
+                  <TableHead>Admission Number</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {studentsInClass && studentsInClass.length > 0 ? (
+                  studentsInClass.map((student) => (
+                      <TableRow key={student.id}>
+                        <TableCell className="font-medium">
+                          <Link href={`/results/${student.id}`} className="flex items-center gap-3 hover:underline">
+                            <Avatar>
+                              <AvatarFallback>
+                                {student.name.charAt(0).toUpperCase()}
+                              </AvatarFallback>
+                            </Avatar>
+                            <span>{student.name}</span>
+                          </Link>
+                        </TableCell>
+                        <TableCell>
+                          {/* This assumes admissionNumber is on the student doc */}
+                          {(student as any).admissionNumber || 'N/A'}
+                        </TableCell>
+                         <TableCell className="text-right">
+                          <Button asChild variant="outline" size="sm">
+                            <Link href={`/results/${student.id}`}>
+                              View Report
+                            </Link>
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={3} className="h-24 text-center">
+                      No students found in this class.
                     </TableCell>
                   </TableRow>
-                ))
-              ) : studentsInClass && studentsInClass.length > 0 ? (
-                studentsInClass.map((student) => (
-                    <TableRow key={student.id}>
-                      <TableCell className="font-medium">
-                        <Link href={`/results/${student.id}`} className="flex items-center gap-3 hover:underline">
-                          <Avatar>
-                            <AvatarFallback>
-                              {student.name.charAt(0).toUpperCase()}
-                            </AvatarFallback>
-                          </Avatar>
-                          <span>{student.name}</span>
-                        </Link>
-                      </TableCell>
-                      <TableCell>
-                        {/* This assumes admissionNumber is on the student doc */}
-                        {(student as any).admissionNumber || 'N/A'}
-                      </TableCell>
-                       <TableCell className="text-right">
-                        <Button asChild variant="outline" size="sm">
-                          <Link href={`/results/${student.id}`}>
-                            View Report
-                          </Link>
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))
-              ) : (
-                <TableRow>
-                  <TableCell colSpan={3} className="h-24 text-center">
-                    No students found in this class.
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
+                )}
+              </TableBody>
+            </Table>
+          )}
         </CardContent>
       </Card>
     </div>

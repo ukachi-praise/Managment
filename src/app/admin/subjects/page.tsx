@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -20,7 +21,7 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { PlusCircle, Trash2 } from 'lucide-react';
+import { PlusCircle, Trash2, Loader2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import {
   useCollection,
@@ -30,7 +31,6 @@ import {
 } from '@/firebase';
 import { useMemoFirebase } from '@/firebase/provider';
 import { collection, query, doc } from 'firebase/firestore';
-import { Skeleton } from '@/components/ui/skeleton';
 import {
   Select,
   SelectContent,
@@ -249,13 +249,8 @@ export default function SubjectsPage() {
       </div>
 
         {isLoading ? (
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                {Array.from({ length: 3 }).map((_, i) => (
-                     <Card key={i}>
-                        <CardHeader><Skeleton className="h-6 w-1/2" /></CardHeader>
-                        <CardContent><Skeleton className="h-20 w-full" /></CardContent>
-                     </Card>
-                ))}
+            <div className="flex h-96 items-center justify-center">
+                <Loader2 className="h-12 w-12 animate-spin text-primary" />
             </div>
         ) : (
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">

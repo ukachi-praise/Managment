@@ -46,11 +46,11 @@ import {
   setDocumentNonBlocking,
   deleteDocumentNonBlocking,
   useAuth,
+  useUser,
 } from '@/firebase';
 import { sendPasswordResetEmail } from 'firebase/auth';
 import { useMemoFirebase } from '@/firebase/provider';
 import { collection, query, doc } from 'firebase/firestore';
-import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import {
   Select,
@@ -85,16 +85,17 @@ export default function StaffPage() {
 
   const firestore = useFirestore();
   const auth = useAuth();
+  const { user } = useUser();
   const { toast } = useToast();
 
   // --- Data Fetching ---
   const usersQuery = useMemoFirebase(
-    () => (firestore ? query(collection(firestore, 'users')) : null),
-    [firestore]
+    () => (firestore && user ? query(collection(firestore, 'users')) : null),
+    [firestore, user]
   );
   const classroomsQuery = useMemoFirebase(
-    () => (firestore ? query(collection(firestore, 'classrooms')) : null),
-    [firestore]
+    () => (firestore && user ? query(collection(firestore, 'classrooms')) : null),
+    [firestore, user]
   );
 
   const { data: users, isLoading: usersLoading } = useCollection<User>(usersQuery);
@@ -161,6 +162,7 @@ export default function StaffPage() {
           name,
           email,
           role,
+          id: userId,
           assignedClassroomId: role === 'Teacher' ? assignedClassroomId : undefined,
       }, {merge: false});
 
@@ -188,7 +190,7 @@ export default function StaffPage() {
 
     const userDocRef = doc(firestore, 'users', editingUser.id);
     
-    const updatedData = {
+    const updatedData: Partial<User> = {
         name,
         role,
         assignedClassroomId: role === 'Teacher' && assignedClassroomId !== 'unassigned' ? assignedClassroomId : undefined,
@@ -388,60 +390,50 @@ export default function StaffPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Role</TableHead>
-                <TableHead>Assigned Class</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {isLoading ? (
-                Array.from({ length: 3 }).map((_, i) => (
-                  <TableRow key={i}>
-                    <TableCell><Skeleton className="h-5 w-40" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-48" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-20" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-24" /></TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        <Skeleton className="h-8 w-8" />
-                        <Skeleton className="h-8 w-8" />
-                        <Skeleton className="h-8 w-8" />
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))
-              ) : users && users.length > 0 ? (
-                users.map((user) => (
-                  <TableRow key={user.id}>
-                    <TableCell className="font-medium">{user.name}</TableCell>
-                    <TableCell>{user.email}</TableCell>
-                    <TableCell><Badge variant={user.role === 'Admin' ? 'default' : 'secondary'}>{user.role}</Badge></TableCell>
-                    <TableCell>{user.role === 'Teacher' && user.assignedClassroomId ? classroomMap[user.assignedClassroomId] || 'N/A' : 'N/A'}</TableCell>
-                    <TableCell className="text-right">
-                      <Button variant="ghost" size="icon" onClick={() => handleOpenResetDialog(user)}>
-                        <KeyRound className="h-4 w-4" />
-                      </Button>
-                      <Button variant="ghost" size="icon" onClick={() => handleOpenEditDialog(user)}>
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => handleDeleteStaff(user)}>
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))
-              ) : (
-                 <TableRow>
-                    <TableCell colSpan={5} className="text-center h-24">No staff found.</TableCell>
-                 </TableRow>
-              )}
-            </TableBody>
-          </Table>
+          {isLoading ? (
+            <div className="flex h-64 items-center justify-center">
+              <Loader2 className="h-12 w-12 animate-spin text-primary" />
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Role</TableHead>
+                  <TableHead>Assigned Class</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {users && users.length > 0 ? (
+                  users.map((user) => (
+                    <TableRow key={user.id}>
+                      <TableCell className="font-medium">{user.name}</TableCell>
+                      <TableCell>{user.email}</TableCell>
+                      <TableCell><Badge variant={user.role === 'Admin' ? 'default' : 'secondary'}>{user.role}</Badge></TableCell>
+                      <TableCell>{user.role === 'Teacher' && user.assignedClassroomId ? classroomMap[user.assignedClassroomId] || 'N/A' : 'N/A'}</TableCell>
+                      <TableCell className="text-right">
+                        <Button variant="ghost" size="icon" onClick={() => handleOpenResetDialog(user)}>
+                          <KeyRound className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" onClick={() => handleOpenEditDialog(user)}>
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => handleDeleteStaff(user)}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                   <TableRow>
+                      <TableCell colSpan={5} className="text-center h-24">No staff found.</TableCell>
+                   </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          )}
         </CardContent>
       </Card>
     </div>

@@ -7,7 +7,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { Users, Presentation, BookCopy } from 'lucide-react';
+import { Users, Presentation, BookCopy, Loader2 } from 'lucide-react';
 import { useCollection, useUser } from '@/firebase';
 import { useMemoFirebase, useFirestore } from '@/firebase/provider';
 import { collection, query } from 'firebase/firestore';
@@ -70,6 +70,14 @@ export default function AdminDashboard() {
   const totalTeachers = users?.filter(u => u.role === 'Teacher').length ?? 0;
   
   const isLoading = studentsLoading || classroomsLoading || subjectsLoading || usersLoading;
+
+  if (isLoading) {
+    return (
+      <div className="flex h-full items-center justify-center">
+        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

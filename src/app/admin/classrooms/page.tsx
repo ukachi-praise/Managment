@@ -29,11 +29,10 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { PlusCircle, Edit, Trash2 } from 'lucide-react';
+import { PlusCircle, Edit, Trash2, Loader2 } from 'lucide-react';
 import { useCollection, useFirestore, addDocumentNonBlocking } from '@/firebase';
 import { useMemoFirebase } from '@/firebase/provider';
 import { collection, query } from 'firebase/firestore';
-import { Skeleton } from '@/components/ui/skeleton';
 
 type Classroom = {
   id: string;
@@ -113,50 +112,43 @@ export default function ClassroomsPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Class Name</TableHead>
-                <TableHead>Class Teacher</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {isLoading ? (
-                Array.from({ length: 4 }).map((_, i) => (
-                  <TableRow key={i}>
-                    <TableCell><Skeleton className="h-5 w-24" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-32" /></TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        <Skeleton className="h-8 w-8" />
-                        <Skeleton className="h-8 w-8" />
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))
-              ) : classrooms && classrooms.length > 0 ? (
-                classrooms.map((classroom) => (
-                  <TableRow key={classroom.id}>
-                    <TableCell className="font-medium">{classroom.name}</TableCell>
-                    <TableCell>{classroom.teacherName || 'N/A'}</TableCell>
-                    <TableCell className="text-right">
-                      <Button variant="ghost" size="icon">
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))
-              ) : (
-                 <TableRow>
-                    <TableCell colSpan={3} className="text-center h-24">No classrooms found.</TableCell>
-                 </TableRow>
-              )}
-            </TableBody>
-          </Table>
+          {isLoading ? (
+            <div className="flex h-64 items-center justify-center">
+              <Loader2 className="h-12 w-12 animate-spin text-primary" />
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Class Name</TableHead>
+                  <TableHead>Class Teacher</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {classrooms && classrooms.length > 0 ? (
+                  classrooms.map((classroom) => (
+                    <TableRow key={classroom.id}>
+                      <TableCell className="font-medium">{classroom.name}</TableCell>
+                      <TableCell>{classroom.teacherName || 'N/A'}</TableCell>
+                      <TableCell className="text-right">
+                        <Button variant="ghost" size="icon">
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                   <TableRow>
+                      <TableCell colSpan={3} className="text-center h-24">No classrooms found.</TableCell>
+                   </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          )}
         </CardContent>
       </Card>
     </div>
