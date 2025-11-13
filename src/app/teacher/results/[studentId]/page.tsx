@@ -170,9 +170,9 @@ export default function StudentResultEntryPage() {
     setIsSaving(true);
     
     Object.values(results).forEach(result => {
-        const hasAnyScore = result.ca1 !== null || result.ca2 !== null || result.ca3 !== null || result.exam !== null;
+        const allScoresPresent = result.ca1 !== null && result.ca2 !== null && result.ca3 !== null && result.exam !== null;
         
-        if (hasAnyScore) {
+        if (allScoresPresent) {
              const resultWithIds = {
                 ...result,
                 studentId: studentId,
@@ -321,3 +321,4 @@ export default function StudentResultEntryPage() {
   );
 }
 
+    
