@@ -181,7 +181,7 @@ export default function StudentResultEntryPage() {
                 termId: schoolSettings.currentTermId,
             };
             // Use a predictable ID to ensure updates happen on the same doc
-            const resultId = result.id || `${studentId}_${result.subjectId}_${schoolSettings.termId}`; 
+            const resultId = result.id || `${studentId}_${result.subjectId}_${schoolSettings.currentTermId}`; 
             const resultRef = doc(firestore, 'results', resultId);
             setDocumentNonBlocking(resultRef, resultWithIds, { merge: true });
         }
