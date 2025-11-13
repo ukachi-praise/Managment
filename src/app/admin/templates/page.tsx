@@ -526,7 +526,7 @@ export default function TemplatesPage() {
                                 </TableRow>
                                 ))
                             ) : (
-                                Array.from({ length: 10 }).map((_, index) => (
+                                Array.from({ length: 9 }).map((_, index) => (
                                 <TableRow key={`placeholder-${index}`}>
                                     <TableCell className="border-b border-r border-black p-1 text-sm">Subject Name</TableCell>
                                     <TableCell className="text-center border-b border-r border-black p-1 text-sm">--</TableCell>
