@@ -241,17 +241,11 @@ export function ResultSheet({ student, classroom }: ResultSheetProps) {
                                         </TableRow>
                                     ))
                                 ) : (
-                                    Array.from({ length: 9 }).map((_, index) => (
-                                        <TableRow key={`placeholder-${index}`}>
-                                        <TableCell className="border-b border-r border-black p-1 text-sm">&nbsp;</TableCell>
-                                        <TableCell className="text-center border-b border-r border-black p-1 text-sm">&nbsp;</TableCell>
-                                        <TableCell className="text-center border-b border-r border-black p-1 text-sm">&nbsp;</TableCell>
-                                        <TableCell className="text-center border-b border-r border-black p-1 text-sm">&nbsp;</TableCell>
-                                        <TableCell className="text-center border-b border-r border-black p-1 text-sm">&nbsp;</TableCell>
-                                        <TableCell className="text-center border-b border-r border-black p-1 text-sm">&nbsp;</TableCell>
-                                        <TableCell className="border-b border-black p-1 text-sm">&nbsp;</TableCell>
-                                        </TableRow>
-                                    ))
+                                    <TableRow>
+                                      <TableCell colSpan={7} className="h-24 text-center border-b border-black p-1 text-sm">
+                                        No subjects assigned or scores entered for this term.
+                                      </TableCell>
+                                    </TableRow>
                                 )}
                             </TableBody>
                         </Table>
