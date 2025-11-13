@@ -156,9 +156,9 @@ export default function StudentResultEntryPage() {
         ...(prevResults[subjectId] || {
             studentId: studentId,
             subjectId: subjectId,
-            classroomId: classroomId,
-            sessionId: schoolSettings?.currentSession,
-            termId: schoolSettings?.currentTermId,
+            classroomId: classroomId!,
+            sessionId: schoolSettings!.currentSession,
+            termId: schoolSettings!.currentTermId,
         }),
         [field]: numericValue,
       },
@@ -169,20 +169,25 @@ export default function StudentResultEntryPage() {
     if (!classroomId || !schoolSettings || !firestore) return;
     setIsSaving(true);
     
-    const promises = Object.values(results).map(result => {
-        // Ensure every result has the necessary identifiers
-        const resultWithIds = {
-            ...result,
-            studentId: studentId,
-            classroomId: classroomId,
-            sessionId: schoolSettings.currentSession,
-            termId: schoolSettings.currentTermId,
-        };
-        const resultId = result.id || `${studentId}_${result.subjectId}_${schoolSettings.termId}`; // Create a predictable ID
-        const resultRef = doc(firestore, 'results', resultId);
-        return setDocumentNonBlocking(resultRef, resultWithIds, { merge: true });
+    Object.values(results).forEach(result => {
+        const hasAnyScore = result.ca1 !== null || result.ca2 !== null || result.ca3 !== null || result.exam !== null;
+        
+        if (hasAnyScore) {
+             const resultWithIds = {
+                ...result,
+                studentId: studentId,
+                classroomId: classroomId,
+                sessionId: schoolSettings.currentSession,
+                termId: schoolSettings.currentTermId,
+            };
+            // Use a predictable ID to ensure updates happen on the same doc
+            const resultId = result.id || `${studentId}_${result.subjectId}_${schoolSettings.termId}`; 
+            const resultRef = doc(firestore, 'results', resultId);
+            setDocumentNonBlocking(resultRef, resultWithIds, { merge: true });
+        }
     });
     
+    // Give feedback after a short delay to allow for non-blocking writes to initiate
     setTimeout(() => { 
         setIsSaving(false);
         toast({
