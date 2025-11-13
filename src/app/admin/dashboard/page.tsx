@@ -67,7 +67,7 @@ export default function AdminDashboard() {
   const totalClasses = classrooms?.length ?? 0;
   const totalSubjects = subjects?.length ?? 0;
   // This is a simplification. A real app would filter for users with the 'teacher' role.
-  const totalTeachers = users?.filter(u => u.role === 'Teacher').length ?? 0;
+  const totalTeachers = users?.filter((u: any) => u.role === 'Teacher').length ?? 0;
   
   const isLoading = studentsLoading || classroomsLoading || subjectsLoading || usersLoading;
 

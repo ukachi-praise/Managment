@@ -26,7 +26,7 @@ import {
   addDocumentNonBlocking,
 } from '@/firebase';
 import { useMemoFirebase } from '@/firebase/provider';
-import { collection, query } from 'firebase/firestore';
+import { collection, query, addDoc } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   Dialog,
@@ -71,8 +71,9 @@ export default function StudentsPage() {
   const handleAddStudent = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!firestore) return;
-
-    const formData = new FormData(event.currentTarget);
+    
+    const form = event.currentTarget;
+    const formData = new FormData(form);
     const newStudentData = {
       name: formData.get('name') as string,
       admissionNumber: formData.get('admissionNumber') as string,
@@ -86,22 +87,22 @@ export default function StudentsPage() {
     if (!newStudentData.name || !classroomId || !newStudentData.admissionNumber) return;
 
     // 1. Create the student
-    const studentRef = await addDocumentNonBlocking(
+    const studentRef = await addDoc(
       collection(firestore, 'students'),
       newStudentData
     );
 
     if (studentRef) {
       // 2. Create the enrollment
-      await addDocumentNonBlocking(collection(firestore, 'enrollments'), {
+      await addDoc(collection(firestore, 'enrollments'), {
         studentId: studentRef.id,
         classroomId: classroomId,
         // In a real app, you'd also have sessionId (e.g. "2025/2026")
       });
     }
 
+    form.reset();
     setOpen(false);
-    event.currentTarget.reset();
   };
   
     const sortedClassrooms = useMemo(() => {

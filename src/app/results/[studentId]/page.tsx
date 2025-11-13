@@ -5,7 +5,7 @@ import { useParams, notFound, useRouter } from 'next/navigation';
 import { ResultSheet } from '@/components/results/result-sheet';
 import { Button } from '@/components/ui/button';
 import { Download, Loader2, ArrowLeft } from 'lucide-react';
-import { useDoc, useCollection, useFirestore } from '@/firebase';
+import { useDoc, useCollection, useFirestore, useUser } from '@/firebase';
 import { useMemoFirebase } from '@/firebase/provider';
 import { doc, collection, query, where } from 'firebase/firestore';
 import { useMemo } from 'react';

@@ -5,7 +5,7 @@ import { SidebarNav } from '@/components/shared/sidebar-nav';
 import { SidebarProvider } from '@/components/ui/sidebar';
 import { useUser } from '@/firebase';
 import { redirect } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 
 export default function TeacherLayout({

@@ -58,7 +58,7 @@ export function ResultViewTable() {
   
   const enrollmentsQuery = useMemoFirebase(
     () =>
-      selectedClass
+      selectedClass && firestore
         ? query(
             collection(firestore, 'enrollments'),
             where('classroomId', '==', selectedClass)

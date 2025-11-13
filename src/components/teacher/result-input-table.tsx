@@ -70,7 +70,7 @@ export function ResultInputTable() {
   // --- Data Fetching ---
   // 1. Get the current teacher's user data to find their assigned class
   const userQuery = useMemoFirebase(
-    () => (user ? doc(firestore, 'users', user.uid) : null),
+    () => (user && firestore ? doc(firestore, 'users', user.uid) : null),
     [user, firestore]
   );
   // Note: useDoc is for single docs, but we'll manually fetch here for simplicity.
@@ -93,7 +93,7 @@ export function ResultInputTable() {
   // 3. Get subjects assigned to the teacher's class
   const classSubjectsQuery = useMemoFirebase(
     () =>
-      teacherClass
+      teacherClass && firestore
         ? query(
             collection(firestore, 'classroomSubjects'),
             where('classroomId', '==', teacherClass.id)
@@ -118,7 +118,7 @@ export function ResultInputTable() {
   // 4. Get students enrolled in the teacher's class
   const enrollmentsQuery = useMemoFirebase(
     () =>
-      teacherClass
+      teacherClass && firestore
         ? query(
             collection(firestore, 'enrollments'),
             where('classroomId', '==', teacherClass.id)
@@ -142,7 +142,7 @@ export function ResultInputTable() {
 
   // --- Fetch existing results when class and subject are selected ---
   useEffect(() => {
-    if (!teacherClass || !selectedSubject) {
+    if (!teacherClass || !selectedSubject || !firestore) {
       setResults({});
       setInitialFetchDone(false);
       return;
@@ -201,7 +201,7 @@ export function ResultInputTable() {
   };
   
   const handleSave = () => {
-    if (!teacherClass || !selectedSubject) return;
+    if (!teacherClass || !selectedSubject || !firestore) return;
     setIsSaving(true);
     
     const promises = Object.values(results).map(result => {
@@ -344,5 +344,3 @@ export function ResultInputTable() {
     </Card>
   );
 }
-
-    
