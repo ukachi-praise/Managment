@@ -57,7 +57,7 @@ service cloud.firestore {
 
     match /results/{resultId} {
       // Admins can list all results. Teachers can list results for their class.
-      allow list: if isAdmin() || (isTeacher() && request.query.where.classroomId == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.assignedClassroomId);
+      allow list: if isAdmin() || (isTeacher() && request.query.classroomId == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.assignedClassroomId);
       // Admins can read any result. Teachers can read results for their class.
       allow read: if isAdmin() || isAssignedTeacher(get(/databases/$(database)/documents/results/$(resultId)).data.classroomId);
       // Teachers can create/update results for their assigned class.
