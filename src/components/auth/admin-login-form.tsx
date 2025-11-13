@@ -20,7 +20,7 @@ import { useState, useEffect } from 'react';
 import { Loader2, Eye, EyeOff } from 'lucide-react';
 import Link from 'next/link';
 import { useAuth, useUser } from '@/firebase';
-import { signInWithEmailAndPassword } from 'firebase/auth';
+import { signInWithEmailAndPassword, User } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
 import { useFirestore } from '@/firebase';
 
@@ -36,7 +36,6 @@ export function AdminLoginForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const auth = useAuth();
-  const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -47,55 +46,55 @@ export function AdminLoginForm() {
     },
   });
 
-  useEffect(() => {
-    if (isUserLoading) {
-      setIsLoading(true);
+  const handleSuccessfulLogin = async (user: User) => {
+    if (!firestore) {
+        toast({
+            variant: 'destructive',
+            title: 'Error',
+            description: 'Could not connect to the database.',
+        });
+        setIsLoading(false);
+        return;
+    }
+    // Temporary: Hardcoded admin check
+    if (user.uid === ADMIN_UID) {
+      toast({
+        title: 'Login Successful',
+        description: 'Welcome, Admin! Redirecting...',
+      });
+      router.push('/admin/dashboard');
       return;
     }
-    if (user) {
-      const checkAdmin = async () => {
-        if (!firestore) return;
-        // Temporary: Hardcoded admin check
-        if (user.uid === ADMIN_UID) {
-          toast({
-            title: 'Login Successful',
-            description: 'Welcome, Admin! Redirecting...',
-          });
-          router.push('/admin/dashboard');
-          return;
-        }
 
-        // Original logic
-        const adminRoleRef = doc(firestore, 'roles_admin', user.uid);
-        const adminDoc = await getDoc(adminRoleRef);
-        if (adminDoc.exists()) {
-          toast({
-            title: 'Login Successful',
-            description: 'Welcome, Admin! Redirecting...',
-          });
-          router.push('/admin/dashboard');
-        } else {
-           toast({
-            variant: 'destructive',
-            title: 'Permission Denied',
-            description: 'You do not have admin privileges.',
-          });
-           setIsLoading(false);
-        }
-      };
-      checkAdmin();
+    // Original logic
+    const adminRoleRef = doc(firestore, 'roles_admin', user.uid);
+    const adminDoc = await getDoc(adminRoleRef);
+    if (adminDoc.exists()) {
+      toast({
+        title: 'Login Successful',
+        description: 'Welcome, Admin! Redirecting...',
+      });
+      router.push('/admin/dashboard');
     } else {
-      setIsLoading(false);
+       toast({
+        variant: 'destructive',
+        title: 'Permission Denied',
+        description: 'You do not have admin privileges.',
+      });
+       setIsLoading(false);
     }
-  }, [user, isUserLoading, router, firestore]);
+  }
   
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
-    if (!auth) return;
+    if (!auth) {
+        setIsLoading(false);
+        return;
+    };
     try {
-      await signInWithEmailAndPassword(auth, values.email, values.password);
-      // onAuthStateChanged will handle the redirect
+      const userCredential = await signInWithEmailAndPassword(auth, values.email, values.password);
+      await handleSuccessfulLogin(userCredential.user);
     } catch (error: any) {
       if (error.code === 'auth/invalid-credential') {
         toast({
@@ -178,5 +177,3 @@ export function AdminLoginForm() {
     </Form>
   );
 }
-
-    

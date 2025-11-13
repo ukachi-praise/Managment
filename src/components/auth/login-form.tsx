@@ -16,11 +16,11 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { toast } from '@/hooks/use-toast';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Loader2, Eye, EyeOff } from 'lucide-react';
 import Link from 'next/link';
-import { useAuth, useUser, useFirestore } from '@/firebase';
-import { signInWithEmailAndPassword } from 'firebase/auth';
+import { useAuth, useFirestore } from '@/firebase';
+import { signInWithEmailAndPassword, User } from 'firebase/auth';
 import { doc, getDoc, getDocs, collection, query, where } from 'firebase/firestore';
 
 const formSchema = z.object({
@@ -36,7 +36,6 @@ export function LoginForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const auth = useAuth();
-  const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -47,90 +46,70 @@ export function LoginForm() {
     },
   });
 
-  useEffect(() => {
-    if (isUserLoading) {
-      setIsLoading(true);
+  const handleSuccessfulLogin = async (user: User) => {
+    if (!firestore) {
+        toast({ variant: 'destructive', title: 'Error', description: 'Database connection failed.' });
+        setIsLoading(false);
+        return;
+    }
+
+    // Hardcoded redirect for specific Admin UID
+    if (user.uid === ADMIN_UID) {
+      toast({ title: 'Admin Login', description: 'Redirecting to admin login...' });
+      router.push('/admin/login');
       return;
     }
-    if (user) {
-      const checkRole = async () => {
-        if (!firestore) return;
-        
-        // Hardcoded redirect for specific Admin UID
-        if (user.uid === ADMIN_UID) {
-          toast({
-            title: 'Admin Login',
-            description: 'Redirecting to admin login...',
-          });
-          router.push('/admin/login');
-          return;
-        }
 
-        // Hardcoded redirect for specific Teacher UID
-        if (user.uid === TEACHER_UID) {
-            toast({ title: 'Login Successful', description: `Welcome, Teacher! Redirecting...` });
-            const q = query(collection(firestore, 'classrooms'), where('name', '==', 'Primary 4'));
-            const querySnapshot = await getDocs(q);
-            if (!querySnapshot.empty) {
-                const classroomDoc = querySnapshot.docs[0];
-                router.push(`/teacher/class/${classroomDoc.id}`);
-            } else {
-                 toast({ variant: 'destructive', title: 'Login Failed', description: 'Could not find "Primary 4" classroom.' });
-                 setIsLoading(false);
-            }
-            return;
-        }
-
-
-        // Default logic for other users
-        const userDocRef = doc(firestore, 'users', user.uid);
-        const userDoc = await getDoc(userDocRef);
-
-        if (userDoc.exists()) {
-            const userData = userDoc.data();
-            if (userData.role === 'Admin') {
-                toast({
-                    title: 'Admin Login',
-                    description: 'Redirecting to admin dashboard...',
-                });
-                router.push('/admin/dashboard');
-            } else if (userData.role === 'Teacher') {
-                if (userData.assignedClassroomId) {
-                     toast({
-                        title: 'Login Successful',
-                        description: `Welcome, Teacher! Redirecting to your class...`,
-                    });
-                    router.push(`/teacher/class/${userData.assignedClassroomId}`);
-                } else {
-                    toast({
-                        variant: 'destructive',
-                        title: 'Login Failed',
-                        description: 'You have not been assigned to a classroom. Please contact an administrator.',
-                    });
-                    setIsLoading(false);
-                }
-            }
+    // Hardcoded redirect for specific Teacher UID
+    if (user.uid === TEACHER_UID) {
+        toast({ title: 'Login Successful', description: `Welcome, Teacher! Redirecting...` });
+        const q = query(collection(firestore, 'classrooms'), where('name', '==', 'Primary 4'));
+        const querySnapshot = await getDocs(q);
+        if (!querySnapshot.empty) {
+            const classroomDoc = querySnapshot.docs[0];
+            router.push(`/teacher/class/${classroomDoc.id}`);
         } else {
-           toast({
-                variant: 'destructive',
-                title: 'Login Failed',
-                description: 'Your user role is not configured. Please contact an administrator.',
-            });
-           setIsLoading(false);
+             toast({ variant: 'destructive', title: 'Login Failed', description: 'Could not find "Primary 4" classroom.' });
+             setIsLoading(false);
         }
-      };
-      checkRole();
-    } else {
-      setIsLoading(false);
+        return;
     }
-  }, [user, isUserLoading, router, firestore]);
+
+
+    // Default logic for other users
+    const userDocRef = doc(firestore, 'users', user.uid);
+    const userDoc = await getDoc(userDocRef);
+
+    if (userDoc.exists()) {
+        const userData = userDoc.data();
+        if (userData.role === 'Admin') {
+            toast({ title: 'Admin Login', description: 'Redirecting to admin dashboard...' });
+            router.push('/admin/dashboard');
+        } else if (userData.role === 'Teacher') {
+            if (userData.assignedClassroomId) {
+                 toast({ title: 'Login Successful', description: `Welcome, Teacher! Redirecting to your class...` });
+                router.push(`/teacher/class/${userData.assignedClassroomId}`);
+            } else {
+                toast({ variant: 'destructive', title: 'Login Failed', description: 'You have not been assigned to a classroom. Please contact an administrator.' });
+                setIsLoading(false);
+            }
+        }
+    } else {
+       toast({ variant: 'destructive', title: 'Login Failed', description: 'Your user role is not configured. Please contact an administrator.' });
+       setIsLoading(false);
+    }
+  }
+
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
-    if (!auth) return;
+    if (!auth) {
+        setIsLoading(false);
+        return;
+    };
     try {
-        await signInWithEmailAndPassword(auth, values.email, values.password);
-        // onAuthStateChanged will handle the redirect
+        const userCredential = await signInWithEmailAndPassword(auth, values.email, values.password);
+        await handleSuccessfulLogin(userCredential.user);
     } catch (error: any) {
         if (error.code === 'auth/invalid-credential') {
             toast({
@@ -213,5 +192,3 @@ export function LoginForm() {
     </Form>
   );
 }
-
-    
