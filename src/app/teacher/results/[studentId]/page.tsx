@@ -80,7 +80,7 @@ export default function StudentResultEntryPage() {
   const { data: student, isLoading: studentLoading } = useDoc<Student>(studentRef);
   
   const enrollmentsQuery = useMemoFirebase(
-    () => (firestore ? query(collection(firestore, 'enrollments'), where('studentId', '==', studentId)) : null),
+    () => (firestore && studentId ? query(collection(firestore, 'enrollments'), where('studentId', '==', studentId)) : null),
     [firestore, studentId]
   );
   const { data: enrollments, isLoading: enrollmentsLoading } = useCollection<Enrollment>(enrollmentsQuery);
@@ -118,14 +118,10 @@ export default function StudentResultEntryPage() {
 
 
   useEffect(() => {
-    // We must wait for the teacher's data and the classroom ID to be available.
-    if (!classroomId || subjects.length === 0 || !schoolSettings || !firestore || !teacherData) {
-      setResults({});
-      setInitialFetchDone(false);
+    if (!classroomId || !schoolSettings || !firestore || !teacherData || !studentId) {
       return;
-    };
+    }
 
-    // Client-side security check.
     if (teacherData.assignedClassroomId !== classroomId) {
         toast({ variant: 'destructive', title: 'Unauthorized', description: 'You are not assigned to this classroom.' });
         return;
@@ -149,9 +145,15 @@ export default function StudentResultEntryPage() {
               fetchedResults[data.subjectId] = { ...data, id: doc.id };
           });
 
+          // After fetching, we merge with the subjects list to create placeholders
+          // but we only call setResults once to avoid overwriting state.
+          const initialResultsState: Record<string, Result> = {};
+          
           subjects.forEach(subject => {
-            if (!fetchedResults[subject.id]) {
-              fetchedResults[subject.id] = {
+            if (fetchedResults[subject.id]) {
+               initialResultsState[subject.id] = fetchedResults[subject.id];
+            } else {
+              initialResultsState[subject.id] = {
                 studentId: studentId,
                 subjectId: subject.id,
                 classroomId: classroomId,
@@ -162,7 +164,7 @@ export default function StudentResultEntryPage() {
             }
           });
           
-          setResults(fetchedResults);
+          setResults(initialResultsState);
         } catch (error) {
            const permissionError = new FirestorePermissionError({
             path: `results`,
@@ -176,7 +178,10 @@ export default function StudentResultEntryPage() {
     };
 
     fetchResults();
-  }, [classroomId, studentId, subjects, schoolSettings, firestore, toast, teacherData]);
+  // IMPORTANT: Do NOT add `subjects` to this dependency array. 
+  // It is calculated on every render and would cause an infinite loop.
+  // The logic inside now depends on the more stable `classroomId` and `schoolSettings`.
+  }, [classroomId, studentId, schoolSettings, firestore, toast, teacherData]);
 
   const handleScoreChange = (
     subjectId: string,
@@ -188,6 +193,7 @@ export default function StudentResultEntryPage() {
     setResults((prevResults) => ({
       ...prevResults,
       [subjectId]: {
+        // Fallback to create a new structure if it somehow doesn't exist yet
         ...(prevResults[subjectId] || {
             studentId: studentId,
             subjectId: subjectId,
@@ -201,25 +207,39 @@ export default function StudentResultEntryPage() {
   };
   
   const handleSave = async () => {
-    if (!classroomId || !schoolSettings || !firestore || !user) return;
+    if (!classroomId || !schoolSettings || !firestore || !user) {
+        toast({ variant: 'destructive', title: 'Save Error', description: 'Could not save. Missing critical information.' });
+        return;
+    }
     
+    // Safety check for unverified users
+    if (user && !user.emailVerified) {
+        sendEmailVerification(user);
+        toast({
+            title: 'Please Verify Your Email',
+            description: 'A verification link has been sent to your email. You must verify before you can save scores.',
+            duration: 6000,
+        });
+        return;
+    }
+
     setIsSaving(true);
     
-    Object.values(results).forEach(result => {
-        const resultWithIds = {
-            ...result,
-            studentId: studentId,
-            classroomId: classroomId,
-            sessionId: schoolSettings.currentSession,
-            termId: schoolSettings.currentTermId,
-        };
-        // Ensure that at least one score has been entered before saving
+    for (const result of Object.values(results)) {
+        // Only save if there is data to save
         if (result.ca1 !== null || result.ca2 !== null || result.ca3 !== null || result.exam !== null) {
+             const resultWithIds = {
+                ...result,
+                studentId: studentId,
+                classroomId: classroomId,
+                sessionId: schoolSettings.currentSession,
+                termId: schoolSettings.currentTermId,
+            };
             const resultId = result.id || `${studentId}_${result.subjectId}_${schoolSettings.currentTermId}`; 
             const resultRef = doc(firestore, 'results', resultId);
             setDocumentNonBlocking(resultRef, resultWithIds, { merge: true });
         }
-    });
+    }
     
     setTimeout(() => { 
         setIsSaving(false);
