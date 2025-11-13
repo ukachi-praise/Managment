@@ -202,25 +202,6 @@ export default function StudentResultEntryPage() {
   const handleSave = async () => {
     if (!classroomId || !schoolSettings || !firestore || !user) return;
     
-    // Check for email verification
-    if (!user.emailVerified) {
-      try {
-        await sendEmailVerification(user);
-        toast({
-          variant: 'destructive',
-          title: 'Email Not Verified',
-          description: 'A verification link has been sent to your email. Please verify before saving.',
-        });
-      } catch (error: any) {
-        toast({
-          variant: 'destructive',
-          title: 'Verification Error',
-          description: `Could not send verification email: ${error.message}`,
-        });
-      }
-      return;
-    }
-    
     setIsSaving(true);
     
     Object.values(results).forEach(result => {
