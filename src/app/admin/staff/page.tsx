@@ -50,7 +50,7 @@ import {
 } from '@/firebase';
 import { sendPasswordResetEmail } from 'firebase/auth';
 import { useMemoFirebase } from '@/firebase/provider';
-import { collection, query, doc } from 'firebase/firestore';
+import { collection, query, doc, where, getDocs, writeBatch } from 'firebase/firestore';
 import { Badge } from '@/components/ui/badge';
 import {
   Select,
@@ -119,6 +119,59 @@ export default function StaffPage() {
         setSelectedRole(editingUser.role);
     }
   }, [editingUser]);
+
+    useEffect(() => {
+    const assignTeacher = async () => {
+        if (!firestore || !users || !classrooms) return;
+
+        const teacherId = 'u3krP4g02DgPJ6Avv1XhVNvvb8R2';
+        const classroomName = 'Primary 4';
+
+        const teacher = users.find(u => u.id === teacherId);
+        const classroom = classrooms.find(c => c.name === classroomName);
+
+        if (teacher && classroom) {
+            // Check if already assigned
+            const classroomDoc = await getDocs(query(collection(firestore, 'classrooms'), where('name', '==', classroomName)));
+            const classroomData = classroomDoc.docs[0]?.data();
+
+            if (classroomData && classroomData.teacherId === teacherId) {
+                console.log('Teacher already assigned to this class.');
+                return;
+            }
+            
+            try {
+                const batch = writeBatch(firestore);
+
+                // Update classroom
+                const classroomRef = doc(firestore, 'classrooms', classroom.id);
+                batch.update(classroomRef, { teacherId: teacher.id, teacherName: teacher.name });
+
+                // Update user
+                const userRef = doc(firestore, 'users', teacher.id);
+                batch.update(userRef, { assignedClassroomId: classroom.id });
+
+                await batch.commit();
+
+                toast({
+                    title: 'Teacher Assigned',
+                    description: `${teacher.name} has been assigned to ${classroom.name}.`,
+                });
+            } catch (error) {
+                console.error("Error assigning teacher: ", error);
+                toast({
+                    variant: 'destructive',
+                    title: 'Assignment Failed',
+                    description: 'Could not assign teacher to the class.',
+                });
+            }
+        }
+    };
+
+    if (!isLoading) {
+        assignTeacher();
+    }
+}, [firestore, users, classrooms, isLoading, toast]);
 
 
   const handleOpenEditDialog = (user: User) => {
