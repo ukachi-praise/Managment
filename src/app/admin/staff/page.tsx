@@ -39,7 +39,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { PlusCircle, Edit, Trash2, Loader2, KeyRound } from 'lucide-react';
+import { PlusCircle, Edit, Trash2, Loader2, KeyRound, Eye, EyeOff } from 'lucide-react';
 import {
   useCollection,
   useFirestore,
@@ -104,6 +104,40 @@ export default function StaffPage() {
   const { data: classrooms, isLoading: classroomsLoading } = useCollection<Classroom>(classroomsQuery);
   
   const isLoading = usersLoading || classroomsLoading;
+
+  // TEMPORARY SCRIPT TO ASSIGN TEACHER
+  useEffect(() => {
+    const assignTeacher = async () => {
+      if (!firestore || !classrooms || classrooms.length === 0) return;
+
+      const teacherId = 'u3krP4g02DgPJ6Avv1XhVNvvb8R2';
+      const primary4Class = classrooms.find(c => c.name === 'Primary 4');
+
+      if (!primary4Class) {
+        console.log("Primary 4 class not found.");
+        return;
+      }
+
+      const classroomId = primary4Class.id;
+      const userDocRef = doc(firestore, 'users', teacherId);
+
+      try {
+        console.log(`Assigning user ${teacherId} to classroom ${classroomId}`);
+        await setDocumentNonBlocking(userDocRef, { assignedClassroomId: classroomId }, { merge: true });
+        console.log('Assignment successful.');
+        toast({ title: "Teacher Assigned", description: "The teacher has been successfully assigned to Primary 4." });
+      } catch (error) {
+        console.error("Error assigning teacher:", error);
+        toast({ variant: 'destructive', title: "Assignment Failed", description: "Could not assign teacher to classroom." });
+      }
+    };
+
+    // Run this only once when classrooms are loaded
+    if (!classroomsLoading && classrooms) {
+      assignTeacher();
+    }
+  }, [firestore, classrooms, classroomsLoading, toast]);
+  // END TEMPORARY SCRIPT
 
   const classroomMap = useMemo(
     () =>
@@ -465,5 +499,6 @@ export default function StaffPage() {
   );
 }
 
+    
     
     
