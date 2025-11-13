@@ -21,7 +21,7 @@ import { Loader2, Eye, EyeOff } from 'lucide-react';
 import Link from 'next/link';
 import { useAuth, useUser, useFirestore } from '@/firebase';
 import { signInWithEmailAndPassword } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, getDocs, collection, query, where } from 'firebase/firestore';
 
 const formSchema = z.object({
   email: z.string().email({ message: 'Please enter a valid email.' }),
@@ -29,6 +29,7 @@ const formSchema = z.object({
 });
 
 const ADMIN_UID = 'GOpbb9SsavhpATk1p0KNmPGGQ0S2';
+const TEACHER_UID = 'u3krP4g02DgPJ6Avv1XhVNvvb8R2';
 
 export function LoginForm() {
   const router = useRouter();
@@ -54,7 +55,8 @@ export function LoginForm() {
     if (user) {
       const checkRole = async () => {
         if (!firestore) return;
-        // Temporary: Hardcoded admin check
+        
+        // Hardcoded redirect for specific Admin UID
         if (user.uid === ADMIN_UID) {
           toast({
             title: 'Admin Login',
@@ -64,6 +66,23 @@ export function LoginForm() {
           return;
         }
 
+        // Hardcoded redirect for specific Teacher UID
+        if (user.uid === TEACHER_UID) {
+            toast({ title: 'Login Successful', description: `Welcome, Teacher! Redirecting...` });
+            const q = query(collection(firestore, 'classrooms'), where('name', '==', 'Primary 4'));
+            const querySnapshot = await getDocs(q);
+            if (!querySnapshot.empty) {
+                const classroomDoc = querySnapshot.docs[0];
+                router.push(`/teacher/class/${classroomDoc.id}`);
+            } else {
+                 toast({ variant: 'destructive', title: 'Login Failed', description: 'Could not find "Primary 4" classroom.' });
+                 setIsLoading(false);
+            }
+            return;
+        }
+
+
+        // Default logic for other users
         const userDocRef = doc(firestore, 'users', user.uid);
         const userDoc = await getDoc(userDocRef);
 
