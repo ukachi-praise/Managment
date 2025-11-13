@@ -1,86 +1,9 @@
-
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    function isAdmin() {
-      // Allow the specific Admin UID to have admin privileges
-      return request.auth.uid == 'GOpbb9SsavhpATk1p0KNmPGGQ0S2';
-    }
-
-    // A user's role is stored in their user document
-    function isTeacher() {
-      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Teacher';
-    }
-
-    function isVerifiedTeacher() {
-      return isTeacher() && request.auth.token.email_verified == true;
-    }
-
-    // Check if the teacher is assigned to the classroom of the result they are trying to write.
-    // The result document must have a 'classroomId' field for this to work.
-    function isAssignedTeacher(classroomId) {
-      let userDoc = get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
-      return isVerifiedTeacher() && userDoc.assignedClassroomId == classroomId;
-    }
-
-    // Admins can read the whole collection, users can read/write their own document
-    match /users/{userId} {
-      allow read, write: if request.auth.uid == userId || isAdmin();
-      allow get: if request.auth != null;
-      allow list: if isAdmin();
-    }
-
-    match /classrooms/{docId} {
-      allow read: if request.auth != null;
-      allow write: if isAdmin();
-    }
-    
-    match /subjects/{subjectId} {
-      allow read: if request.auth != null;
-      allow write: if isAdmin();
-    }
-
-    match /students/{docId} {
-      allow write: if isAdmin();
-      // Admins and teachers can read student data.
-      allow read: if request.auth != null;
-    }
-
-    match /enrollments/{docId} {
-        allow read: if request.auth != null;
-        allow write: if isAdmin();
-    }
-
-    match /classroomSubjects/{docId} {
-        allow read: if request.auth != null;
-        allow write: if isAdmin();
-    }
-    
-    match /headTeacherRemarks/{docId} {
-        allow read, write: if isAdmin();
-    }
-
-    match /results/{resultId} {
-      // A teacher can list results, but only if they filter by their classroomId
-      allow list: if isTeacher() && request.query.classroomId != null;
-      // Admins can get any result. A teacher can get a result if they are assigned to that class.
-      allow get: if isAdmin() || isAssignedTeacher(get(/databases/$(database)/documents/results/$(resultId)).data.classroomId);
-      // A verified teacher can create/update results for their assigned class.
-      allow write: if isAssignedTeacher(request.resource.data.classroomId);
-    }
-
-    match /sessions/{sessionId} {
-      allow read, write: if isAdmin();
-    }
-    
-    match /schoolSettings/{settingsId} {
-      allow read: if request.auth != null;
-      allow write: if isAdmin();
-    }
-    
-    match /resultTemplates/{templateId} {
-      allow read, write: if isAdmin();
+    // Applies to every collection and document
+    match /{document=**} {
+      allow read, write: if request.auth != null;
     }
   }
 }
