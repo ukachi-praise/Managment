@@ -50,18 +50,40 @@ const adminNavItems: NavItem[] = [
   { href: '/admin/settings', label: 'Settings', icon: Settings },
 ];
 
-const teacherNavItems: NavItem[] = [
-    { href: '/teacher/dashboard', label: 'My Class', icon: Presentation, exact: true },
-    { href: '/teacher/profile', label: 'Profile', icon: UserIcon },
-];
-
 export function SidebarNav({ role }: { role: 'admin' | 'teacher' }) {
   const pathname = usePathname();
+  const { user } = useUser();
+  const firestore = useFirestore();
+  const [teacherClassroomId, setTeacherClassroomId] = useState<string | null>(null);
+
+
+  useEffect(() => {
+    if (role === 'teacher' && user && firestore) {
+      const fetchUserClass = async () => {
+        const userDocRef = doc(firestore, 'users', user.uid);
+        const userDoc = await getDoc(userDocRef);
+        if (userDoc.exists() && userDoc.data().assignedClassroomId) {
+          setTeacherClassroomId(userDoc.data().assignedClassroomId);
+        }
+      };
+      fetchUserClass();
+    }
+  }, [role, user, firestore]);
+  
+  const teacherNavItems: NavItem[] = [
+    { href: teacherClassroomId ? `/teacher/class/${teacherClassroomId}` : '/teacher/dashboard', label: 'My Class', icon: Presentation, exact: true },
+    { href: '/teacher/profile', label: 'Profile', icon: UserIcon },
+  ];
+
   const navItems = role === 'admin' ? adminNavItems : teacherNavItems;
 
   const isActive = (href: string, exact?: boolean) => {
-    if (href === '/teacher/dashboard') {
-        return pathname.startsWith('/teacher/class') || pathname === href;
+    // Special handling for the dynamic "My Class" link
+    if (href.startsWith('/teacher/class/')) {
+        return pathname.startsWith('/teacher/class/');
+    }
+    if (href === '/teacher/dashboard' && teacherClassroomId) {
+        return pathname.startsWith(`/teacher/class/${teacherClassroomId}`);
     }
     return exact ? pathname === href : pathname.startsWith(href);
   }
@@ -74,7 +96,7 @@ export function SidebarNav({ role }: { role: 'admin' | 'teacher' }) {
       <SidebarContent>
         <SidebarMenu>
           {navItems.map((item) => (
-            <SidebarMenuItem key={item.href}>
+            <SidebarMenuItem key={item.label}>
               <Button
                 asChild
                 variant={isActive(item.href, item.exact) ? 'secondary' : 'ghost'}
