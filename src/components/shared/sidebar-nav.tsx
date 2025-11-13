@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -32,6 +33,7 @@ type NavItem = {
   href: string;
   label: string;
   icon: React.ElementType;
+  exact?: boolean;
 };
 
 const adminNavItems: NavItem[] = [
@@ -48,13 +50,16 @@ const adminNavItems: NavItem[] = [
 ];
 
 const teacherNavItems: NavItem[] = [
-    { href: '/teacher/dashboard', label: 'My Class', icon: Presentation },
-    { href: '/teacher/results', label: 'Enter Results', icon: Book },
+    { href: '/teacher/dashboard', label: 'My Class', icon: Presentation, exact: true },
 ];
 
 export function SidebarNav({ role }: { role: 'admin' | 'teacher' }) {
   const pathname = usePathname();
   const navItems = role === 'admin' ? adminNavItems : teacherNavItems;
+
+  const isActive = (href: string, exact?: boolean) => {
+    return exact ? pathname === href : pathname.startsWith(href);
+  }
 
   return (
     <Sidebar>
@@ -67,7 +72,7 @@ export function SidebarNav({ role }: { role: 'admin' | 'teacher' }) {
             <SidebarMenuItem key={item.href}>
               <Button
                 asChild
-                variant={pathname.startsWith(item.href) ? 'secondary' : 'ghost'}
+                variant={isActive(item.href, item.exact) ? 'secondary' : 'ghost'}
                 className="w-full justify-start"
               >
                 <Link href={item.href}>

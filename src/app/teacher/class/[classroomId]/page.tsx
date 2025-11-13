@@ -84,16 +84,13 @@ export default function TeacherClassPage() {
                 Your assigned class dashboard. View students and manage results.
             </p>
         </div>
-        <Button asChild>
-            <Link href="/teacher/results">Enter/Edit Results</Link>
-        </Button>
       </div>
 
       <Card>
         <CardHeader>
           <CardTitle>Student List</CardTitle>
           <CardDescription>
-            A list of all students enrolled in your class. Click a student's name to view their report card.
+            A list of all students enrolled in your class. Click a student's name to enter their scores.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -115,7 +112,7 @@ export default function TeacherClassPage() {
                   studentsInClass.map((student) => (
                       <TableRow key={student.id}>
                         <TableCell className="font-medium">
-                          <Link href={`/results/${student.id}`} className="flex items-center gap-3 hover:underline">
+                          <Link href={`/teacher/results/${student.id}`} className="flex items-center gap-3 hover:underline">
                             <Avatar>
                               <AvatarFallback>
                                 {student.name.charAt(0).toUpperCase()}
@@ -130,8 +127,8 @@ export default function TeacherClassPage() {
                         </TableCell>
                          <TableCell className="text-right">
                           <Button asChild variant="outline" size="sm">
-                            <Link href={`/results/${student.id}`}>
-                              View Report
+                            <Link href={`/teacher/results/${student.id}`}>
+                              Enter/View Scores
                             </Link>
                           </Button>
                         </TableCell>
