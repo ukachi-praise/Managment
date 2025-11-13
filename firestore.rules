@@ -59,9 +59,9 @@ service cloud.firestore {
       // Admins can list all results. Teachers can list results for their class.
       allow list: if isAdmin() || (isTeacher() && request.query.classroomId == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.assignedClassroomId);
       // Admins can read any result. Teachers can read results for their class.
-      allow read: if isAdmin() || isAssignedTeacher(get(/databases/$(database)/documents/results/$(resultId)).data.classroomId);
+      allow get, read: if isAdmin() || isAssignedTeacher(get(/databases/$(database)/documents/results/$(resultId)).data.classroomId);
       // Teachers can create/update results for their assigned class.
-      allow write: if isAssignedTeacher(request.resource.data.classroomId);
+      allow create, update, write: if isAssignedTeacher(request.resource.data.classroomId);
     }
 
     match /sessions/{sessionId} {
