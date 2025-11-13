@@ -206,16 +206,15 @@ export default function StudentResultEntryPage() {
     setIsSaving(true);
     
     Object.values(results).forEach(result => {
-        const allScoresPresent = result.ca1 !== null && result.ca2 !== null && result.ca3 !== null && result.exam !== null;
-        
-        if (allScoresPresent) {
-             const resultWithIds = {
-                ...result,
-                studentId: studentId,
-                classroomId: classroomId,
-                sessionId: schoolSettings.currentSession,
-                termId: schoolSettings.currentTermId,
-            };
+        const resultWithIds = {
+            ...result,
+            studentId: studentId,
+            classroomId: classroomId,
+            sessionId: schoolSettings.currentSession,
+            termId: schoolSettings.currentTermId,
+        };
+        // Ensure that at least one score has been entered before saving
+        if (result.ca1 !== null || result.ca2 !== null || result.ca3 !== null || result.exam !== null) {
             const resultId = result.id || `${studentId}_${result.subjectId}_${schoolSettings.currentTermId}`; 
             const resultRef = doc(firestore, 'results', resultId);
             setDocumentNonBlocking(resultRef, resultWithIds, { merge: true });
