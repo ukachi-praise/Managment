@@ -17,7 +17,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -57,7 +56,6 @@ type ClassroomSubject = {
 };
 
 export default function SubjectsPage() {
-  const [newSubjectDialogOpen, setNewSubjectDialogOpen] = useState(false);
   const [assignDialogOpen, setAssignDialogOpen] = useState(false);
   const [classToAssign, setClassToAssign] = useState<Classroom | null>(null);
 
@@ -137,7 +135,6 @@ export default function SubjectsPage() {
     addDocumentNonBlocking(collection(firestore, 'subjects'), { name: subjectName });
     toast({ title: "Subject Added", description: `"${subjectName}" has been created.`});
     
-    setNewSubjectDialogOpen(false);
     event.currentTarget.reset();
   };
   
@@ -173,33 +170,6 @@ export default function SubjectsPage() {
 
   return (
     <div className="space-y-6">
-      {/* Create New Subject Dialog */}
-      <Dialog open={newSubjectDialogOpen} onOpenChange={setNewSubjectDialogOpen}>
-        <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle>Create New Subject</DialogTitle>
-              <DialogDescription>
-                Create a new subject that can be assigned to classes.
-              </DialogDescription>
-            </DialogHeader>
-            <form onSubmit={handleNewSubjectSubmit} className="grid gap-4 py-4">
-              <div className="space-y-2">
-                <Label htmlFor="name">Subject Name</Label>
-                <Input
-                  id="name"
-                  name="name"
-                  placeholder="e.g. Creative Arts"
-                  required
-                />
-              </div>
-              <DialogFooter>
-                <Button type="button" variant="outline" onClick={() => setNewSubjectDialogOpen(false)}>Cancel</Button>
-                <Button type="submit">Create Subject</Button>
-              </DialogFooter>
-            </form>
-          </DialogContent>
-      </Dialog>
-      
       {/* Assign Subject Dialog */}
       <Dialog open={assignDialogOpen} onOpenChange={setAssignDialogOpen}>
           <DialogContent className="sm:max-w-md">
@@ -236,59 +206,85 @@ export default function SubjectsPage() {
             </form>
           </DialogContent>
       </Dialog>
-
-      <div className="flex items-center justify-between">
-        <div>
-            <h1 className="text-3xl font-bold tracking-tight">Subjects by Class</h1>
-            <p className="text-muted-foreground">Manage which subjects are taught in each classroom.</p>
-        </div>
-        <Button onClick={() => setNewSubjectDialogOpen(true)}>
-          <PlusCircle className="mr-2 h-4 w-4" />
-          Create New Subject
-        </Button>
+      
+      <div className="space-y-2">
+          <h1 className="text-3xl font-bold tracking-tight">Subjects</h1>
+          <p className="text-muted-foreground">Create new subjects and assign them to classrooms.</p>
       </div>
+
+       <Card>
+        <CardHeader>
+          <CardTitle>Create a New Subject</CardTitle>
+          <CardDescription>
+            Add a new subject to the list of available subjects that can be assigned to classes.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleNewSubjectSubmit} className="flex gap-4">
+            <Input
+              name="name"
+              placeholder="e.g. Creative Arts"
+              required
+              className="flex-grow"
+            />
+            <Button type="submit">
+              <PlusCircle className="mr-2 h-4 w-4" />
+              Add Subject
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
+
 
         {isLoading ? (
             <div className="flex h-96 items-center justify-center">
                 <Loader2 className="h-12 w-12 animate-spin text-primary" />
             </div>
         ) : (
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {sortedClassrooms.map(classroom => (
-                <Card key={classroom.id}>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-                        <CardTitle className="text-xl">{classroom.name}</CardTitle>
-                        <Button size="sm" onClick={() => handleOpenAssignDialog(classroom)}>
-                            <PlusCircle className="mr-2 h-4 w-4" />
-                            Add Subject
-                        </Button>
-                    </CardHeader>
-                    <CardContent>
-                        <p className="text-sm font-medium mb-2 text-muted-foreground">Assigned Subjects:</p>
-                        <div className="flex flex-wrap gap-2 items-center min-h-[40px] p-2 border rounded-md bg-muted/50">
-                                {classSubjectMap[classroom.id]?.length > 0 ? (
-                                    classSubjectMap[classroom.id].map(({ subject, assignmentId }) => (
-                                        <Badge key={assignmentId} variant="secondary" className="pl-3 pr-1 text-sm">
-                                            {subject.name}
-                                            <Button 
-                                                variant="ghost" 
-                                                size="icon" 
-                                                className="ml-1 h-5 w-5 text-muted-foreground hover:bg-destructive/20 hover:text-destructive"
-                                                onClick={() => handleUnassignSubject(assignmentId)}
-                                            >
-                                                <Trash2 className="h-3 w-3"/>
-                                            </Button>
-                                        </Badge>
-                                    ))
-                                ) : (
-                                    <p className="text-xs text-muted-foreground italic">No subjects assigned yet.</p>
-                                )}
-                            </div>
-                    </CardContent>
-                </Card>
-            ))}
-            </div>
+          <Card>
+            <CardHeader>
+              <CardTitle>Subjects by Class</CardTitle>
+              <CardDescription>Manage which subjects are taught in each classroom.</CardDescription>
+            </CardHeader>
+            <CardContent className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+              {sortedClassrooms.map(classroom => (
+                  <Card key={classroom.id} className="flex flex-col">
+                      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+                          <CardTitle className="text-xl">{classroom.name}</CardTitle>
+                          <Button size="sm" onClick={() => handleOpenAssignDialog(classroom)}>
+                              <PlusCircle className="mr-2 h-4 w-4" />
+                              Add Subject
+                          </Button>
+                      </CardHeader>
+                      <CardContent className="flex-grow">
+                          <p className="text-sm font-medium mb-2 text-muted-foreground">Assigned Subjects:</p>
+                          <div className="flex flex-wrap gap-2 items-center min-h-[40px] p-2 border rounded-md bg-muted/50">
+                                  {classSubjectMap[classroom.id]?.length > 0 ? (
+                                      classSubjectMap[classroom.id].map(({ subject, assignmentId }) => (
+                                          <Badge key={assignmentId} variant="secondary" className="pl-3 pr-1 text-sm">
+                                              {subject.name}
+                                              <Button 
+                                                  variant="ghost" 
+                                                  size="icon" 
+                                                  className="ml-1 h-5 w-5 text-muted-foreground hover:bg-destructive/20 hover:text-destructive"
+                                                  onClick={() => handleUnassignSubject(assignmentId)}
+                                              >
+                                                  <Trash2 className="h-3 w-3"/>
+                                              </Button>
+                                          </Badge>
+                                      ))
+                                  ) : (
+                                      <p className="text-xs text-muted-foreground italic">No subjects assigned yet.</p>
+                                  )}
+                              </div>
+                      </CardContent>
+                  </Card>
+              ))}
+            </CardContent>
+          </Card>
         )}
     </div>
   );
 }
+
+    
