@@ -72,7 +72,7 @@ export function ResultSheet({ student, classroom }: ResultSheetProps) {
   const templateRef = useMemoFirebase(() => (firestore ? doc(firestore, 'resultTemplates', 'main-template') : null), [firestore]);
   const { data: savedTemplateData, isLoading: templateLoading } = useDoc<SavedTemplateData>(templateRef);
 
-  const classroomSubjectsQuery = useMemoFirebase(() => (classroomId ? query(collection(firestore, 'classroomSubjects'), where('classroomId', '==', classroomId)) : null), [firestore, classroomId]);
+  const classroomSubjectsQuery = useMemoFirebase(() => (classroomId && firestore ? query(collection(firestore, 'classroomSubjects'), where('classroomId', '==', classroomId)) : null), [firestore, classroomId]);
   const { data: classroomSubjects, isLoading: classroomSubjectsLoading } = useCollection(classroomSubjectsQuery);
   
   const allSubjectsQuery = useMemoFirebase(() => (firestore ? collection(firestore, 'subjects') : null), [firestore]);
@@ -145,7 +145,7 @@ export function ResultSheet({ student, classroom }: ResultSheetProps) {
   }, [schoolSettings]);
 
   // The main loading state now correctly includes all dependencies.
-  const isLoading = settingsLoading || templateLoading || classroomSubjectsLoading || subjectsLoading || resultsLoading || !resultsQuery;
+  const isLoading = settingsLoading || templateLoading || classroomSubjectsLoading || subjectsLoading || resultsLoading || !schoolSettings;
 
 
   if (isLoading) {

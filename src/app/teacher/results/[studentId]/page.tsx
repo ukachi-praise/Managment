@@ -68,11 +68,11 @@ export default function StudentResultEntryPage() {
   const [initialFetchDone, setInitialFetchDone] = useState(false);
 
   // --- Data Fetching ---
-  const studentRef = useMemoFirebase(() => doc(firestore, 'students', studentId), [firestore, studentId]);
+  const studentRef = useMemoFirebase(() => (firestore ? doc(firestore, 'students', studentId) : null), [firestore, studentId]);
   const { data: student, isLoading: studentLoading } = useDoc<Student>(studentRef);
   
   const enrollmentsQuery = useMemoFirebase(
-    () => query(collection(firestore, 'enrollments'), where('studentId', '==', studentId)),
+    () => (firestore ? query(collection(firestore, 'enrollments'), where('studentId', '==', studentId)) : null),
     [firestore, studentId]
   );
   const { data: enrollments, isLoading: enrollmentsLoading } = useCollection<Enrollment>(enrollmentsQuery);
@@ -80,14 +80,14 @@ export default function StudentResultEntryPage() {
   const classroomId = useMemo(() => enrollments?.[0]?.classroomId, [enrollments]);
 
   const classroomSubjectsQuery = useMemoFirebase(() =>
-      classroomId ? query(collection(firestore, 'classroomSubjects'), where('classroomId', '==', classroomId)) : null
+      classroomId && firestore ? query(collection(firestore, 'classroomSubjects'), where('classroomId', '==', classroomId)) : null
   , [firestore, classroomId]);
   const { data: classroomSubjects, isLoading: classSubjectsLoading } = useCollection(classroomSubjectsQuery);
 
-  const allSubjectsQuery = useMemoFirebase(() => collection(firestore, 'subjects'), [firestore]);
+  const allSubjectsQuery = useMemoFirebase(() => (firestore ? collection(firestore, 'subjects') : null), [firestore]);
   const { data: allSubjects, isLoading: allSubjectsLoading } = useCollection<Subject>(allSubjectsQuery);
 
-  const settingsRef = useMemoFirebase(() => doc(firestore, 'schoolSettings', 'current'), [firestore]);
+  const settingsRef = useMemoFirebase(() => (firestore ? doc(firestore, 'schoolSettings', 'current') : null), [firestore]);
   const { data: schoolSettings, isLoading: settingsLoading } = useDoc<SchoolSettings>(settingsRef);
   
   const subjects = useMemo(() => {
@@ -98,6 +98,7 @@ export default function StudentResultEntryPage() {
 
 
   useEffect(() => {
+    // Crucially, wait for all dependencies including schoolSettings before fetching results
     if (!classroomId || subjects.length === 0 || !schoolSettings || !firestore) {
       setResults({});
       setInitialFetchDone(false);
@@ -198,7 +199,6 @@ export default function StudentResultEntryPage() {
   };
   
   const isLoading = studentLoading || enrollmentsLoading || classSubjectsLoading || allSubjectsLoading || settingsLoading;
-  const isDisplayingData = !isLoading && initialFetchDone;
 
   return (
     <div className="space-y-6">
@@ -228,7 +228,7 @@ export default function StudentResultEntryPage() {
         </div>
       </CardHeader>
       <CardContent>
-        {isLoading ? (
+        {isLoading && !initialFetchDone ? (
             <div className="flex h-64 items-center justify-center">
               <Loader2 className="h-12 w-12 animate-spin text-primary" />
             </div>
@@ -320,5 +320,3 @@ export default function StudentResultEntryPage() {
     </div>
   );
 }
-
-    
