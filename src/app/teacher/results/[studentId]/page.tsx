@@ -27,7 +27,9 @@ import {
   setDocumentNonBlocking,
   errorEmitter,
   FirestorePermissionError,
+  useAuth,
 } from '@/firebase';
+import { sendEmailVerification } from 'firebase/auth';
 import { useMemoFirebase } from '@/firebase/provider';
 import {
   collection,
@@ -66,6 +68,7 @@ export default function StudentResultEntryPage() {
   const { toast } = useToast();
   const firestore = useFirestore();
   const { user } = useUser();
+  const auth = useAuth();
 
   const [results, setResults] = useState<Record<string, Result>>({}); // subjectId -> Result
   const [isSaving, setIsSaving] = useState(false);
@@ -172,7 +175,7 @@ export default function StudentResultEntryPage() {
     };
 
     fetchResults();
-  }, [classroomId, studentId, subjects, schoolSettings, firestore, teacherData]);
+  }, [classroomId, studentId, subjects, schoolSettings, firestore, toast, teacherData]);
 
   const handleScoreChange = (
     subjectId: string,
@@ -196,8 +199,28 @@ export default function StudentResultEntryPage() {
     }));
   };
   
-  const handleSave = () => {
-    if (!classroomId || !schoolSettings || !firestore) return;
+  const handleSave = async () => {
+    if (!classroomId || !schoolSettings || !firestore || !user) return;
+    
+    // Check for email verification
+    if (!user.emailVerified) {
+      try {
+        await sendEmailVerification(user);
+        toast({
+          variant: 'destructive',
+          title: 'Email Not Verified',
+          description: 'A verification link has been sent to your email. Please verify before saving.',
+        });
+      } catch (error: any) {
+        toast({
+          variant: 'destructive',
+          title: 'Verification Error',
+          description: `Could not send verification email: ${error.message}`,
+        });
+      }
+      return;
+    }
+    
     setIsSaving(true);
     
     Object.values(results).forEach(result => {

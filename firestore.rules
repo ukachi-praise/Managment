@@ -4,6 +4,7 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     function isAdmin() {
+      // Allow the specific Admin UID to have admin privileges
       return request.auth.uid == 'GOpbb9SsavhpATk1p0KNmPGGQ0S2';
     }
 
@@ -12,11 +13,15 @@ service cloud.firestore {
       return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Teacher';
     }
 
+    function isVerifiedTeacher() {
+      return isTeacher() && request.auth.token.email_verified == true;
+    }
+
     // Check if the teacher is assigned to the classroom of the result they are trying to write.
     // The result document must have a 'classroomId' field for this to work.
     function isAssignedTeacher(classroomId) {
       let userDoc = get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
-      return isTeacher() && userDoc.assignedClassroomId == classroomId;
+      return isVerifiedTeacher() && userDoc.assignedClassroomId == classroomId;
     }
 
     // Admins can read the whole collection, users can read/write their own document
@@ -57,11 +62,11 @@ service cloud.firestore {
     }
 
     match /results/{resultId} {
-      // Admins can list all results. Teachers can list results for their class if they query by classroomId.
-      allow list: if isAdmin() || (isTeacher() && request.query.classroomId != null);
-      // Admins can read any result. Teachers can read results for their class.
+      // A teacher can list results, but only if they filter by their classroomId
+      allow list: if isTeacher() && request.query.classroomId != null;
+      // Admins can get any result. A teacher can get a result if they are assigned to that class.
       allow get: if isAdmin() || isAssignedTeacher(get(/databases/$(database)/documents/results/$(resultId)).data.classroomId);
-      // Teachers can create/update results for their assigned class.
+      // A verified teacher can create/update results for their assigned class.
       allow write: if isAssignedTeacher(request.resource.data.classroomId);
     }
 
