@@ -10,7 +10,8 @@
         "name": { "type": "string", "description": "User's full name." },
         "email": { "type": "string", "description": "User's email for login." },
         "role": { "type": "string", "enum": ["Admin", "Teacher"], "description": "User's role in the system." },
-        "assignedClassroomId": { "type": "string", "description": "For teachers, the ID of the classroom they are assigned to." }
+        "assignedClassroomId": { "type": "string", "description": "For teachers, the ID of the classroom they are assigned to." },
+        "phoneNumber": { "type": "string", "description": "User's contact phone number." }
       },
       "required": ["id", "name", "role", "email"]
     },

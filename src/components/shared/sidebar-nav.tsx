@@ -15,6 +15,7 @@ import {
   LayoutTemplate,
   Info,
   Users2,
+  User as UserIcon,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -51,6 +52,7 @@ const adminNavItems: NavItem[] = [
 
 const teacherNavItems: NavItem[] = [
     { href: '/teacher/dashboard', label: 'My Class', icon: Presentation, exact: true },
+    { href: '/teacher/profile', label: 'Profile', icon: UserIcon },
 ];
 
 export function SidebarNav({ role }: { role: 'admin' | 'teacher' }) {
@@ -58,6 +60,9 @@ export function SidebarNav({ role }: { role: 'admin' | 'teacher' }) {
   const navItems = role === 'admin' ? adminNavItems : teacherNavItems;
 
   const isActive = (href: string, exact?: boolean) => {
+    if (href === '/teacher/dashboard') {
+        return pathname.startsWith('/teacher/class') || pathname === href;
+    }
     return exact ? pathname === href : pathname.startsWith(href);
   }
 
