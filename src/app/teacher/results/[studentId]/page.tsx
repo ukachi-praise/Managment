@@ -35,6 +35,7 @@ import {
   where,
   doc,
   getDocs,
+  getDoc,
 } from 'firebase/firestore';
 
 // Define types based on backend.json
@@ -55,6 +56,7 @@ type Result = {
   ca3: number | null;
   exam: number | null;
 };
+type UserData = { assignedClassroomId?: string; };
 
 export default function StudentResultEntryPage() {
   const params = useParams();
@@ -68,6 +70,7 @@ export default function StudentResultEntryPage() {
   const [results, setResults] = useState<Record<string, Result>>({}); // subjectId -> Result
   const [isSaving, setIsSaving] = useState(false);
   const [initialFetchDone, setInitialFetchDone] = useState(false);
+  const [teacherData, setTeacherData] = useState<UserData | null>(null);
 
   // --- Data Fetching ---
   const studentRef = useMemoFirebase(() => (firestore ? doc(firestore, 'students', studentId) : null), [firestore, studentId]);
@@ -92,6 +95,18 @@ export default function StudentResultEntryPage() {
   const settingsRef = useMemoFirebase(() => (firestore ? doc(firestore, 'schoolSettings', 'current') : null), [firestore]);
   const { data: schoolSettings, isLoading: settingsLoading } = useDoc<SchoolSettings>(settingsRef);
   
+  // Fetch teacher's assigned classroom ID
+  useEffect(() => {
+    if (user && firestore) {
+      const userDocRef = doc(firestore, 'users', user.uid);
+      getDoc(userDocRef).then(docSnap => {
+        if (docSnap.exists()) {
+          setTeacherData(docSnap.data() as UserData);
+        }
+      });
+    }
+  }, [user, firestore]);
+  
   const subjects = useMemo(() => {
     if (!classroomSubjects || !allSubjects) return [];
     const subjectIds = new Set(classroomSubjects.map(cs => cs.subjectId));
@@ -100,12 +115,17 @@ export default function StudentResultEntryPage() {
 
 
   useEffect(() => {
-    // Crucially, wait for all dependencies including schoolSettings before fetching results
-    if (!classroomId || subjects.length === 0 || !schoolSettings || !firestore) {
+    if (!classroomId || subjects.length === 0 || !schoolSettings || !firestore || !teacherData) {
       setResults({});
       setInitialFetchDone(false);
       return;
     };
+
+    // Client-side security check
+    if (teacherData.assignedClassroomId !== classroomId) {
+        toast({ variant: 'destructive', title: 'Unauthorized', description: 'You are not assigned to this classroom.' });
+        return;
+    }
     
     const fetchResults = async () => {
         setIsSaving(true);
@@ -125,7 +145,6 @@ export default function StudentResultEntryPage() {
               fetchedResults[data.subjectId] = { ...data, id: doc.id };
           });
 
-          // Pre-fill results for subjects that don't have any yet
           subjects.forEach(subject => {
             if (!fetchedResults[subject.id]) {
               fetchedResults[subject.id] = {
@@ -153,7 +172,7 @@ export default function StudentResultEntryPage() {
     };
 
     fetchResults();
-  }, [classroomId, studentId, subjects, schoolSettings, firestore]);
+  }, [classroomId, studentId, subjects, schoolSettings, firestore, teacherData]);
 
   const handleScoreChange = (
     subjectId: string,
@@ -192,14 +211,12 @@ export default function StudentResultEntryPage() {
                 sessionId: schoolSettings.currentSession,
                 termId: schoolSettings.currentTermId,
             };
-            // Use a predictable ID to ensure updates happen on the same doc
             const resultId = result.id || `${studentId}_${result.subjectId}_${schoolSettings.currentTermId}`; 
             const resultRef = doc(firestore, 'results', resultId);
             setDocumentNonBlocking(resultRef, resultWithIds, { merge: true });
         }
     });
     
-    // Give feedback after a short delay to allow for non-blocking writes to initiate
     setTimeout(() => { 
         setIsSaving(false);
         toast({
