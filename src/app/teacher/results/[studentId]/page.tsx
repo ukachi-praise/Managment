@@ -25,6 +25,8 @@ import {
   useDoc,
   useUser,
   setDocumentNonBlocking,
+  errorEmitter,
+  FirestorePermissionError,
 } from '@/firebase';
 import { useMemoFirebase } from '@/firebase/provider';
 import {
@@ -115,30 +117,39 @@ export default function StudentResultEntryPage() {
             where('termId', '==', schoolSettings.currentTermId)
         );
 
-        const querySnapshot = await getDocs(resultsQuery);
-        const fetchedResults: Record<string, Result> = {};
-        querySnapshot.forEach((doc) => {
-            const data = doc.data() as Result;
-            fetchedResults[data.subjectId] = { ...data, id: doc.id };
-        });
+        try {
+          const querySnapshot = await getDocs(resultsQuery);
+          const fetchedResults: Record<string, Result> = {};
+          querySnapshot.forEach((doc) => {
+              const data = doc.data() as Result;
+              fetchedResults[data.subjectId] = { ...data, id: doc.id };
+          });
 
-        // Pre-fill results for subjects that don't have any yet
-        subjects.forEach(subject => {
-          if (!fetchedResults[subject.id]) {
-            fetchedResults[subject.id] = {
-              studentId: studentId,
-              subjectId: subject.id,
-              classroomId: classroomId,
-              sessionId: schoolSettings.currentSession,
-              termId: schoolSettings.currentTermId,
-              ca1: null, ca2: null, ca3: null, exam: null
-            };
-          }
-        });
-        
-        setResults(fetchedResults);
-        setIsSaving(false);
-        setInitialFetchDone(true);
+          // Pre-fill results for subjects that don't have any yet
+          subjects.forEach(subject => {
+            if (!fetchedResults[subject.id]) {
+              fetchedResults[subject.id] = {
+                studentId: studentId,
+                subjectId: subject.id,
+                classroomId: classroomId,
+                sessionId: schoolSettings.currentSession,
+                termId: schoolSettings.currentTermId,
+                ca1: null, ca2: null, ca3: null, exam: null
+              };
+            }
+          });
+          
+          setResults(fetchedResults);
+        } catch (error) {
+           const permissionError = new FirestorePermissionError({
+            path: `results`,
+            operation: 'list'
+          });
+          errorEmitter.emit('permission-error', permissionError);
+        } finally {
+            setIsSaving(false);
+            setInitialFetchDone(true);
+        }
     };
 
     fetchResults();
