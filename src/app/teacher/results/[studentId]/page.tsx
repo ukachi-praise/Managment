@@ -29,7 +29,7 @@ import {
   FirestorePermissionError,
   useAuth,
 } from '@/firebase';
-import { sendEmailVerification } from 'firebase/auth';
+import { sendEmailVerification, User } from 'firebase/auth';
 import { useMemoFirebase } from '@/firebase/provider';
 import {
   collection,
@@ -118,13 +118,14 @@ export default function StudentResultEntryPage() {
 
 
   useEffect(() => {
+    // We must wait for the teacher's data and the classroom ID to be available.
     if (!classroomId || subjects.length === 0 || !schoolSettings || !firestore || !teacherData) {
       setResults({});
       setInitialFetchDone(false);
       return;
     };
 
-    // Client-side security check
+    // Client-side security check.
     if (teacherData.assignedClassroomId !== classroomId) {
         toast({ variant: 'destructive', title: 'Unauthorized', description: 'You are not assigned to this classroom.' });
         return;
@@ -293,7 +294,9 @@ export default function StudentResultEntryPage() {
                           <TableCell className="font-medium">{subject.name}</TableCell>
                           <TableCell>
                             <Input
-                              type="number"
+                              type="text"
+                              inputMode="numeric"
+                              pattern="[0-9]*"
                               className="h-8 w-20"
                               value={result.ca1 ?? ''}
                               onChange={(e) => handleScoreChange(subject.id, 'ca1', e.target.value)}
@@ -302,7 +305,9 @@ export default function StudentResultEntryPage() {
                           </TableCell>
                            <TableCell>
                             <Input
-                              type="number"
+                              type="text"
+                              inputMode="numeric"
+                              pattern="[0-9]*"
                               className="h-8 w-20"
                               value={result.ca2 ?? ''}
                               onChange={(e) => handleScoreChange(subject.id, 'ca2', e.target.value)}
@@ -311,7 +316,9 @@ export default function StudentResultEntryPage() {
                           </TableCell>
                            <TableCell>
                             <Input
-                              type="number"
+                              type="text"
+                              inputMode="numeric"
+                              pattern="[0-9]*"
                               className="h-8 w-20"
                               value={result.ca3 ?? ''}
                               onChange={(e) => handleScoreChange(subject.id, 'ca3', e.target.value)}
@@ -320,7 +327,9 @@ export default function StudentResultEntryPage() {
                           </TableCell>
                           <TableCell>
                             <Input
-                              type="number"
+                              type="text"
+                              inputMode="numeric"
+                              pattern="[0-9]*"
                               className="h-8 w-20"
                               value={result.exam ?? ''}
                               onChange={(e) => handleScoreChange(subject.id, 'exam', e.target.value)}
