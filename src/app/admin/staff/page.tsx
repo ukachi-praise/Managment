@@ -103,31 +103,6 @@ export default function StaffPage() {
   const { data: users, isLoading: usersLoading } = useCollection<User>(usersQuery);
   const { data: classrooms, isLoading: classroomsLoading } = useCollection<Classroom>(classroomsQuery);
   
-  // ONE-TIME SCRIPT to assign teacher
-    useEffect(() => {
-        if (firestore && classrooms) {
-            const teacherId = 'u3krP4g02DgPJ6Avv1XhVNvvb8R2';
-            const primary4Class = classrooms.find(c => c.name === 'Primary 4');
-            
-            if (primary4Class) {
-                const classroomId = primary4Class.id;
-                const teacherRef = doc(firestore, 'users', teacherId);
-                const classroomRef = doc(firestore, 'classrooms', classroomId);
-
-                const batch = writeBatch(firestore);
-                // Assign classroom to teacher
-                batch.update(teacherRef, { assignedClassroomId: classroomId });
-                // Assign teacher to classroom
-                batch.update(classroomRef, { teacherId: teacherId, teacherName: 'Assigned Teacher' }); // Assuming a name
-
-                batch.commit().then(() => {
-                    console.log("Teacher assigned to Primary 4 successfully.");
-                }).catch(e => console.error("Error assigning teacher", e));
-            }
-        }
-    }, [firestore, classrooms]);
-
-
   const isLoading = usersLoading || classroomsLoading;
 
   const classroomMap = useMemo(
@@ -490,4 +465,5 @@ export default function StaffPage() {
   );
 }
 
+    
     
