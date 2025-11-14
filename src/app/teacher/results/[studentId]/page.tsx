@@ -2,7 +2,7 @@
 'use client';
 
 import { useParams } from 'next/navigation';
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import {
   Table,
   TableBody,
@@ -25,30 +25,26 @@ import {
   useDoc,
   useUser,
   setDocumentNonBlocking,
-  errorEmitter,
-  FirestorePermissionError,
-  useAuth,
 } from '@/firebase';
-import { sendEmailVerification, User } from 'firebase/auth';
+
 import { useMemoFirebase } from '@/firebase/provider';
 import {
   collection,
   query,
   where,
   doc,
-  getDocs,
   getDoc,
+  DocumentReference,
+  DocumentData,
 } from 'firebase/firestore';
 
 // Define types based on backend.json
 type Student = { id: string; name: string; admissionNumber: string };
-// This now includes both individual and combined subjects
 type ScoreableSubject = { id: string; name: string; };
-type Classroom = { id: string; name: string; teacherId?: string };
 type Enrollment = { id: string; studentId: string; classroomId: string };
 type SchoolSettings = { currentSession: string; currentTermId: string; }
 type Result = {
-  id?: string; // It will have an id when fetched
+  id?: string; 
   studentId: string;
   subjectId: string;
   classroomId: string;
@@ -58,7 +54,6 @@ type Result = {
   ca2: number | null;
   exam: number | null;
 };
-type UserData = { assignedClassroomId?: string; };
 
 export default function StudentResultEntryPage() {
   const params = useParams();
@@ -68,12 +63,10 @@ export default function StudentResultEntryPage() {
   const { toast } = useToast();
   const firestore = useFirestore();
   const { user } = useUser();
-  const auth = useAuth();
 
   const [results, setResults] = useState<Record<string, Result>>({}); // subjectId -> Result
   const [isSaving, setIsSaving] = useState(false);
-  const [initialFetchDone, setInitialFetchDone] = useState(false);
-  const [teacherData, setTeacherData] = useState<UserData | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   // --- Data Fetching ---
   const studentRef = useMemoFirebase(() => (firestore ? doc(firestore, 'students', studentId) : null), [firestore, studentId]);
@@ -92,7 +85,6 @@ export default function StudentResultEntryPage() {
   , [firestore, classroomId]);
   const { data: classroomSubjects, isLoading: classSubjectsLoading } = useCollection(classroomSubjectsQuery);
 
-  // Fetch both individual and combined subjects
   const subjectsQuery = useMemoFirebase(() => (firestore ? collection(firestore, 'subjects') : null), [firestore]);
   const { data: individualSubjects, isLoading: subjectsLoading } = useCollection<ScoreableSubject>(subjectsQuery);
   const combinedSubjectsQuery = useMemoFirebase(() => (firestore ? collection(firestore, 'combinedSubjects') : null), [firestore]);
@@ -101,16 +93,6 @@ export default function StudentResultEntryPage() {
   const settingsRef = useMemoFirebase(() => (firestore ? doc(firestore, 'schoolSettings', 'current') : null), [firestore]);
   const { data: schoolSettings, isLoading: settingsLoading } = useDoc<SchoolSettings>(settingsRef);
   
-  useEffect(() => {
-    if (user && firestore) {
-      const userDocRef = doc(firestore, 'users', user.uid);
-      getDoc(userDocRef).then(docSnap => {
-        if (docSnap.exists()) {
-          setTeacherData(docSnap.data() as UserData);
-        }
-      });
-    }
-  }, [user, firestore]);
   
   const subjectsForClass = useMemo(() => {
     if (!classroomSubjects || (!individualSubjects && !combinedSubjects)) return [];
@@ -128,75 +110,6 @@ export default function StudentResultEntryPage() {
 
   }, [classroomSubjects, individualSubjects, combinedSubjects]);
 
-
-  useEffect(() => {
-    if (!classroomId || !schoolSettings || !firestore || !teacherData || !studentId ) {
-      return;
-    }
-    
-    // Client-side validation to ensure teacher is assigned to this class
-    if (teacherData.assignedClassroomId !== classroomId) {
-        toast({ variant: 'destructive', title: 'Unauthorized', description: 'You are not assigned to this classroom.' });
-        // Optionally redirect them away
-        // router.push('/teacher/dashboard'); 
-        return;
-    }
-    
-    const fetchResults = async () => {
-        setIsSaving(true);
-        const resultsQuery = query(
-            collection(firestore, 'results'),
-            where('classroomId', '==', classroomId),
-            where('studentId', '==', studentId),
-            where('sessionId', '==', schoolSettings.currentSession),
-            where('termId', '==', schoolSettings.currentTermId)
-        );
-
-        try {
-          const querySnapshot = await getDocs(resultsQuery);
-          const fetchedResults: Record<string, Result> = {};
-          querySnapshot.forEach((doc) => {
-              const data = doc.data() as Result;
-              fetchedResults[data.subjectId] = { ...data, id: doc.id };
-          });
-          
-          const initialResultsState: Record<string, Result> = {};
-          subjectsForClass.forEach(subject => {
-            if (fetchedResults[subject.id]) {
-               initialResultsState[subject.id] = fetchedResults[subject.id];
-            } else {
-              initialResultsState[subject.id] = {
-                studentId: studentId,
-                subjectId: subject.id,
-                classroomId: classroomId,
-                sessionId: schoolSettings.currentSession,
-                termId: schoolSettings.currentTermId,
-                ca1: null, ca2: null, exam: null
-              };
-            }
-          });
-          
-          setResults(initialResultsState);
-        } catch (error) {
-           const permissionError = new FirestorePermissionError({
-            path: `results`,
-            operation: 'list'
-          });
-          errorEmitter.emit('permission-error', permissionError);
-        } finally {
-            setIsSaving(false);
-            setInitialFetchDone(true);
-        }
-    };
-
-    if (subjectsForClass.length > 0) {
-      fetchResults();
-    } else {
-      setIsSaving(false);
-      setInitialFetchDone(true);
-    }
-  }, [classroomId, studentId, schoolSettings, firestore, toast, teacherData, subjectsForClass, router]);
-
   const handleScoreChange = (
     subjectId: string,
     field: 'ca1' | 'ca2' | 'exam',
@@ -207,13 +120,7 @@ export default function StudentResultEntryPage() {
     setResults((prevResults) => ({
       ...prevResults,
       [subjectId]: {
-        ...(prevResults[subjectId] || {
-            studentId: studentId,
-            subjectId: subjectId,
-            classroomId: classroomId!,
-            sessionId: schoolSettings!.currentSession,
-            termId: schoolSettings!.currentTermId,
-        }),
+        ...prevResults[subjectId],
         [field]: numericValue,
       },
     }));
@@ -229,17 +136,23 @@ export default function StudentResultEntryPage() {
     
     for (const subjectId in results) {
         const result = results[subjectId];
-        const resultWithIds = {
-            ...result,
+        // Use a composite key to ensure a unique document per student-subject-term-session
+        const resultId = `${studentId}-${subjectId}-${schoolSettings.currentSession.replace('/', '-')}-${schoolSettings.currentTermId}`; 
+        const resultRef = doc(firestore, 'results', resultId);
+        
+        // Ensure all required fields are present before saving
+        const resultToSave: Result = {
             studentId: studentId,
+            subjectId: subjectId,
             classroomId: classroomId,
             sessionId: schoolSettings.currentSession,
             termId: schoolSettings.currentTermId,
+            ca1: result.ca1 ?? null,
+            ca2: result.ca2 ?? null,
+            exam: result.exam ?? null,
         };
-        // Use a composite key to ensure a unique document per student-subject-term
-        const resultId = result.id || `${studentId}_${result.subjectId}_${schoolSettings.currentTermId}`; 
-        const resultRef = doc(firestore, 'results', resultId);
-        setDocumentNonBlocking(resultRef, resultWithIds, { merge: true });
+
+        setDocumentNonBlocking(resultRef, resultToSave, { merge: true });
     }
     
     setTimeout(() => { 
@@ -251,8 +164,70 @@ export default function StudentResultEntryPage() {
         router.push(`/results/${studentId}`);
     }, 1500);
   };
+
+  useEffect(() => {
+    const areDependenciesLoaded = 
+      !studentLoading &&
+      !enrollmentsLoading &&
+      !classSubjectsLoading &&
+      !subjectsLoading &&
+      !combinedSubjectsLoading &&
+      !settingsLoading &&
+      subjectsForClass.length > 0 &&
+      schoolSettings &&
+      classroomId &&
+      firestore;
+
+    if (!areDependenciesLoaded) {
+      setIsLoading(true);
+      return;
+    }
+
+    const fetchInitialResults = async () => {
+      const initialResultsState: Record<string, Result> = {};
+      
+      for (const subject of subjectsForClass) {
+        const resultId = `${studentId}-${subject.id}-${schoolSettings.currentSession.replace('/', '-')}-${schoolSettings.currentTermId}`;
+        const resultRef = doc(firestore, 'results', resultId);
+        
+        const docSnap = await getDoc(resultRef);
+
+        if (docSnap.exists()) {
+          initialResultsState[subject.id] = { id: docSnap.id, ...docSnap.data() } as Result;
+        } else {
+          initialResultsState[subject.id] = {
+            studentId: studentId,
+            subjectId: subject.id,
+            classroomId: classroomId,
+            sessionId: schoolSettings.currentSession,
+            termId: schoolSettings.currentTermId,
+            ca1: null,
+            ca2: null,
+            exam: null,
+          };
+        }
+      }
+      setResults(initialResultsState);
+      setIsLoading(false);
+    };
+
+    fetchInitialResults();
   
-  const isLoading = studentLoading || enrollmentsLoading || classSubjectsLoading || subjectsLoading || combinedSubjectsLoading || settingsLoading;
+  }, [
+      studentId, 
+      classroomId, 
+      schoolSettings, 
+      firestore, 
+      subjectsForClass, 
+      studentLoading, 
+      enrollmentsLoading, 
+      classSubjectsLoading, 
+      subjectsLoading, 
+      combinedSubjectsLoading, 
+      settingsLoading
+  ]);
+  
+  const pageIsLoading = studentLoading || isLoading;
 
   return (
     <div className="space-y-6">
@@ -282,7 +257,7 @@ export default function StudentResultEntryPage() {
         </div>
       </CardHeader>
       <CardContent>
-        {isLoading && !initialFetchDone ? (
+        {pageIsLoading ? (
             <div className="flex h-64 items-center justify-center">
               <Loader2 className="h-12 w-12 animate-spin text-primary" />
             </div>
@@ -317,7 +292,7 @@ export default function StudentResultEntryPage() {
                               type="text"
                               inputMode="numeric"
                               pattern="[0-9]*"
-                              className="h-8 w-20"
+                              className="h-8 w-20 text-sm"
                               value={result.ca1 ?? ''}
                               onChange={(e) => handleScoreChange(subject.id, 'ca1', e.target.value)}
                               max={20}
@@ -328,7 +303,7 @@ export default function StudentResultEntryPage() {
                               type="text"
                               inputMode="numeric"
                               pattern="[0-9]*"
-                              className="h-8 w-20"
+                              className="h-8 w-20 text-sm"
                               value={result.ca2 ?? ''}
                               onChange={(e) => handleScoreChange(subject.id, 'ca2', e.target.value)}
                               max={20}
@@ -339,7 +314,7 @@ export default function StudentResultEntryPage() {
                               type="text"
                               inputMode="numeric"
                               pattern="[0-9]*"
-                              className="h-8 w-20"
+                              className="h-8 w-20 text-sm"
                               value={result.exam ?? ''}
                               onChange={(e) => handleScoreChange(subject.id, 'exam', e.target.value)}
                               max={60}
@@ -354,7 +329,7 @@ export default function StudentResultEntryPage() {
               </Table>
             </div>
             <div className="mt-6 flex justify-end">
-              <Button onClick={handleSave} disabled={isSaving || subjectsForClass.length === 0}>
+              <Button onClick={handleSave} disabled={isSaving || pageIsLoading || subjectsForClass.length === 0}>
                 {isSaving ? (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 ) : (
