@@ -5,8 +5,10 @@ import { Toaster } from '@/components/ui/toaster';
 import { FirebaseClientProvider } from '@/firebase';
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://justvision.netlify.app'),
   title: 'JustVision Kiddies School',
   description: 'Database & Result Management System',
+  keywords: ['school management', 'result portal', 'education', 'JustVision Kiddies School', 'student database'],
 };
 
 export default function RootLayout({
