@@ -82,16 +82,15 @@ export function ResultSheet({ student, classroom }: ResultSheetProps) {
   const { data: combinedSubjects, isLoading: combinedSubjectsLoading } = useCollection<ScoreableSubject>(combinedSubjectsQuery);
 
   const resultsQuery = useMemoFirebase(() => {
-    if (!firestore || !studentId || !schoolSettings?.currentSession || !schoolSettings?.currentTermId) {
+    if (!firestore || !studentId) {
       return null;
     }
+    // Fetch all results for the student, don't filter by session/term here
     return query(
       collection(firestore, 'results'), 
-      where('studentId', '==', studentId),
-      where('sessionId', '==', schoolSettings.currentSession),
-      where('termId', '==', schoolSettings.currentTermId)
+      where('studentId', '==', studentId)
     );
-  }, [firestore, studentId, schoolSettings]);
+  }, [firestore, studentId]);
   
   const { data: studentResults, isLoading: resultsLoading } = useCollection<Result>(resultsQuery);
 
@@ -151,7 +150,12 @@ export function ResultSheet({ student, classroom }: ResultSheetProps) {
     return format(date, 'PPP');
   }, [schoolSettings]);
 
-  const isLoading = settingsLoading || templateLoading || classroomSubjectsLoading || subjectsLoading || combinedSubjectsLoading || resultsLoading || !schoolSettings;
+  // Use the session/term from the first result entry if available, otherwise from school settings
+  const reportSession = studentResults?.[0]?.sessionId || schoolSettings?.currentSession;
+  const reportTermId = studentResults?.[0]?.termId || schoolSettings?.currentTermId;
+  const reportTermName = reportTermId ? termNames[reportTermId] : 'N/A';
+
+  const isLoading = settingsLoading || templateLoading || classroomSubjectsLoading || subjectsLoading || combinedSubjectsLoading || resultsLoading;
 
 
   if (isLoading) {
@@ -187,7 +191,7 @@ export function ResultSheet({ student, classroom }: ResultSheetProps) {
                     <div className="text-right">
                         <h2 className="font-bold text-lg text-black">Student Report Card</h2>
                         <p className="text-sm text-zinc-600">
-                            {schoolSettings?.currentTermId ? termNames[schoolSettings.currentTermId] : 'N/A'}, {schoolSettings?.currentSession}
+                            {reportTermName}, {reportSession}
                         </p>
                     </div>
                 </div>
@@ -206,12 +210,12 @@ export function ResultSheet({ student, classroom }: ResultSheetProps) {
                                 <div className="w-1/3"><StudentInfoDetail label="Class" value={classroom?.name} /></div>
                             </div>
                             <div className="flex gap-4">
-                                <div className="w-1/3"><StudentInfoDetail label="Term" value={schoolSettings?.currentTermId ? termNames[schoolSettings.currentTermId] : undefined} /></div>
-                                <div className="w-1/3"><StudentInfoDetail label="Session" value={schoolSettings?.currentSession} /></div>
+                                <div className="w-1/3"><StudentInfoDetail label="Term" value={reportTermName} /></div>
+                                <div className="w-1/3"><StudentInfoDetail label="Session" value={reportSession} /></div>
                                 <div className="w-1/3"><StudentInfoDetail label="Days Attended" value={studentResults?.[0]?.daysAttended?.toString() || '0'} /></div>
                             </div>
                             <div className="flex gap-4">
-                                <div className="w-1/3"><StudentInfoDetail label="School Open" value={schoolSettings?.daysSchoolOpened.toString()} /></div>
+                                <div className="w-1/3"><StudentInfoDetail label="School Open" value={schoolSettings?.daysSchoolOpened?.toString()} /></div>
                                 <div className="w-1/3"><StudentInfoDetail label="Resumption" value={formattedResumptionDate} /></div>
                                 <div className="w-1/3"><StudentInfoDetail label="Class Teacher" value={classroom?.teacherName || 'N/A'} /></div>
                             </div>
@@ -305,7 +309,7 @@ export function ResultSheet({ student, classroom }: ResultSheetProps) {
                 {settings.gradingKey.visible && (
                     <div className="grid grid-cols-2 gap-x-4 pt-2">
                         <div className="space-y-1"><h3 className="font-bold text-black">Grading Key</h3><Table><TableHeader><TableRow><TableHead className="p-1 h-auto text-[10px] border border-black text-black">Score</TableHead><TableHead className="p-1 h-auto text-[10px] border border-black text-black">Grade</TableHead><TableHead className="p-1 h-auto text-[10px] border border-black text-black">Remark</TableHead></TableRow></TableHeader><TableBody><TableRow><TableCell className="p-1 h-auto text-[10px] border border-black">80 – 100</TableCell><TableCell className="p-1 h-auto text-[10px] border border-black">A</TableCell><TableCell className="p-1 h-auto text-[10px] border border-black">Excellent</TableCell></TableRow><TableRow><TableCell className="p-1 h-auto text-[10px] border border-black">70 – 79</TableCell><TableCell className="p-1 h-auto text-[10px] border border-black">B</TableCell><TableCell className="p-1 h-auto text-[10px] border border-black">Very Good</TableCell></TableRow><TableRow><TableCell className="p-1 h-auto text-[10px] border border-black">60 – 69</TableCell><TableCell className="p-1 h-auto text-[10px] border border-black">C</TableCell><TableCell className="p-1 h-auto text-[10px] border border-black">Good</TableCell></TableRow><TableRow><TableCell className="p-1 h-auto text-[10px] border border-black">50 – 59</TableCell><TableCell className="p-1 h-auto text-[10px] border border-black">D</TableCell><TableCell className="p-1 h-auto text-[10px] border border-black">Fair</TableCell></TableRow><TableRow><TableCell className="p-1 h-auto text-[10px] border border-black">0 – 49</TableCell><TableCell className="p-1 h-auto text-[10px] border border-black">F</TableCell><TableCell className="p-1 h-auto text-[10px] border border-black">Fail</TableCell></TableRow></TableBody></Table></div>
-                        <div className="space-y-1"><h3 className="font-bold text-black">Skill Score Rating</h3><Table><TableHeader><TableRow><TableHead className="p-1 h-auto text-[10px] border border-black text-black">Score</TableHead><TableHead className="p-1 h-auto text-[10px] border border-black text-black">Remark</TableHead></TableRow></TableHeader><TableBody><TableRow><TableCell className="p-1 h-auto text-[10px] border border-black">5</TableCell><TableCell className="p-1 h-auto text-[10px] border border-black">Excellent</TableCell></TableRow><TableRow><TableCell className="p-1 h-auto text-[10px] border border-black">4</TableCell><TableCell className="p-1 h-auto text-[10px] border border-black">Very Good</TableCell></TableRow><TableRow><TableCell className="p-1 h-auto text-[10px] border border-black">3</TableCell><TableCell className="p-1 h-auto text-[10px] border-black">Good</TableCell></TableRow><TableRow><TableCell className="p-1 h-auto text-[10px] border border-black">2</TableCell><TableCell className="p-1 h-auto text-[10px] border border-black">Fair</TableCell></TableRow><TableRow><TableCell className="p-1 h-auto text-[10px] border border-black">1</TableCell><TableCell className="p-1 h-auto text-[10px] border border-black">Poor</TableCell></TableRow></TableBody></Table></div>
+                        <div className="space-y-1"><h3 className="font-bold text-black">Skill Score Rating</h3><Table><TableHeader><TableRow><TableHead className="p-1 h-auto text-[10px] border border-black text-black">Score</TableHead><TableHead className="p-1 h-auto text-[10px] border border-black text-black">Remark</TableHead></TableRow></TableHeader><TableBody><TableRow><TableCell className="p-1 h-auto text-[10px] border border-black">5</TableCell><TableCell className="p-1 h-auto text-[10px] border border-black">Excellent</TableCell></TableRow><TableRow><TableCell className="p-1 h-auto text-[10px] border border-black">4</TableCell><TableCell className="p-1 h-auto text-[10px] border border-black">Very Good</TableCell></TableRow><TableRow><TableCell className="p-1 h-auto text-[10px] border border-black">3</TableCell><TableCell className="p-1 h-auto text-[10px] border border-black">Good</TableCell></TableRow><TableRow><TableCell className="p-1 h-auto text-[10px] border border-black">2</TableCell><TableCell className="p-1 h-auto text-[10px] border border-black">Fair</TableCell></TableRow><TableRow><TableCell className="p-1 h-auto text-[10px] border border-black">1</TableCell><TableCell className="p-1 h-auto text-[10px] border-black">Poor</TableCell></TableRow></TableBody></Table></div>
                     </div>
                 )}
                 {settings.remarks.visible && (
@@ -327,3 +331,4 @@ export function ResultSheet({ student, classroom }: ResultSheetProps) {
   );
 }
 
+    
