@@ -1,8 +1,7 @@
 
-
 'use client';
 
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { useMemo } from 'react';
 import {
   Card,
@@ -30,7 +29,7 @@ import { collection, query, where, doc } from 'firebase/firestore';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { Loader2 } from 'lucide-react';
+import { Loader2, ArrowLeft } from 'lucide-react';
 
 type Student = { id: string; name: string };
 type Classroom = { id: string; name: string };
@@ -38,6 +37,7 @@ type Enrollment = { studentId: string; classroomId: string };
 
 export default function TeacherClassPage() {
   const params = useParams();
+  const router = useRouter();
   const classroomId = params.classroomId as string;
   const firestore = useFirestore();
   const { user } = useUser();
@@ -84,6 +84,10 @@ export default function TeacherClassPage() {
                 Your assigned class dashboard. View students and manage results.
             </p>
         </div>
+        <Button onClick={() => router.back()} variant="outline">
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Go Back
+        </Button>
       </div>
 
       <Card>
