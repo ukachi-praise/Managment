@@ -210,14 +210,14 @@ export function ResultSheet({ student, classroom }: ResultSheetProps) {
                     <div className="flex items-center gap-4">
                         <div className="relative h-20 w-20"><Image src="/Logo.jpg" alt="School Logo" layout="fill" objectFit="contain" /></div>
                         <div className="text-black">
-                            <h1 className="font-headline text-2xl font-bold text-black">{schoolName}</h1>
-                            <p className="text-base text-black">Katampe 2 Mpape Abuja</p>
-                            <p className="text-base font-semibold text-black">Motto: Exceeding Great</p>
+                            <h1 className="font-headline text-3xl font-bold text-black">{schoolName}</h1>
+                            <p className="text-lg text-black">Katampe 2 Mpape Abuja</p>
+                            <p className="text-lg font-semibold text-black">Motto: Exceeding Great</p>
                         </div>
                     </div>
                     <div className="text-right">
-                        <h2 className="font-bold text-lg text-black">Student Report Card</h2>
-                        <p className="text-sm text-zinc-600">
+                        <h2 className="font-bold text-xl text-black">Student Report Card</h2>
+                        <p className="text-base text-zinc-600">
                             {reportTermName}, {reportSession}
                         </p>
                     </div>
@@ -304,8 +304,7 @@ export function ResultSheet({ student, classroom }: ResultSheetProps) {
          <div className="absolute inset-0 z-0 flex items-center justify-center">
           <Image src="/Logo.jpg" alt="School Watermark" width={400} height={400} className="opacity-10" />
       </div>
-       <div className="relative z-10 flex h-full flex-col justify-between p-6">
-            <div></div>
+       <div className="relative z-10 flex h-full flex-col justify-end p-6">
             <footer className="pt-2 text-xs">
                 <section className='border border-black p-2 flex flex-col gap-2'>
                     {settings.softSkills.visible && (
@@ -370,7 +369,7 @@ export function ResultSheet({ student, classroom }: ResultSheetProps) {
                     {settings.remarks.visible && (
                         <div className="pt-2 space-y-2">
                             <div><h3 className="font-bold text-black">Teacher's Remarks:</h3><p className="min-h-[25px] rounded-md border-b border-black p-1">A brilliant student...</p></div>
-                            <div><h3 className="font-bold text-black">Head Teacher's Remarks:</h3><p className="min-h-[25px] rounded-md border-b border-black p-1">Excellent performance...</p></div>
+                            <div><h3 className="font-bold text-black">Head Teacher's Remarks:</h3><p className="min-h-2-5px] rounded-md border-b border-black p-1">Excellent performance...</p></div>
                         </div>
                     )}
                     {settings.signatures.visible && (
@@ -386,5 +385,3 @@ export function ResultSheet({ student, classroom }: ResultSheetProps) {
     </>
   );
 }
-
-    
