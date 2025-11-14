@@ -50,7 +50,7 @@ import {
   setDocumentNonBlocking,
 } from '@/firebase';
 import { useMemoFirebase } from '@/firebase/provider';
-import { collection, query, doc, getDocs, writeBatch, where } from 'firebase/firestore';
+import { collection, query, doc, getDocs, writeBatch, where, collectionGroup, FieldValue, updateDoc, deleteField } from 'firebase/firestore';
 import {
   Select,
   SelectContent,
@@ -200,7 +200,7 @@ export default function SubjectsPage() {
     const subjectRef = doc(firestore, 'subjects', subjectIdToDelete);
     batch.delete(subjectRef);
 
-    // 2. Delete all assignments of this subject to classrooms
+    // 2. Find and delete all assignments of this subject to classrooms
     const classroomSubjectsQuerySnapshot = await getDocs(
       query(collection(firestore, 'classroomSubjects'), where('subjectId', '==', subjectIdToDelete))
     );
@@ -208,12 +208,27 @@ export default function SubjectsPage() {
       batch.delete(doc.ref);
     });
 
+    // 3. Find all result documents across all students and remove the subject's score
+    const allStudentResultsQuery = collectionGroup(firestore, 'results');
+    const studentResultsSnapshot = await getDocs(allStudentResultsQuery);
+    
+    studentResultsSnapshot.forEach(resultDoc => {
+        // Check if the score for the subject to be deleted exists in the document
+        if (resultDoc.data().scores && resultDoc.data().scores[subjectIdToDelete]) {
+            // Use update with deleteField to remove the map key
+            batch.update(resultDoc.ref, {
+                [`scores.${subjectIdToDelete}`]: deleteField()
+            });
+        }
+    });
+
+
     try {
       await batch.commit();
-      toast({ variant: 'destructive', title: 'Subject Deleted', description: `${subjectToDelete.name} and its assignments have been removed.` });
+      toast({ variant: 'destructive', title: 'Subject Deleted', description: `${subjectToDelete.name} and all associated scores have been removed.` });
     } catch (error) {
-      console.error("Error deleting subject and assignments:", error);
-      toast({ variant: 'destructive', title: 'Error', description: 'Could not delete the subject and its assignments.' });
+      console.error("Error deleting subject and its data:", error);
+      toast({ variant: 'destructive', title: 'Error', description: 'Could not delete the subject and its associated data.' });
     } finally {
         setDeleteDialogOpen(false);
         setSubjectToDelete(null);
