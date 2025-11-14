@@ -39,7 +39,7 @@ import {
 
 // --- TYPE DEFINITIONS ---
 type Student = { id: string; name: string; admissionNumber: string };
-type ScoreableSubject = { id: string; name: string; };
+type Subject = { id: string; name: string; description?: string };
 type Enrollment = { id: string; studentId: string; classroomId: string };
 type SchoolSettings = { currentSession: string; currentTermId: string; }
 
@@ -89,29 +89,24 @@ export default function StudentResultEntryPage() {
   const { data: classroomSubjects, isLoading: classSubjectsLoading } = useCollection(classroomSubjectsQuery);
 
   const subjectsQuery = useMemoFirebase(() => (firestore ? collection(firestore, 'subjects') : null), [firestore]);
-  const { data: individualSubjects, isLoading: subjectsLoading } = useCollection<ScoreableSubject>(subjectsQuery);
-  const combinedSubjectsQuery = useMemoFirebase(() => (firestore ? collection(firestore, 'combinedSubjects') : null), [firestore]);
-  const { data: combinedSubjects, isLoading: combinedSubjectsLoading } = useCollection<ScoreableSubject>(combinedSubjectsQuery);
+  const { data: allSubjects, isLoading: subjectsLoading } = useCollection<Subject>(subjectsQuery);
 
   const settingsRef = useMemoFirebase(() => (firestore ? doc(firestore, 'schoolSettings', 'current') : null), [firestore]);
   const { data: schoolSettings, isLoading: settingsLoading } = useDoc<SchoolSettings>(settingsRef);
   
   
   const subjectsForClass = useMemo(() => {
-    if (!classroomSubjects || (!individualSubjects && !combinedSubjects)) return [];
+    if (!classroomSubjects || !allSubjects) return [];
     
-    const allScoreableSubjects = new Map<string, ScoreableSubject>();
-    individualSubjects?.forEach(s => allScoreableSubjects.set(s.id, s));
-    combinedSubjects?.forEach(cs => allScoreableSubjects.set(cs.id, cs));
-
+    const subjectMap = new Map(allSubjects.map(s => [s.id, s]));
     const subjectIdsForClass = new Set(classroomSubjects.map(cs => cs.subjectId));
     
     return Array.from(subjectIdsForClass)
-        .map(id => allScoreableSubjects.get(id))
-        .filter((s): s is ScoreableSubject => !!s)
+        .map(id => subjectMap.get(id))
+        .filter((s): s is Subject => !!s)
         .sort((a,b) => a.name.localeCompare(b.name));
 
-  }, [classroomSubjects, individualSubjects, combinedSubjects]);
+  }, [classroomSubjects, allSubjects]);
 
   const termResultRef = useMemoFirebase(() => {
       if (!firestore || !studentId || !schoolSettings) return null;
@@ -196,7 +191,7 @@ export default function StudentResultEntryPage() {
     }, 1500);
   };
 
-  const pageIsLoading = studentLoading || enrollmentsLoading || classSubjectsLoading || subjectsLoading || combinedSubjectsLoading || settingsLoading || !termResult;
+  const pageIsLoading = studentLoading || enrollmentsLoading || classSubjectsLoading || subjectsLoading || settingsLoading || !termResult;
 
   return (
     <div className="space-y-6">
@@ -256,7 +251,10 @@ export default function StudentResultEntryPage() {
 
                       return (
                         <TableRow key={subject.id}>
-                          <TableCell className="font-medium">{subject.name}</TableCell>
+                          <TableCell className="font-medium">
+                            {subject.name}
+                            {subject.description && <span className="ml-2 text-muted-foreground text-xs">({subject.description})</span>}
+                          </TableCell>
                           <TableCell>
                             <Input
                               type="text"

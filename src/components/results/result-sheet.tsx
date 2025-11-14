@@ -37,7 +37,7 @@ type SchoolSettingsData = { currentSession: string; currentTermId: string; daysS
 type TemplateSettings = { studentInfo: { fontSize: number; visible: boolean; }; header: { visible: boolean; }; subjectsTable: { visible: boolean; }; summary: { visible: boolean; }; softSkills: { visible: boolean; }; gradingKey: { visible: boolean; }; remarks: { visible: boolean; }; signatures: { visible: boolean; }; };
 type SavedTemplateData = { name: string; schoolName: string; settings: TemplateSettings; };
 type ResultEntry = { subjectName: string; ca1: number | null; ca2: number | null; exam: number | null; total: number; grade: string; remark: string; };
-type ScoreableSubject = { id: string; name: string; };
+type Subject = { id: string; name: string; description?: string };
 
 // Represents a single subject's scores within the main result document
 type SubjectScore = {
@@ -92,9 +92,7 @@ export function ResultSheet({ student, classroom }: ResultSheetProps) {
   const { data: savedTemplateData, isLoading: templateLoading } = useDoc<SavedTemplateData>(templateRef);
   
   const subjectsQuery = useMemoFirebase(() => (firestore ? collection(firestore, 'subjects') : null), [firestore]);
-  const { data: individualSubjects, isLoading: subjectsLoading } = useCollection<ScoreableSubject>(subjectsQuery);
-  const combinedSubjectsQuery = useMemoFirebase(() => (firestore ? collection(firestore, 'combinedSubjects') : null), [firestore]);
-  const { data: combinedSubjects, isLoading: combinedSubjectsLoading } = useCollection<ScoreableSubject>(combinedSubjectsQuery);
+  const { data: allSubjects, isLoading: subjectsLoading } = useCollection<Subject>(subjectsQuery);
 
   const termResultRef = useMemoFirebase(() => {
       if (!firestore || !studentId || !schoolSettings) return null;
@@ -126,27 +124,25 @@ export function ResultSheet({ student, classroom }: ResultSheetProps) {
   const settings = savedTemplateData?.settings || initialSettings;
   const schoolName = savedTemplateData?.schoolName || 'JustVision Kiddies School';
 
-  const allScoreableSubjectsMap = useMemo(() => {
-    const all = new Map<string, ScoreableSubject>();
-    individualSubjects?.forEach(s => all.set(s.id, s));
-    combinedSubjects?.forEach(cs => all.set(cs.id, cs));
-    return all;
-  }, [individualSubjects, combinedSubjects]);
+  const allSubjectsMap = useMemo(() => {
+    if (!allSubjects) return new Map();
+    return new Map(allSubjects.map(s => [s.id, s]));
+  }, [allSubjects]);
 
 
   const resultEntries: ResultEntry[] = useMemo(() => {
-    if (!termResult || !termResult.scores || !allScoreableSubjectsMap.size) return [];
+    if (!termResult || !termResult.scores || !allSubjectsMap.size) return [];
 
     return Object.entries(termResult.scores)
       .map(([subjectId, score]) => {
-        const subject = allScoreableSubjectsMap.get(subjectId);
+        const subject = allSubjectsMap.get(subjectId);
         if (!subject) return null;
         
         const total = (score.ca1 || 0) + (score.ca2 || 0) + (score.exam || 0);
         const { grade, remark } = calculateGrade(total);
 
         return {
-          subjectName: subject.name,
+          subjectName: `${subject.name} ${subject.description ? `(${subject.description})` : ''}`,
           ca1: score.ca1,
           ca2: score.ca2,
           exam: score.exam,
@@ -157,7 +153,7 @@ export function ResultSheet({ student, classroom }: ResultSheetProps) {
       })
       .filter((r): r is ResultEntry => r !== null)
       .sort((a, b) => a.subjectName.localeCompare(b.subjectName));
-  }, [termResult, allScoreableSubjectsMap]);
+  }, [termResult, allSubjectsMap]);
 
   const overall = useMemo(() => {
     if (resultEntries.length === 0) return { average: 0, grade: 'N/A' };
@@ -180,7 +176,7 @@ export function ResultSheet({ student, classroom }: ResultSheetProps) {
   const reportTermId = termResult?.termId || schoolSettings?.currentTermId;
   const reportTermName = reportTermId ? termNames[reportTermId] : 'N/A';
 
-  const isLoading = settingsLoading || templateLoading || subjectsLoading || combinedSubjectsLoading || !termResultRef;
+  const isLoading = settingsLoading || templateLoading || subjectsLoading || !termResultRef;
 
 
   if (isLoading) {
@@ -239,7 +235,7 @@ export function ResultSheet({ student, classroom }: ResultSheetProps) {
                             <div className="flex gap-4">
                                 <div className="w-1/3"><StudentInfoDetail label="Term" value={reportTermName} /></div>
                                 <div className="w-1/3"><StudentInfoDetail label="Session" value={reportSession} /></div>
-                                <div className="w-1/3"><StudentInfoDetail label="Days Attended" value={termResult?.daysAttended?.toString() || '0'} /></div>
+                                <div className="w-1/3"><StudentInfoDetail label="Days Attended" value={termResult?.daysAttended?.toString() || '--'} /></div>
                             </div>
                             <div className="flex gap-4">
                                 <div className="w-1/3"><StudentInfoDetail label="School Open" value={schoolSettings?.daysSchoolOpened?.toString()} /></div>
@@ -360,7 +356,7 @@ export function ResultSheet({ student, classroom }: ResultSheetProps) {
                                         <TableRow><TableCell className="p-0.5 h-auto text-[9px] border border-black">4</TableCell><TableCell className="p-0.5 h-auto text-[9px] border border-black">Very Good</TableCell></TableRow>
                                         <TableRow><TableCell className="p-0.5 h-auto text-[9px] border border-black">3</TableCell><TableCell className="p-0.5 h-auto text-[9px] border border-black">Good</TableCell></TableRow>
                                         <TableRow><TableCell className="p-0.5 h-auto text-[9px] border border-black">2</TableCell><TableCell className="p-0.5 h-auto text-[9px] border border-black">Fair</TableCell></TableRow>
-                                        <TableRow><TableCell className="p-0.5 h-auto text-[9px] border border-black">1</TableCell><TableCell className="p-0.5 h-auto text-[9px] border-black">Poor</TableCell></TableRow>
+                                        <TableRow><TableCell className="p-0.5 h-auto text-[9px] border border-black">1</TableCell><TableCell className="p-0.5 h-auto text-[9px] border border-black">Poor</TableCell></TableRow>
                                     </TableBody>
                                 </Table>
                             </div>

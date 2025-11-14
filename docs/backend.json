@@ -30,23 +30,13 @@
     "Subject": {
       "title": "Subject",
       "type": "object",
-      "description": "Represents an academic subject.",
+      "description": "Represents an academic subject. Can include a description for combined subjects.",
       "properties": {
         "id": { "type": "string", "description": "Unique identifier for the subject." },
-        "name": { "type": "string", "description": "Name of the subject (e.g., 'Mathematics')." }
+        "name": { "type": "string", "description": "Name of the subject (e.g., 'Mathematics', 'B.S.T')." },
+        "description": { "type": "string", "description": "Optional description for the subject (e.g., 'Basic Science & Technology')." }
       },
       "required": ["id", "name"]
-    },
-    "CombinedSubject": {
-      "title": "CombinedSubject",
-      "type": "object",
-      "description": "Represents a group of subjects that are graded as one.",
-      "properties": {
-        "id": { "type": "string", "description": "Unique identifier for the combined subject." },
-        "name": { "type": "string", "description": "Name of the combined subject (e.g., 'Basic Science & Technology')." },
-        "subjectIds": { "type": "array", "items": { "type": "string" }, "description": "An array of subject IDs that are part of this group." }
-      },
-      "required": ["id", "name", "subjectIds"]
     },
     "ClassroomSubject": {
       "title": "ClassroomSubject",
@@ -230,7 +220,6 @@
       { "path": "/users/{userId}", "definition": { "schema": { "$ref": "#/backend/entities/User" } } },
       { "path": "/classrooms/{classroomId}", "definition": { "schema": { "$ref": "#/backend/entities/Classroom" } } },
       { "path": "/subjects/{subjectId}", "definition": { "schema": { "$ref": "#/backend/entities/Subject" } } },
-      { "path": "/combinedSubjects/{combinedSubjectId}", "definition": { "schema": { "$ref": "#/backend/entities/CombinedSubject" } } },
       { "path": "/classroomSubjects/{classroomSubjectId}", "definition": { "schema": { "$ref": "#/backend/entities/ClassroomSubject" } } },
       { "path": "/students/{studentId}", "definition": { "schema": { "$ref": "#/backend/entities/Student" } } },
       { "path": "/students/{studentId}/results/{termResultId}", "definition": { "schema": { "$ref": "#/backend/entities/Result" } } },
