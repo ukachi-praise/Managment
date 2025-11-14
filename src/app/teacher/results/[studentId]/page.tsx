@@ -121,26 +121,28 @@ export default function StudentResultEntryPage() {
 
   // --- REAL-TIME DATA SUBSCRIPTION ---
   useEffect(() => {
-    if (!termResultRef || !classroomId || !schoolSettings) return;
+    if (!termResultRef || !classroomId || !schoolSettings || subjectsForClass.length === 0) return;
 
     const unsubscribe = onSnapshot(termResultRef, (snap) => {
-      if (snap.exists()) {
-        setTermResult(snap.data() as TermResult);
-      } else {
-        // If doc doesn't exist, create a new local state for it
-        const newScores: Record<string, SubjectScore> = {};
-        subjectsForClass.forEach(subject => {
-            newScores[subject.id] = { ca1: null, ca2: null, exam: null };
-        });
+      const existingData = snap.exists() ? snap.data() : null;
+      
+      const newScores: Record<string, SubjectScore> = {};
+      subjectsForClass.forEach(subject => {
+          newScores[subject.id] = { 
+              ca1: existingData?.scores?.[subject.id]?.ca1 ?? null,
+              ca2: existingData?.scores?.[subject.id]?.ca2 ?? null,
+              exam: existingData?.scores?.[subject.id]?.exam ?? null,
+           };
+      });
 
-        setTermResult({
-            scores: newScores,
-            studentId,
-            termId: schoolSettings.currentTermId,
-            sessionId: schoolSettings.currentSession,
-            classroomId,
-        });
-      }
+      setTermResult({
+          scores: newScores,
+          studentId,
+          termId: schoolSettings.currentTermId,
+          sessionId: schoolSettings.currentSession,
+          classroomId,
+      });
+
     }, (error) => {
         console.error("Error fetching student results:", error);
         toast({ variant: 'destructive', title: "Error", description: "Could not fetch student scores." });
@@ -186,7 +188,11 @@ export default function StudentResultEntryPage() {
           title: 'Scores Saved!',
           description: `Scores for ${student?.name} have been updated.`,
         });
-        router.push(`/results/${studentId}`);
+        if(classroomId) {
+            router.push(`/teacher/class/${classroomId}`);
+        } else {
+            router.push('/teacher/dashboard');
+        }
     }, 1500);
   };
 
