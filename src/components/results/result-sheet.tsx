@@ -36,7 +36,7 @@ type Classroom = { id: string; name: string; teacherName?: string; };
 type SchoolSettingsData = { currentSession: string; currentTermId: string; daysSchoolOpened: number; nextTermResumptionDate: Timestamp | Date | string; };
 type TemplateSettings = { studentInfo: { fontSize: number; visible: boolean; }; header: { visible: boolean; }; subjectsTable: { visible: boolean; }; summary: { visible: boolean; }; softSkills: { visible: boolean; }; gradingKey: { visible: boolean; }; remarks: { visible: boolean; }; signatures: { visible: boolean; }; };
 type SavedTemplateData = { name: string; schoolName: string; settings: TemplateSettings; };
-type ResultEntry = { subjectName: string; ca1: number; ca2: number; exam: number; total: number; grade: string; remark: string; };
+type ResultEntry = { subjectName: string; ca1: number | null; ca2: number | null; exam: number | null; total: number; grade: string; remark: string; };
 type ScoreableSubject = { id: string; name: string; };
 
 // Represents a single subject's scores within the main result document
@@ -147,9 +147,9 @@ export function ResultSheet({ student, classroom }: ResultSheetProps) {
 
         return {
           subjectName: subject.name,
-          ca1: score.ca1 || 0,
-          ca2: score.ca2 || 0,
-          exam: score.exam || 0,
+          ca1: score.ca1,
+          ca2: score.ca2,
+          exam: score.exam,
           total,
           grade,
           remark,
@@ -268,9 +268,9 @@ export function ResultSheet({ student, classroom }: ResultSheetProps) {
                                     resultEntries.map(entry => (
                                         <TableRow key={entry.subjectName}>
                                             <TableCell className="border-b border-r border-black p-2 text-base">{entry.subjectName}</TableCell>
-                                            <TableCell className="text-center border-b border-r border-black p-2 text-base">{entry.ca1}</TableCell>
-                                            <TableCell className="text-center border-b border-r border-black p-2 text-base">{entry.ca2}</TableCell>
-                                            <TableCell className="text-center border-b border-r border-black p-2 text-base">{entry.exam}</TableCell>
+                                            <TableCell className="text-center border-b border-r border-black p-2 text-base">{entry.ca1 ?? '--'}</TableCell>
+                                            <TableCell className="text-center border-b border-r border-black p-2 text-base">{entry.ca2 ?? '--'}</TableCell>
+                                            <TableCell className="text-center border-b border-r border-black p-2 text-base">{entry.exam ?? '--'}</TableCell>
                                             <TableCell className="text-center border-b border-r border-black p-2 text-base font-semibold">{entry.total}</TableCell>
                                             <TableCell className="border-b border-black p-2 text-base">{entry.remark}</TableCell>
                                         </TableRow>
@@ -304,7 +304,8 @@ export function ResultSheet({ student, classroom }: ResultSheetProps) {
          <div className="absolute inset-0 z-0 flex items-center justify-center">
           <Image src="/Logo.jpg" alt="School Watermark" width={400} height={400} className="opacity-10" />
       </div>
-       <div className="relative z-10 flex h-full flex-col justify-end p-6">
+       <div className="relative z-10 flex h-full flex-col justify-between p-6">
+            <div></div>
             <footer className="pt-2 text-xs">
                 <section className='border border-black p-2 flex flex-col gap-2'>
                     {settings.softSkills.visible && (
@@ -385,3 +386,5 @@ export function ResultSheet({ student, classroom }: ResultSheetProps) {
     </>
   );
 }
+
+    
