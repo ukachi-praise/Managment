@@ -71,14 +71,6 @@ export default function AdminDashboard() {
   
   const isLoading = studentsLoading || classroomsLoading || subjectsLoading || usersLoading;
 
-  if (isLoading) {
-    return (
-      <div className="flex h-full items-center justify-center">
-        <Loader2 className="h-12 w-12 animate-spin text-primary" />
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-6">
       <h1 className="text-3xl font-bold tracking-tight">Admin Dashboard</h1>
