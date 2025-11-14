@@ -63,8 +63,8 @@ const initialSettings: TemplateSettings = { studentInfo: { fontSize: 12, visible
 
 // --- HELPER COMPONENTS ---
 const StudentInfoDetail = ({ label, value, isLoading = false }: { label: string, value?: string | React.ReactNode, isLoading?: boolean }) => (
-    <div className="flex text-xs">
-        <span className="font-semibold w-[80px] shrink-0">{label}:</span>
+    <div className="flex text-sm">
+        <span className="font-semibold w-[90px] shrink-0">{label}:</span>
         <span className="flex-1 border-b border-dotted border-black">
             {isLoading ? <Skeleton className="h-4 w-24" /> : value}
         </span>
@@ -230,7 +230,7 @@ export function ResultSheet({ student, classroom }: ResultSheetProps) {
             <div className="overflow-auto h-full">
                 {settings.studentInfo.visible && (
                     <div className="mb-4 p-2 border border-black" style={{ fontSize: `${settings.studentInfo.fontSize}px` }}>
-                        <div className="flex flex-col gap-1">
+                        <div className="flex flex-col gap-1.5">
                             <div className="flex gap-4">
                                 <div className="w-1/3"><StudentInfoDetail label="Student Name" value={student.name} /></div>
                                 <div className="w-1/3"><StudentInfoDetail label="Admission No" value={student.admissionNumber} /></div>
@@ -304,7 +304,7 @@ export function ResultSheet({ student, classroom }: ResultSheetProps) {
          <div className="absolute inset-0 z-0 flex items-center justify-center">
           <Image src="/Logo.jpg" alt="School Watermark" width={400} height={400} className="opacity-10" />
       </div>
-       <div className="relative z-10 flex h-full flex-col justify-end p-6">
+       <div className="relative z-10 flex h-full flex-col justify-start p-6">
             <footer className="pt-2 text-xs">
                 <section className='border border-black p-2 flex flex-col gap-2'>
                     {settings.softSkills.visible && (
@@ -360,7 +360,7 @@ export function ResultSheet({ student, classroom }: ResultSheetProps) {
                                         <TableRow><TableCell className="p-0.5 h-auto text-[9px] border border-black">4</TableCell><TableCell className="p-0.5 h-auto text-[9px] border border-black">Very Good</TableCell></TableRow>
                                         <TableRow><TableCell className="p-0.5 h-auto text-[9px] border border-black">3</TableCell><TableCell className="p-0.5 h-auto text-[9px] border border-black">Good</TableCell></TableRow>
                                         <TableRow><TableCell className="p-0.5 h-auto text-[9px] border border-black">2</TableCell><TableCell className="p-0.5 h-auto text-[9px] border border-black">Fair</TableCell></TableRow>
-                                        <TableRow><TableCell className="p-0.5 h-auto text-[9px] border border-black">1</TableCell><TableCell className="p-0.5 h-auto text-[9px] border border-black">Poor</TableCell></TableRow>
+                                        <TableRow><TableCell className="p-0.5 h-auto text-[9px] border border-black">1</TableCell><TableCell className="p-0.5 h-auto text-[9px] border-black">Poor</TableCell></TableRow>
                                     </TableBody>
                                 </Table>
                             </div>
