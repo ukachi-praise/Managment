@@ -255,29 +255,29 @@ export function ResultSheet({ student, classroom }: ResultSheetProps) {
                         <Table>
                             <TableHeader>
                                 <TableRow>
-                                    <TableHead className="border border-black p-1 h-auto text-sm text-black">Subject</TableHead>
-                                    <TableHead className="text-center border border-black p-1 h-auto text-sm text-black">CA1 (20)</TableHead>
-                                    <TableHead className="text-center border border-black p-1 h-auto text-sm text-black">CA2 (20)</TableHead>
-                                    <TableHead className="text-center border border-black p-1 h-auto text-sm text-black">Exam (60)</TableHead>
-                                    <TableHead className="text-center border border-black p-1 h-auto text-sm text-black">Total (100)</TableHead>
-                                    <TableHead className="border border-black p-1 h-auto text-sm text-black">Remark</TableHead>
+                                    <TableHead className="border border-black p-2 h-auto text-base text-black">Subject</TableHead>
+                                    <TableHead className="text-center border border-black p-2 h-auto text-base text-black">CA1 (20)</TableHead>
+                                    <TableHead className="text-center border border-black p-2 h-auto text-base text-black">CA2 (20)</TableHead>
+                                    <TableHead className="text-center border border-black p-2 h-auto text-base text-black">Exam (60)</TableHead>
+                                    <TableHead className="text-center border border-black p-2 h-auto text-base text-black">Total (100)</TableHead>
+                                    <TableHead className="border border-black p-2 h-auto text-base text-black">Remark</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
                             {resultEntries.length > 0 ? (
                                     resultEntries.map(entry => (
                                         <TableRow key={entry.subjectName}>
-                                            <TableCell className="border-b border-r border-black p-1 text-sm">{entry.subjectName}</TableCell>
-                                            <TableCell className="text-center border-b border-r border-black p-1 text-sm">{entry.ca1}</TableCell>
-                                            <TableCell className="text-center border-b border-r border-black p-1 text-sm">{entry.ca2}</TableCell>
-                                            <TableCell className="text-center border-b border-r border-black p-1 text-sm">{entry.exam}</TableCell>
-                                            <TableCell className="text-center border-b border-r border-black p-1 text-sm">{entry.total}</TableCell>
-                                            <TableCell className="border-b border-black p-1 text-sm">{entry.remark}</TableCell>
+                                            <TableCell className="border-b border-r border-black p-2 text-base">{entry.subjectName}</TableCell>
+                                            <TableCell className="text-center border-b border-r border-black p-2 text-base">{entry.ca1}</TableCell>
+                                            <TableCell className="text-center border-b border-r border-black p-2 text-base">{entry.ca2}</TableCell>
+                                            <TableCell className="text-center border-b border-r border-black p-2 text-base">{entry.exam}</TableCell>
+                                            <TableCell className="text-center border-b border-r border-black p-2 text-base font-semibold">{entry.total}</TableCell>
+                                            <TableCell className="border-b border-black p-2 text-base">{entry.remark}</TableCell>
                                         </TableRow>
                                     ))
                                 ) : (
                                     <TableRow>
-                                      <TableCell colSpan={6} className="h-24 text-center border-b border-black p-1 text-sm">
+                                      <TableCell colSpan={6} className="h-24 text-center border-b border-black p-2 text-base">
                                         No scores entered for this term.
                                       </TableCell>
                                     </TableRow>
@@ -288,7 +288,7 @@ export function ResultSheet({ student, classroom }: ResultSheetProps) {
                 )}
                  {settings.summary.visible && (
                     <div className="mt-2 flex justify-end">
-                        <div className="w-1/2 rounded-md border border-black p-2 text-xs space-y-1">
+                        <div className="w-1/2 rounded-md border border-black p-2 text-sm space-y-1">
                             <div className="flex justify-between"><span className="font-semibold text-black">Overall Average:</span><span className="text-black">{overall.average}%</span></div>
                             <div className="flex justify-between"><span className="font-semibold text-black">Overall Grade:</span><span className="text-black">{overall.grade}</span></div>
                         </div>
@@ -304,8 +304,7 @@ export function ResultSheet({ student, classroom }: ResultSheetProps) {
          <div className="absolute inset-0 z-0 flex items-center justify-center">
           <Image src="/Logo.jpg" alt="School Watermark" width={400} height={400} className="opacity-10" />
       </div>
-       <div className="relative z-10 flex h-full flex-col p-6">
-            <div className="flex-grow" /> {/* Spacer to push content to the bottom */}
+       <div className="relative z-10 flex h-full flex-col justify-end p-6">
             <footer className="pt-2 text-xs">
                 <section className='border border-black p-2 flex flex-col gap-2'>
                     {settings.softSkills.visible && (
