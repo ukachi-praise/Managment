@@ -30,11 +30,17 @@
     "Subject": {
       "title": "Subject",
       "type": "object",
-      "description": "Represents an academic subject. Can include a description for combined subjects.",
+      "description": "Represents an academic subject. Can include sub-subjects for display purposes.",
       "properties": {
         "id": { "type": "string", "description": "Unique identifier for the subject." },
         "name": { "type": "string", "description": "Name of the subject (e.g., 'Mathematics', 'B.S.T')." },
-        "description": { "type": "string", "description": "Optional description for the subject (e.g., 'Basic Science & Technology')." }
+        "subSubjects": { 
+          "type": "array", 
+          "description": "Optional list of sub-subject names for display.",
+          "items": {
+            "type": "string"
+          }
+        }
       },
       "required": ["id", "name"]
     },

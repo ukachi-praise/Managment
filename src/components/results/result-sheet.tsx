@@ -36,8 +36,8 @@ type Classroom = { id: string; name: string; teacherName?: string; };
 type SchoolSettingsData = { currentSession: string; currentTermId: string; daysSchoolOpened: number; nextTermResumptionDate: Timestamp | Date | string; };
 type TemplateSettings = { studentInfo: { fontSize: number; visible: boolean; }; header: { visible: boolean; }; subjectsTable: { visible: boolean; }; summary: { visible: boolean; }; softSkills: { visible: boolean; }; gradingKey: { visible: boolean; }; remarks: { visible: boolean; }; signatures: { visible: boolean; }; };
 type SavedTemplateData = { name: string; schoolName: string; settings: TemplateSettings; };
-type ResultEntry = { subjectName: string; ca1: number | null; ca2: number | null; exam: number | null; total: number; grade: string; remark: string; };
-type Subject = { id: string; name: string; description?: string };
+type ResultEntry = { subjectName: string; ca1: number | null; ca2: number | null; exam: number | null; total: number; grade: string; remark: string; subSubjects?: string[] };
+type Subject = { id: string; name: string; subSubjects?: string[] };
 
 // Represents a single subject's scores within the main result document
 type SubjectScore = {
@@ -142,7 +142,8 @@ export function ResultSheet({ student, classroom }: ResultSheetProps) {
         const { grade, remark } = calculateGrade(total);
 
         return {
-          subjectName: `${subject.name} ${subject.description ? `(${subject.description})` : ''}`,
+          subjectName: subject.name,
+          subSubjects: subject.subSubjects,
           ca1: score.ca1,
           ca2: score.ca2,
           exam: score.exam,
@@ -263,7 +264,16 @@ export function ResultSheet({ student, classroom }: ResultSheetProps) {
                             {resultEntries.length > 0 ? (
                                     resultEntries.map(entry => (
                                         <TableRow key={entry.subjectName}>
-                                            <TableCell className="border-b border-r border-black p-2 text-base">{entry.subjectName}</TableCell>
+                                            <TableCell className="border-b border-r border-black p-2 text-base">
+                                                <div className="font-semibold">{entry.subjectName}</div>
+                                                {entry.subSubjects && entry.subSubjects.length > 0 && (
+                                                    <div className="pl-2 text-sm text-muted-foreground">
+                                                        {entry.subSubjects.map((sub, index) => (
+                                                            <div key={index}>{sub}</div>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </TableCell>
                                             <TableCell className="text-center border-b border-r border-black p-2 text-base">{entry.ca1 ?? '--'}</TableCell>
                                             <TableCell className="text-center border-b border-r border-black p-2 text-base">{entry.ca2 ?? '--'}</TableCell>
                                             <TableCell className="text-center border-b border-r border-black p-2 text-base">{entry.exam ?? '--'}</TableCell>

@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -32,7 +32,7 @@ import {
 
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { PlusCircle, Trash2, Loader2, Edit, X, ArrowLeft } from 'lucide-react';
+import { PlusCircle, Trash2, Loader2, Edit, X, ArrowLeft, MinusCircle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import {
   Table,
@@ -64,7 +64,7 @@ import { useRouter } from 'next/navigation';
 type Subject = {
   id: string;
   name: string;
-  description?: string;
+  subSubjects?: string[];
 };
 
 type Classroom = {
@@ -86,6 +86,7 @@ export default function SubjectsPage() {
   const [classToAssign, setClassToAssign] = useState<Classroom | null>(null);
   const [editingSubject, setEditingSubject] = useState<Subject | null>(null);
   const [subjectToDelete, setSubjectToDelete] = useState<Subject | null>(null);
+  const [subSubjectInputs, setSubSubjectInputs] = useState<string[]>(['']);
   const router = useRouter();
 
 
@@ -112,6 +113,15 @@ export default function SubjectsPage() {
 
   const isLoading = subjectsLoading || classroomsLoading || classroomSubjectsLoading;
 
+  useEffect(() => {
+    if (editingSubject) {
+        setSubSubjectInputs(editingSubject.subSubjects || ['']);
+    } else {
+        setSubSubjectInputs(['']);
+    }
+  }, [editingSubject]);
+
+
   // --- Data Memoization ---
   const sortedSubjects = useMemo(() => {
     if (!subjects) return [];
@@ -129,7 +139,7 @@ export default function SubjectsPage() {
   );
 
   const classSubjectMap = useMemo(() => {
-    const map: Record<string, { subjectId: string; name: string; assignmentId: string; description?: string }[]> = {};
+    const map: Record<string, { subjectId: string; name: string; assignmentId: string; subSubjects?: string[] }[]> = {};
     if (!classrooms || !classroomSubjects || !subjectMap) return map;
 
     classrooms.forEach(c => {
@@ -142,7 +152,7 @@ export default function SubjectsPage() {
         map[cs.classroomId].push({
           subjectId: cs.subjectId,
           name: subject.name,
-          description: subject.description,
+          subSubjects: subject.subSubjects,
           assignmentId: cs.id,
         });
       }
@@ -159,9 +169,12 @@ export default function SubjectsPage() {
 
     const formData = new FormData(event.currentTarget);
     const subjectName = formData.get('name') as string;
-    const subjectDescription = formData.get('description') as string;
+    const subSubjects = subSubjectInputs.map(input => input.trim()).filter(input => input !== '');
 
-    const subjectData = { name: subjectName, description: subjectDescription };
+    const subjectData = { 
+        name: subjectName, 
+        subSubjects: subSubjects.length > 0 ? subSubjects : [],
+    };
 
     if (editingSubject) {
       setDocumentNonBlocking(doc(firestore, 'subjects', editingSubject.id), subjectData, { merge: true });
@@ -173,7 +186,6 @@ export default function SubjectsPage() {
 
     setDialogOpen(false);
     setEditingSubject(null);
-    event.currentTarget.reset();
   };
   
   const handleDeleteSubject = () => {
@@ -238,6 +250,21 @@ export default function SubjectsPage() {
     setDialogOpen(true);
   }
 
+  const handleSubSubjectChange = (index: number, value: string) => {
+    const newInputs = [...subSubjectInputs];
+    newInputs[index] = value;
+    setSubSubjectInputs(newInputs);
+  };
+
+  const addSubSubjectInput = () => {
+    setSubSubjectInputs([...subSubjectInputs, '']);
+  };
+
+  const removeSubSubjectInput = (index: number) => {
+    const newInputs = subSubjectInputs.filter((_, i) => i !== index);
+    setSubSubjectInputs(newInputs);
+  };
+
 
   return (
     <div className="space-y-6">
@@ -247,19 +274,35 @@ export default function SubjectsPage() {
             <DialogHeader>
               <DialogTitle>{editingSubject ? 'Edit Subject' : 'Add New Subject'}</DialogTitle>
               <DialogDescription>
-                {editingSubject ? 'Update the subject details below.' : 'Add a new subject to the list.'}
+                {editingSubject ? 'Update the subject details below.' : 'Add a new subject. You can add sub-subjects for display purposes on reports.'}
               </DialogDescription>
             </DialogHeader>
             <form onSubmit={handleSubjectSubmit} className="grid gap-4 py-4">
               <div className="space-y-2">
                 <Label htmlFor="name">Subject Name</Label>
-                <Input name="name" placeholder="e.g. Creative Arts, B.S.T." defaultValue={editingSubject?.name} required />
+                <Input name="name" placeholder="e.g. B.S.T. (Basic Science & Tech)" defaultValue={editingSubject?.name} required />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="description">Description (Optional)</Label>
-                <Input name="description" placeholder="e.g. Basic Science & Technology" defaultValue={editingSubject?.description} />
+              
+              <div className="space-y-3">
+                <Label>Sub-Subjects (for display on reports)</Label>
+                {subSubjectInputs.map((input, index) => (
+                    <div key={index} className="flex items-center gap-2">
+                        <Input 
+                            value={input}
+                            onChange={(e) => handleSubSubjectChange(index, e.target.value)}
+                            placeholder={`e.g. Basic Science`}
+                        />
+                        <Button type="button" variant="ghost" size="icon" onClick={() => removeSubSubjectInput(index)} disabled={subSubjectInputs.length === 1 && index === 0}>
+                            <MinusCircle className="h-4 w-4 text-destructive" />
+                        </Button>
+                    </div>
+                ))}
+                <Button type="button" variant="outline" size="sm" onClick={addSubSubjectInput}>
+                    <PlusCircle className="mr-2 h-4 w-4" /> Add Sub-subject
+                </Button>
               </div>
-              <DialogFooter>
+
+              <DialogFooter className="mt-4">
                 <Button type="submit">Save Subject</Button>
               </DialogFooter>
             </form>
@@ -302,7 +345,7 @@ export default function SubjectsPage() {
                             ) : (
                             sortedSubjects.map(s => (
                                 <SelectItem key={s.id} value={s.id}>
-                                {s.name} {s.description ? `(${s.description})` : ''}
+                                {s.name}
                                 </SelectItem>
                             ))
                             )}
@@ -354,7 +397,7 @@ export default function SubjectsPage() {
                             <TableHeader>
                                 <TableRow>
                                     <TableHead>Subject Name</TableHead>
-                                    <TableHead>Description</TableHead>
+                                    <TableHead>Sub-subjects</TableHead>
                                     <TableHead className="text-right">Actions</TableHead>
                                 </TableRow>
                             </TableHeader>
@@ -363,7 +406,11 @@ export default function SubjectsPage() {
                                     sortedSubjects.map(subject => (
                                         <TableRow key={subject.id}>
                                             <TableCell className="font-medium">{subject.name}</TableCell>
-                                            <TableCell className="text-muted-foreground">{subject.description || 'N/A'}</TableCell>
+                                            <TableCell className="text-muted-foreground text-xs">
+                                                {subject.subSubjects && subject.subSubjects.length > 0 
+                                                    ? subject.subSubjects.join(', ') 
+                                                    : 'N/A'}
+                                            </TableCell>
                                             <TableCell className="text-right">
                                                 <Button variant="ghost" size="icon" onClick={() => openEditDialog(subject)}>
                                                     <Edit className="h-4 w-4" />
@@ -413,9 +460,9 @@ export default function SubjectsPage() {
                           <p className="text-sm font-medium mb-2 text-muted-foreground">Assigned Subjects:</p>
                           <div className="flex flex-wrap gap-2 items-center min-h-[40px] p-2 border rounded-md bg-muted/50">
                                   {classSubjectMap[classroom.id]?.length > 0 ? (
-                                      classSubjectMap[classroom.id].map(({ name, assignmentId, description }) => (
+                                      classSubjectMap[classroom.id].map(({ name, assignmentId, subSubjects }) => (
                                           <Badge key={assignmentId} variant="secondary" className="pl-3 pr-1 text-sm">
-                                              {name} {description ? <span className="text-muted-foreground ml-1">({description})</span> : ''}
+                                              {name}
                                               <Button 
                                                   variant="ghost" 
                                                   size="icon" 

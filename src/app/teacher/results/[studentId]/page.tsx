@@ -39,7 +39,7 @@ import {
 
 // --- TYPE DEFINITIONS ---
 type Student = { id: string; name: string; admissionNumber: string };
-type Subject = { id: string; name: string; description?: string };
+type Subject = { id: string; name: string; subSubjects?: string[] };
 type Enrollment = { id: string; studentId: string; classroomId: string };
 type SchoolSettings = { currentSession: string; currentTermId: string; }
 
@@ -253,7 +253,7 @@ export default function StudentResultEntryPage() {
                         <TableRow key={subject.id}>
                           <TableCell className="font-medium">
                             {subject.name}
-                            {subject.description && <span className="ml-2 text-muted-foreground text-xs">({subject.description})</span>}
+                            {subject.subSubjects && subject.subSubjects.length > 0 && <span className="ml-2 text-muted-foreground text-xs">({subject.subSubjects.join(', ')})</span>}
                           </TableCell>
                           <TableCell>
                             <Input
