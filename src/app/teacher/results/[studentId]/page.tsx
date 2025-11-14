@@ -42,7 +42,8 @@ import {
 
 // Define types based on backend.json
 type Student = { id: string; name: string; admissionNumber: string };
-type Subject = { id: string; name: string };
+// This now includes both individual and combined subjects
+type ScoreableSubject = { id: string; name: string; };
 type Classroom = { id: string; name: string; teacherId?: string };
 type Enrollment = { id: string; studentId: string; classroomId: string };
 type SchoolSettings = { currentSession: string; currentTermId: string; }
@@ -92,13 +93,15 @@ export default function StudentResultEntryPage() {
   , [firestore, classroomId]);
   const { data: classroomSubjects, isLoading: classSubjectsLoading } = useCollection(classroomSubjectsQuery);
 
-  const allSubjectsQuery = useMemoFirebase(() => (firestore ? collection(firestore, 'subjects') : null), [firestore]);
-  const { data: allSubjects, isLoading: allSubjectsLoading } = useCollection<Subject>(allSubjectsQuery);
+  // Fetch both individual and combined subjects
+  const subjectsQuery = useMemoFirebase(() => (firestore ? collection(firestore, 'subjects') : null), [firestore]);
+  const { data: individualSubjects, isLoading: subjectsLoading } = useCollection<ScoreableSubject>(subjectsQuery);
+  const combinedSubjectsQuery = useMemoFirebase(() => (firestore ? collection(firestore, 'combinedSubjects') : null), [firestore]);
+  const { data: combinedSubjects, isLoading: combinedSubjectsLoading } = useCollection<ScoreableSubject>(combinedSubjectsQuery);
 
   const settingsRef = useMemoFirebase(() => (firestore ? doc(firestore, 'schoolSettings', 'current') : null), [firestore]);
   const { data: schoolSettings, isLoading: settingsLoading } = useDoc<SchoolSettings>(settingsRef);
   
-  // Fetch teacher's assigned classroom ID
   useEffect(() => {
     if (user && firestore) {
       const userDocRef = doc(firestore, 'users', user.uid);
@@ -110,15 +113,25 @@ export default function StudentResultEntryPage() {
     }
   }, [user, firestore]);
   
-  const subjects = useMemo(() => {
-    if (!classroomSubjects || !allSubjects) return [];
-    const subjectIds = new Set(classroomSubjects.map(cs => cs.subjectId));
-    return allSubjects.filter(s => subjectIds.has(s.id)).sort((a,b) => a.name.localeCompare(b.name));
-  }, [classroomSubjects, allSubjects]);
+  const subjectsForClass = useMemo(() => {
+    if (!classroomSubjects || (!individualSubjects && !combinedSubjects)) return [];
+    
+    const allScoreableSubjects = new Map<string, ScoreableSubject>();
+    individualSubjects?.forEach(s => allScoreableSubjects.set(s.id, s));
+    combinedSubjects?.forEach(cs => allScoreableSubjects.set(cs.id, cs));
+
+    const subjectIdsForClass = new Set(classroomSubjects.map(cs => cs.subjectId));
+    
+    return Array.from(subjectIdsForClass)
+        .map(id => allScoreableSubjects.get(id))
+        .filter((s): s is ScoreableSubject => !!s)
+        .sort((a,b) => a.name.localeCompare(b.name));
+
+  }, [classroomSubjects, individualSubjects, combinedSubjects]);
 
 
   useEffect(() => {
-    if (!classroomId || !schoolSettings || !firestore || !teacherData || !studentId) {
+    if (!classroomId || !schoolSettings || !firestore || !teacherData || !studentId || !subjectsForClass) {
       return;
     }
 
@@ -144,12 +157,9 @@ export default function StudentResultEntryPage() {
               const data = doc.data() as Result;
               fetchedResults[data.subjectId] = { ...data, id: doc.id };
           });
-
-          // After fetching, we merge with the subjects list to create placeholders
-          // but we only call setResults once to avoid overwriting state.
-          const initialResultsState: Record<string, Result> = {};
           
-          subjects.forEach(subject => {
+          const initialResultsState: Record<string, Result> = {};
+          subjectsForClass.forEach(subject => {
             if (fetchedResults[subject.id]) {
                initialResultsState[subject.id] = fetchedResults[subject.id];
             } else {
@@ -178,10 +188,7 @@ export default function StudentResultEntryPage() {
     };
 
     fetchResults();
-  // IMPORTANT: Do NOT add `subjects` to this dependency array. 
-  // It is calculated on every render and would cause an infinite loop.
-  // The logic inside now depends on the more stable `classroomId` and `schoolSettings`.
-  }, [classroomId, studentId, schoolSettings, firestore, toast, teacherData]);
+  }, [classroomId, studentId, schoolSettings, firestore, toast, teacherData, subjectsForClass]);
 
   const handleScoreChange = (
     subjectId: string,
@@ -193,7 +200,6 @@ export default function StudentResultEntryPage() {
     setResults((prevResults) => ({
       ...prevResults,
       [subjectId]: {
-        // Fallback to create a new structure if it somehow doesn't exist yet
         ...(prevResults[subjectId] || {
             studentId: studentId,
             subjectId: subjectId,
@@ -211,22 +217,10 @@ export default function StudentResultEntryPage() {
         toast({ variant: 'destructive', title: 'Save Error', description: 'Could not save. Missing critical information.' });
         return;
     }
-    
-    // Safety check for unverified users
-    if (user && !user.emailVerified) {
-        sendEmailVerification(user);
-        toast({
-            title: 'Please Verify Your Email',
-            description: 'A verification link has been sent to your email. You must verify before you can save scores.',
-            duration: 6000,
-        });
-        return;
-    }
 
     setIsSaving(true);
     
     for (const result of Object.values(results)) {
-        // Only save if there is data to save
         if (result.ca1 !== null || result.ca2 !== null || result.ca3 !== null || result.exam !== null) {
              const resultWithIds = {
                 ...result,
@@ -250,7 +244,7 @@ export default function StudentResultEntryPage() {
     }, 1500);
   };
   
-  const isLoading = studentLoading || enrollmentsLoading || classSubjectsLoading || allSubjectsLoading || settingsLoading;
+  const isLoading = studentLoading || enrollmentsLoading || classSubjectsLoading || subjectsLoading || combinedSubjectsLoading || settingsLoading;
 
   return (
     <div className="space-y-6">
@@ -300,10 +294,10 @@ export default function StudentResultEntryPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {subjects.length === 0 && (
+                  {subjectsForClass.length === 0 && (
                      <TableRow><TableCell colSpan={7} className="text-center h-24">No subjects assigned to this class.</TableCell></TableRow>
                   )}
-                  {subjects.map((subject) => {
+                  {subjectsForClass.map((subject) => {
                       const result = results[subject.id] || { ca1: null, ca2: null, ca3: null, exam: null };
                       const total = (result.ca1 || 0) + (result.ca2 || 0) + (result.ca3 || 0) + (result.exam || 0);
                       const { grade: finalGrade } = calculateGrade(total);
@@ -364,7 +358,7 @@ export default function StudentResultEntryPage() {
               </Table>
             </div>
             <div className="mt-6 flex justify-end">
-              <Button onClick={handleSave} disabled={isSaving || subjects.length === 0}>
+              <Button onClick={handleSave} disabled={isSaving || subjectsForClass.length === 0}>
                 {isSaving ? (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 ) : (

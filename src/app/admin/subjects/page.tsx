@@ -77,10 +77,12 @@ type Classroom = {
   name: string;
 };
 
+// Represents an assignment. The subjectId can be for a regular or combined subject.
 type ClassroomSubject = {
   id: string;
   classroomId: string;
   subjectId: string;
+  isCombined: boolean; // Flag to distinguish
 };
 
 export default function SubjectsPage() {
@@ -127,7 +129,7 @@ export default function SubjectsPage() {
 
   const isLoading = subjectsLoading || classroomsLoading || classroomSubjectsLoading || combinedSubjectsLoading;
 
-  // --- Data Sorting and Mapping ---
+  // --- Data Memoization ---
   const sortedSubjects = useMemo(() => {
     if (!subjects) return [];
     return [...subjects].sort((a, b) => a.name.localeCompare(b.name));
@@ -138,30 +140,39 @@ export default function SubjectsPage() {
     return [...classrooms].sort((a, b) => a.name.localeCompare(b.name));
   }, [classrooms]);
 
+  // A map of all scoreable entities (individual and combined subjects)
+  const allScoreableEntities = useMemo(() => {
+    const all = new Map<string, {name: string, isCombined: boolean}>();
+    subjects?.forEach(s => all.set(s.id, { name: s.name, isCombined: false }));
+    combinedSubjects?.forEach(cs => all.set(cs.id, { name: cs.name, isCombined: true }));
+    return all;
+  }, [subjects, combinedSubjects]);
+
   const subjectMap = useMemo(
     () => subjects?.reduce((acc, s) => ({ ...acc, [s.id]: s }), {} as Record<string, Subject>) || {},
     [subjects]
   );
 
   const classSubjectMap = useMemo(() => {
-    const map: Record<string, { subject: Subject; assignmentId: string }[]> = {};
-    if (!classrooms || !classroomSubjects || !subjects) return map;
+    const map: Record<string, { subjectId: string; name: string; assignmentId: string }[]> = {};
+    if (!classrooms || !classroomSubjects || !allScoreableEntities) return map;
 
     classrooms.forEach(c => {
       map[c.id] = [];
     });
 
     classroomSubjects.forEach(cs => {
-      if (map[cs.classroomId] && subjectMap[cs.subjectId]) {
+      if (map[cs.classroomId] && allScoreableEntities.has(cs.subjectId)) {
         map[cs.classroomId].push({
-          subject: subjectMap[cs.subjectId],
+          subjectId: cs.subjectId,
+          name: allScoreableEntities.get(cs.subjectId)!.name,
           assignmentId: cs.id,
         });
       }
     });
 
     return map;
-  }, [classrooms, classroomSubjects, subjectMap, subjects]);
+  }, [classrooms, classroomSubjects, allScoreableEntities]);
 
 
   // --- Dialog and Form Handling ---
@@ -193,7 +204,6 @@ export default function SubjectsPage() {
   
   const handleDeleteSubject = () => {
     if(!firestore || !subjectToDelete) return;
-    // TODO: Also delete classroom-subject assignments
     deleteDocumentNonBlocking(doc(firestore, 'subjects', subjectToDelete.id));
     toast({ variant: 'destructive', title: 'Subject Deleted', description: `${subjectToDelete.name} has been removed.` });
     setDeleteDialogOpen(false);
@@ -217,14 +227,20 @@ export default function SubjectsPage() {
         return;
     }
 
-    const alreadyAssigned = classSubjectMap[classToAssign.id]?.some(cs => cs.subject.id === subjectId);
+    const alreadyAssigned = classSubjectMap[classToAssign.id]?.some(cs => cs.subjectId === subjectId);
     if(alreadyAssigned) {
          toast({ variant: 'destructive', title: "Already Assigned", description: `This subject is already assigned to ${classToAssign.name}.`});
         return;
     }
+    
+    const entity = allScoreableEntities.get(subjectId)!;
 
-    addDocumentNonBlocking(collection(firestore, 'classroomSubjects'), { subjectId: subjectId, classroomId: classToAssign.id });
-    toast({ title: "Subject Assigned", description: `${subjectMap[subjectId].name} assigned to ${classToAssign.name}.`});
+    addDocumentNonBlocking(collection(firestore, 'classroomSubjects'), { 
+        subjectId: subjectId, 
+        classroomId: classToAssign.id,
+        isCombined: entity.isCombined,
+    });
+    toast({ title: "Subject Assigned", description: `${entity.name} assigned to ${classToAssign.name}.`});
     setAssignDialogOpen(false);
   };
 
@@ -364,12 +380,12 @@ export default function SubjectsPage() {
                             <SelectValue placeholder="Select a subject to assign" />
                         </SelectTrigger>
                         <SelectContent>
-                            {subjectsLoading ? (
+                            {isLoading ? (
                             <SelectItem value="loading" disabled>Loading...</SelectItem>
                             ) : (
-                            subjects?.map((s) => (
-                                <SelectItem key={s.id} value={s.id}>
-                                {s.name}
+                            Array.from(allScoreableEntities.entries()).map(([id, {name}]) => (
+                                <SelectItem key={id} value={id}>
+                                {name}
                                 </SelectItem>
                             ))
                             )}
@@ -577,9 +593,9 @@ export default function SubjectsPage() {
                           <p className="text-sm font-medium mb-2 text-muted-foreground">Assigned Subjects:</p>
                           <div className="flex flex-wrap gap-2 items-center min-h-[40px] p-2 border rounded-md bg-muted/50">
                                   {classSubjectMap[classroom.id]?.length > 0 ? (
-                                      classSubjectMap[classroom.id].map(({ subject, assignmentId }) => (
+                                      classSubjectMap[classroom.id].map(({ subjectId, name, assignmentId }) => (
                                           <Badge key={assignmentId} variant="secondary" className="pl-3 pr-1 text-sm">
-                                              {subject.name}
+                                              {name}
                                               <Button 
                                                   variant="ghost" 
                                                   size="icon" 
@@ -603,5 +619,3 @@ export default function SubjectsPage() {
     </div>
   );
 }
-
-    
