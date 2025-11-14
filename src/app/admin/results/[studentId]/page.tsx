@@ -78,14 +78,18 @@ export default function ResultSheetPage() {
 
   return (
     <div className="bg-muted min-h-screen py-8 px-4 no-print">
-      <div className="max-w-[210mm] mx-auto mb-4 flex justify-between items-center">
+      <div className="max-w-4xl mx-auto mb-4 flex justify-between items-center">
         <Button onClick={() => router.back()} variant="outline">
           <ArrowLeft className="mr-2 h-4 w-4" />
           Back to Student List
         </Button>
         <Button onClick={() => window.print()}>Print Report Card</Button>
       </div>
-      <ResultSheet student={student} classroom={classroom} />
+      <div className="max-w-4xl mx-auto">
+        <div className="aspect-[210/297] w-full bg-white shadow-lg overflow-hidden">
+            <ResultSheet student={student} classroom={classroom} />
+        </div>
+      </div>
     </div>
   );
 }

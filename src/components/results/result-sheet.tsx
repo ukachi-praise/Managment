@@ -185,7 +185,7 @@ export function ResultSheet({ student, classroom }: ResultSheetProps) {
 
   if (isLoading) {
     return (
-        <div className="relative mx-auto aspect-[210/297] w-full max-w-[210mm] bg-white p-6 shadow-lg">
+        <div className="relative mx-auto w-full h-full bg-white p-6 shadow-lg">
             <Skeleton className="h-full w-full" />
         </div>
     );
@@ -197,7 +197,7 @@ export function ResultSheet({ student, classroom }: ResultSheetProps) {
 
   // --- RENDER ---
   return (
-    <div className="relative mx-auto aspect-[210/297] w-full max-w-[210mm] bg-white shadow-lg print:shadow-none print:m-0 print:p-0 print:max-w-none print:h-full text-black">
+    <div className="relative w-full h-full bg-white text-black print:shadow-none print:m-0 print:p-0 print:max-w-none print:h-full">
       <div className="absolute inset-0 z-0 flex items-center justify-center">
           <Image src="/Logo.jpg" alt="School Watermark" width={400} height={400} className="opacity-10" />
       </div>
@@ -299,42 +299,61 @@ export function ResultSheet({ student, classroom }: ResultSheetProps) {
             <section className='border border-black p-2 flex flex-col gap-2'>
                 {settings.softSkills.visible && (
                   <div className="space-y-1">
-                    <h3 className="font-bold text-black">Soft Skills Assessment</h3>
-                    <div className="grid grid-cols-3 gap-x-4">
-                      <div>
-                        <Table>
-                          <TableBody>
-                            <TableRow><TableCell className="font-medium p-0.5 h-auto text-[9px] border border-black text-black">Punctuality</TableCell><TableCell className="text-right p-0.5 h-auto text-[9px] border border-black">5</TableCell></TableRow>
-                            <TableRow><TableCell className="font-medium p-0.5 h-auto text-[9px] border border-black text-black">Neatness</TableCell><TableCell className="text-right p-0.5 h-auto text-[9px] border border-black">4</TableCell></TableRow>
-                            <TableRow><TableCell className="font-medium p-0.5 h-auto text-[9px] border border-black text-black">Creativity</TableCell><TableCell className="text-right p-0.5 h-auto text-[9px] border border-black">5</TableCell></TableRow>
-                          </TableBody>
-                        </Table>
-                      </div>
-                      <div>
-                        <Table>
-                          <TableBody>
-                            <TableRow><TableCell className="font-medium p-0.5 h-auto text-[9px] border border-black text-black">Honesty</TableCell><TableCell className="text-right p-0.5 h-auto text-[9px] border border-black">5</TableCell></TableRow>
-                            <TableRow><TableCell className="font-medium p-0.5 h-auto text-[9px] border border-black text-black">Communication</TableCell><TableCell className="text-right p-0.5 h-auto text-[9px] border border-black">5</TableCell></TableRow>
-                            <TableRow><TableCell className="font-medium p-0.5 h-auto text-[9px] border border-black text-black">Teamwork</TableCell><TableCell className="text-right p-0.5 h-auto text-[9px] border border-black">4</TableCell></TableRow>
-                          </TableBody>
-                        </Table>
-                      </div>
-                      <div>
-                        <Table>
-                          <TableBody>
-                            <TableRow><TableCell className="font-medium p-0.5 h-auto text-[9px] border border-black text-black">Attentiveness</TableCell><TableCell className="text-right p-0.5 h-auto text-[9px] border border-black">4</TableCell></TableRow>
-                            <TableRow><TableCell className="font-medium p-0.5 h-auto text-[9px] border border-black text-black">Self Control</TableCell><TableCell className="text-right p-0.5 h-auto text-[9px] border border-black">5</TableCell></TableRow>
-                            <TableRow><TableCell className="font-medium p-0.5 h-auto text-[9px] border border-black text-black">Leadership</TableCell><TableCell className="text-right p-0.5 h-auto text-[9px] border border-black">5</TableCell></TableRow>
-                          </TableBody>
-                        </Table>
-                      </div>
+                    <h3 className="font-bold text-black text-[10px]">Soft Skills Assessment</h3>
+                    <div className="grid grid-cols-3 gap-x-2">
+                        {[
+                            ["Punctuality", "Neatness", "Creativity"],
+                            ["Honesty", "Communication", "Teamwork"],
+                            ["Attentiveness", "Self Control", "Leadership"]
+                        ].map((column, colIndex) => (
+                            <div key={colIndex}>
+                                <Table>
+                                    <TableBody>
+                                        {column.map((skill, skillIndex) => (
+                                            <TableRow key={skillIndex}>
+                                                <TableCell className="font-medium p-0.5 h-auto text-[9px] border border-black text-black">{skill}</TableCell>
+                                                <TableCell className="text-right p-0.5 h-auto text-[9px] border border-black w-[20px]">5</TableCell>
+                                            </TableRow>
+                                        ))}
+                                    </TableBody>
+                                </Table>
+                            </div>
+                        ))}
                     </div>
                   </div>
                 )}
                 {settings.gradingKey.visible && (
-                    <div className="grid grid-cols-2 gap-x-4 pt-2">
-                        <div className="space-y-1"><h3 className="font-bold text-black">Grading Key</h3><Table><TableHeader><TableRow><TableHead className="p-1 h-auto text-[10px] border border-black text-black">Score</TableHead><TableHead className="p-1 h-auto text-[10px] border border-black text-black">Grade</TableHead><TableHead className="p-1 h-auto text-[10px] border border-black text-black">Remark</TableHead></TableRow></TableHeader><TableBody><TableRow><TableCell className="p-1 h-auto text-[10px] border border-black">80 – 100</TableCell><TableCell className="p-1 h-auto text-[10px] border border-black">A</TableCell><TableCell className="p-1 h-auto text-[10px] border border-black">Excellent</TableCell></TableRow><TableRow><TableCell className="p-1 h-auto text-[10px] border border-black">70 – 79</TableCell><TableCell className="p-1 h-auto text-[10px] border border-black">B</TableCell><TableCell className="p-1 h-auto text-[10px] border border-black">Very Good</TableCell></TableRow><TableRow><TableCell className="p-1 h-auto text-[10px] border border-black">60 – 69</TableCell><TableCell className="p-1 h-auto text-[10px] border border-black">C</TableCell><TableCell className="p-1 h-auto text-[10px] border border-black">Good</TableCell></TableRow><TableRow><TableCell className="p-1 h-auto text-[10px] border border-black">50 – 59</TableCell><TableCell className="p-1 h-auto text-[10px] border border-black">D</TableCell><TableCell className="p-1 h-auto text-[10px] border border-black">Fair</TableCell></TableRow><TableRow><TableCell className="p-1 h-auto text-[10px] border border-black">0 – 49</TableCell><TableCell className="p-1 h-auto text-[10px] border border-black">F</TableCell><TableCell className="p-1 h-auto text-[10px] border border-black">Fail</TableCell></TableRow></TableBody></Table></div>
-                        <div className="space-y-1"><h3 className="font-bold text-black">Skill Score Rating</h3><Table><TableHeader><TableRow><TableHead className="p-1 h-auto text-[10px] border border-black text-black">Score</TableHead><TableHead className="p-1 h-auto text-[10px] border border-black text-black">Remark</TableHead></TableRow></TableHeader><TableBody><TableRow><TableCell className="p-1 h-auto text-[10px] border border-black">5</TableCell><TableCell className="p-1 h-auto text-[10px] border border-black">Excellent</TableCell></TableRow><TableRow><TableCell className="p-1 h-auto text-[10px] border border-black">4</TableCell><TableCell className="p-1 h-auto text-[10px] border border-black">Very Good</TableCell></TableRow><TableRow><TableCell className="p-1 h-auto text-[10px] border border-black">3</TableCell><TableCell className="p-1 h-auto text-[10px] border border-black">Good</TableCell></TableRow><TableRow><TableCell className="p-1 h-auto text-[10px] border border-black">2</TableCell><TableCell className="p-1 h-auto text-[10px] border border-black">Fair</TableCell></TableRow><TableRow><TableCell className="p-1 h-auto text-[10px] border border-black">1</TableCell><TableCell className="p-1 h-auto text-[10px] border border-black">Poor</TableCell></TableRow></TableBody></Table></div>
+                    <div className="grid grid-cols-2 gap-x-4 pt-2 text-[10px]">
+                        <div className="space-y-1">
+                            <h3 className="font-bold text-black">Grading Key</h3>
+                            <Table>
+                                <TableHeader>
+                                    <TableRow><TableHead className="p-0.5 h-auto text-[9px] border border-black text-black">Score</TableHead><TableHead className="p-0.5 h-auto text-[9px] border border-black text-black">Grade</TableHead><TableHead className="p-0.5 h-auto text-[9px] border border-black text-black">Remark</TableHead></TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    <TableRow><TableCell className="p-0.5 h-auto text-[9px] border border-black">80 – 100</TableCell><TableCell className="p-0.5 h-auto text-[9px] border border-black">A</TableCell><TableCell className="p-0.5 h-auto text-[9px] border border-black">Excellent</TableCell></TableRow>
+                                    <TableRow><TableCell className="p-0.5 h-auto text-[9px] border border-black">70 – 79</TableCell><TableCell className="p-0.5 h-auto text-[9px] border border-black">B</TableCell><TableCell className="p-0.5 h-auto text-[9px] border-black">Very Good</TableCell></TableRow>
+                                    <TableRow><TableCell className="p-0.5 h-auto text-[9px] border border-black">60 – 69</TableCell><TableCell className="p-0.5 h-auto text-[9px] border border-black">C</TableCell><TableCell className="p-0.5 h-auto text-[9px] border border-black">Good</TableCell></TableRow>
+                                    <TableRow><TableCell className="p-0.5 h-auto text-[9px] border border-black">50 – 59</TableCell><TableCell className="p-0.5 h-auto text-[9px] border border-black">D</TableCell><TableCell className="p-0.5 h-auto text-[9px] border border-black">Fair</TableCell></TableRow>
+                                    <TableRow><TableCell className="p-0.5 h-auto text-[9px] border border-black">0 – 49</TableCell><TableCell className="p-0.5 h-auto text-[9px] border border-black">F</TableCell><TableCell className="p-0.5 h-auto text-[9px] border border-black">Fail</TableCell></TableRow>
+                                </TableBody>
+                            </Table>
+                        </div>
+                        <div className="space-y-1">
+                            <h3 className="font-bold text-black">Skill Score Rating</h3>
+                            <Table>
+                                <TableHeader>
+                                    <TableRow><TableHead className="p-0.5 h-auto text-[9px] border border-black text-black">Score</TableHead><TableHead className="p-0.5 h-auto text-[9px] border border-black text-black">Remark</TableHead></TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    <TableRow><TableCell className="p-0.5 h-auto text-[9px] border border-black">5</TableCell><TableCell className="p-0.5 h-auto text-[9px] border border-black">Excellent</TableCell></TableRow>
+                                    <TableRow><TableCell className="p-0.5 h-auto text-[9px] border border-black">4</TableCell><TableCell className="p-0.5 h-auto text-[9px] border border-black">Very Good</TableCell></TableRow>
+                                    <TableRow><TableCell className="p-0.5 h-auto text-[9px] border border-black">3</TableCell><TableCell className="p-0.5 h-auto text-[9px] border border-black">Good</TableCell></TableRow>
+                                    <TableRow><TableCell className="p-0.5 h-auto text-[9px] border border-black">2</TableCell><TableCell className="p-0.5 h-auto text-[9px] border border-black">Fair</TableCell></TableRow>
+                                    <TableRow><TableCell className="p-0.5 h-auto text-[9px] border border-black">1</TableCell><TableCell className="p-0.5 h-auto text-[9px] border border-black">Poor</TableCell></TableRow>
+                                </TableBody>
+                            </Table>
+                        </div>
                     </div>
                 )}
                 {settings.remarks.visible && (
