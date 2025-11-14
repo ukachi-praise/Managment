@@ -134,8 +134,11 @@ export default function StudentResultEntryPage() {
       return;
     }
     
+    // Client-side validation to ensure teacher is assigned to this class
     if (teacherData.assignedClassroomId !== classroomId) {
         toast({ variant: 'destructive', title: 'Unauthorized', description: 'You are not assigned to this classroom.' });
+        // Optionally redirect them away
+        // router.push('/teacher/dashboard'); 
         return;
     }
     
@@ -187,7 +190,7 @@ export default function StudentResultEntryPage() {
     };
 
     fetchResults();
-  }, [classroomId, studentId, schoolSettings, firestore, toast, teacherData, subjectsForClass]);
+  }, [classroomId, studentId, schoolSettings, firestore, toast, teacherData, subjectsForClass, router]);
 
   const handleScoreChange = (
     subjectId: string,
@@ -220,7 +223,7 @@ export default function StudentResultEntryPage() {
     setIsSaving(true);
     
     for (const result of Object.values(results)) {
-        // Save if any score has been entered for this subject.
+        // Only save if at least one score has been entered.
         if (result.ca1 !== null || result.ca2 !== null || result.exam !== null) {
              const resultWithIds = {
                 ...result,
@@ -229,6 +232,7 @@ export default function StudentResultEntryPage() {
                 sessionId: schoolSettings.currentSession,
                 termId: schoolSettings.currentTermId,
             };
+            // Use a composite key to ensure a unique document per student-subject-term
             const resultId = result.id || `${studentId}_${result.subjectId}_${schoolSettings.currentTermId}`; 
             const resultRef = doc(firestore, 'results', resultId);
             setDocumentNonBlocking(resultRef, resultWithIds, { merge: true });
@@ -241,6 +245,7 @@ export default function StudentResultEntryPage() {
           title: 'Scores Saved!',
           description: `Scores for ${student?.name} have been updated.`,
         });
+        router.push(`/results/${studentId}`);
     }, 1500);
   };
   
@@ -363,4 +368,3 @@ export default function StudentResultEntryPage() {
   );
 }
 
-    
