@@ -63,7 +63,7 @@ const initialSettings: TemplateSettings = { studentInfo: { fontSize: 12, visible
 
 // --- HELPER COMPONENTS ---
 const StudentInfoDetail = ({ label, value, isLoading = false }: { label: string, value?: string | React.ReactNode, isLoading?: boolean }) => (
-    <div className="flex text-sm">
+    <div className="flex text-xs">
         <span className="font-semibold w-[90px] shrink-0">{label}:</span>
         <span className="flex-1 border-b border-dotted border-black">
             {isLoading ? <Skeleton className="h-4 w-24" /> : value}
@@ -207,13 +207,13 @@ export function ResultSheet({ student, classroom }: ResultSheetProps) {
                     <div className="flex items-center gap-4">
                         <div className="relative h-20 w-20"><Image src="/Logo.jpg" alt="School Logo" layout="fill" objectFit="contain" /></div>
                         <div className="text-black">
-                            <h1 className="font-headline text-3xl font-bold text-black">{schoolName}</h1>
-                            <p className="text-lg text-black">Katampe 2 Mpape Abuja</p>
-                            <p className="text-lg font-semibold text-black">Motto: Exceeding Great</p>
+                            <h1 className="font-headline text-2xl font-bold text-black">{schoolName}</h1>
+                            <p className="text-base text-black">Katampe 2 Mpape Abuja</p>
+                            <p className="text-base font-semibold text-black">Motto: Exceeding Great</p>
                         </div>
                     </div>
                     <div className="text-right">
-                        <h2 className="font-bold text-xl text-black">Student Report Card</h2>
+                        <h2 className="font-bold text-lg text-black">Student Report Card</h2>
                         <p className="text-base text-zinc-600">
                             {reportTermName}, {reportSession}
                         </p>
@@ -227,7 +227,7 @@ export function ResultSheet({ student, classroom }: ResultSheetProps) {
             <div className="overflow-auto h-full">
                 {settings.studentInfo.visible && (
                     <div className="mb-4 p-2 border border-black" style={{ fontSize: `${settings.studentInfo.fontSize}px` }}>
-                        <div className="flex flex-col gap-1.5">
+                        <div className="flex flex-col gap-1">
                             <div className="flex gap-4">
                                 <div className="w-1/3"><StudentInfoDetail label="Student Name" value={student.name} /></div>
                                 <div className="w-1/3"><StudentInfoDetail label="Admission No" value={student.admissionNumber} /></div>
@@ -391,3 +391,5 @@ export function ResultSheet({ student, classroom }: ResultSheetProps) {
     </>
   );
 }
+
+    
