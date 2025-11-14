@@ -39,11 +39,12 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { PlusCircle, Edit, Trash2, Loader2 } from 'lucide-react';
+import { PlusCircle, Edit, Trash2, Loader2, ArrowLeft } from 'lucide-react';
 import { useCollection, useFirestore, addDocumentNonBlocking, setDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase';
 import { useMemoFirebase } from '@/firebase/provider';
 import { collection, query, doc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
+import { useRouter } from 'next/navigation';
 
 
 type Classroom = {
@@ -59,6 +60,7 @@ export default function ClassroomsPage() {
   const [editingClassroom, setEditingClassroom] = useState<Classroom | null>(null);
   const [classroomToDelete, setClassroomToDelete] = useState<Classroom | null>(null);
   const { toast } = useToast();
+  const router = useRouter();
 
   const firestore = useFirestore();
 
@@ -119,7 +121,12 @@ export default function ClassroomsPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold tracking-tight">Classrooms</h1>
+        <div className="flex items-center gap-4">
+            <Button onClick={() => router.back()} variant="outline" size="icon">
+                <ArrowLeft className="h-4 w-4" />
+            </Button>
+            <h1 className="text-3xl font-bold tracking-tight">Classrooms</h1>
+        </div>
         <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
           <DialogTrigger asChild>
             <Button>

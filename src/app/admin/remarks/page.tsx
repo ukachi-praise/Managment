@@ -30,8 +30,9 @@ import {
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { headTeacherRemarks as initialRemarks } from '@/lib/data';
-import { PlusCircle, Edit, Trash2 } from 'lucide-react';
+import { PlusCircle, Edit, Trash2, ArrowLeft } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useRouter } from 'next/navigation';
 
 export default function RemarksPage() {
   const [remarks, setRemarks] = useState<string[]>(initialRemarks);
@@ -39,6 +40,7 @@ export default function RemarksPage() {
   const [editingRemark, setEditingRemark] = useState<string | null>(null);
   const [currentRemarkValue, setCurrentRemarkValue] = useState('');
   const { toast } = useToast();
+  const router = useRouter();
 
   const handleAddOrUpdateRemark = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -84,7 +86,12 @@ export default function RemarksPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold tracking-tight">Manage Remarks</h1>
+         <div className="flex items-center gap-4">
+            <Button onClick={() => router.back()} variant="outline" size="icon">
+                <ArrowLeft className="h-4 w-4" />
+            </Button>
+            <h1 className="text-3xl font-bold tracking-tight">Manage Remarks</h1>
+        </div>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
              <Button onClick={() => handleOpenDialog()}>
@@ -164,5 +171,3 @@ export default function RemarksPage() {
     </div>
   );
 }
-
-    

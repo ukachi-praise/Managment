@@ -21,7 +21,7 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Loader2 } from 'lucide-react';
+import { Loader2, ArrowLeft } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import {
   useFirestore,
@@ -33,6 +33,7 @@ import { useMemoFirebase } from '@/firebase/provider';
 import { doc } from 'firebase/firestore';
 import { useEffect } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useRouter } from 'next/navigation';
 
 // Schema for the form validation
 const formSchema = z.object({
@@ -47,6 +48,7 @@ export default function ProfilePage() {
   const { toast } = useToast();
   const firestore = useFirestore();
   const { user, isUserLoading } = useUser();
+  const router = useRouter();
 
   // --- Data Fetching ---
   const userRef = useMemoFirebase(
@@ -94,7 +96,12 @@ export default function ProfilePage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-3xl font-bold tracking-tight">My Profile</h1>
+       <div className="flex items-center gap-4">
+            <Button onClick={() => router.back()} variant="outline" size="icon">
+                <ArrowLeft className="h-4 w-4" />
+            </Button>
+            <h1 className="text-3xl font-bold tracking-tight">My Profile</h1>
+        </div>
       <Card>
         <CardHeader>
           <CardTitle>Manage Your Information</CardTitle>

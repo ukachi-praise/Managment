@@ -18,7 +18,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { PlusCircle, ArrowRight } from 'lucide-react';
+import { PlusCircle, ArrowRight, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import {
   useCollection,
@@ -46,6 +46,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { useRouter } from 'next/navigation';
 
 type Classroom = {
   id: string;
@@ -56,6 +57,7 @@ type Classroom = {
 export default function StudentsPage() {
   const [open, setOpen] = useState(false);
   const firestore = useFirestore();
+  const router = useRouter();
 
   // --- Data Fetching ---
   const classroomsQuery = useMemoFirebase(
@@ -114,7 +116,12 @@ export default function StudentsPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold tracking-tight">Students</h1>
+        <div className="flex items-center gap-4">
+            <Button onClick={() => router.back()} variant="outline" size="icon">
+                <ArrowLeft className="h-4 w-4" />
+            </Button>
+            <h1 className="text-3xl font-bold tracking-tight">Students</h1>
+        </div>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
             <Button>

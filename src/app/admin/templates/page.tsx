@@ -5,7 +5,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Eye, Save, RotateCcw, Upload, Settings, CaseUpper, CaseLower, BookOpenCheck, PanelLeft, PanelRight, Loader2, Database } from 'lucide-react';
+import { Eye, Save, RotateCcw, Upload, Settings, CaseUpper, CaseLower, BookOpenCheck, PanelLeft, PanelRight, Loader2, Database, ArrowLeft } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import {
   Table,
@@ -34,6 +34,7 @@ import Image from 'next/image';
 import { format } from 'date-fns';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
+import { useRouter } from 'next/navigation';
 
 
 type Subject = {
@@ -140,6 +141,7 @@ export default function TemplatesPage() {
   const [selectedElement, setSelectedElement] = useState<TemplateElement>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const router = useRouter();
 
   const firestore = useFirestore();
 
@@ -369,7 +371,10 @@ export default function TemplatesPage() {
       <header className="flex-shrink-0 border-b bg-background z-10 no-print">
         <div className="flex flex-wrap items-center justify-between gap-4 p-4">
           <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon" onClick={() => setSidebarOpen(!sidebarOpen)}>
+            <Button onClick={() => router.back()} variant="outline" size="icon" className="md:hidden">
+                <ArrowLeft className="h-4 w-4" />
+            </Button>
+            <Button variant="ghost" size="icon" onClick={() => setSidebarOpen(!sidebarOpen)} className="hidden md:flex">
               {sidebarOpen ? <PanelLeft /> : <PanelRight />}
             </Button>
             <div>
@@ -583,7 +588,7 @@ export default function TemplatesPage() {
                         <Table>
                           <TableBody>
                             <TableRow><TableCell className="font-medium p-0.5 h-auto text-[9px] border border-black text-black">Honesty</TableCell><TableCell className="text-right p-0.5 h-auto text-[9px] border border-black">5</TableCell></TableRow>
-                            <TableRow><TableCell className="font-medium p-0.5 h-auto text-[9px] border border-black text-black">Communication</TableCell><TableCell className="text-right p-0.5 h-auto text-[9px] border border-black">5</TableCell></TableRow>
+                            <TableRow><TableCell className="font-medium p-0.5 h-auto text-[9px] border border-black text-black">Communication</TableCell><TableCell className="text-right p-0.5 h-auto text-[9px] border-black">5</TableCell></TableRow>
                             <TableRow><TableCell className="font-medium p-0.5 h-auto text-[9px] border border-black text-black">Teamwork</TableCell><TableCell className="text-right p-0.5 h-auto text-[9px] border border-black">4</TableCell></TableRow>
                           </TableBody>
                         </Table>
@@ -681,5 +686,3 @@ export default function TemplatesPage() {
     </div>
   );
 }
-
-    

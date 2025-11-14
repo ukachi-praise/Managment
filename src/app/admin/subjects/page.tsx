@@ -32,7 +32,7 @@ import {
 
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { PlusCircle, Trash2, Loader2, Edit, X } from 'lucide-react';
+import { PlusCircle, Trash2, Loader2, Edit, X, ArrowLeft } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import {
   Table,
@@ -60,6 +60,7 @@ import {
 } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { MultiSelect } from '@/components/ui/multi-select';
+import { useRouter } from 'next/navigation';
 
 type Subject = {
   id: string;
@@ -99,6 +100,7 @@ export default function SubjectsPage() {
   const [editingCombinedSubject, setEditingCombinedSubject] = useState<CombinedSubject | null>(null);
   const [combinedSubjectToDelete, setCombinedSubjectToDelete] = useState<CombinedSubject | null>(null);
   const [deleteCombinedDialogOpen, setDeleteCombinedDialogOpen] = useState(false);
+  const router = useRouter();
 
 
   const firestore = useFirestore();
@@ -447,9 +449,14 @@ export default function SubjectsPage() {
 
 
       <div className="flex items-start justify-between">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">Subjects</h1>
-            <p className="text-muted-foreground">Create, edit, and assign subjects to classrooms.</p>
+          <div className="flex items-center gap-4">
+            <Button onClick={() => router.back()} variant="outline" size="icon">
+                <ArrowLeft className="h-4 w-4" />
+            </Button>
+            <div>
+                <h1 className="text-3xl font-bold tracking-tight">Subjects</h1>
+                <p className="text-muted-foreground">Create, edit, and assign subjects to classrooms.</p>
+            </div>
           </div>
           <div className="flex gap-2">
              <Button onClick={() => openCombinedSubjectDialog(null)}>

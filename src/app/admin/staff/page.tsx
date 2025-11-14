@@ -39,7 +39,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { PlusCircle, Edit, Trash2, Loader2, KeyRound, Eye, EyeOff } from 'lucide-react';
+import { PlusCircle, Edit, Trash2, Loader2, KeyRound, ArrowLeft } from 'lucide-react';
 import {
   useCollection,
   useFirestore,
@@ -60,6 +60,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
+import { useRouter } from 'next/navigation';
 
 type User = {
   id: string;
@@ -84,6 +85,7 @@ export default function StaffPage() {
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [selectedRole, setSelectedRole] = useState('Teacher');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const router = useRouter();
 
   const firestore = useFirestore();
   const auth = useAuth();
@@ -255,7 +257,12 @@ export default function StaffPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold tracking-tight">Staff Management</h1>
+        <div className="flex items-center gap-4">
+            <Button onClick={() => router.back()} variant="outline" size="icon">
+                <ArrowLeft className="h-4 w-4" />
+            </Button>
+            <h1 className="text-3xl font-bold tracking-tight">Staff Management</h1>
+        </div>
         <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
             <DialogTrigger asChild>
                 <Button>
@@ -464,7 +471,3 @@ export default function StaffPage() {
     </div>
   );
 }
-
-    
-    
-    

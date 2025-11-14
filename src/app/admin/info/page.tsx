@@ -1,3 +1,4 @@
+
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -33,7 +34,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
-import { CalendarIcon, Loader2 } from 'lucide-react';
+import { CalendarIcon, Loader2, ArrowLeft } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
@@ -45,6 +46,7 @@ import {
 import { useMemoFirebase } from '@/firebase/provider';
 import { doc, Timestamp } from 'firebase/firestore';
 import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 
 const formSchema = z.object({
   currentSession: z.string().min(1, 'Please enter a session name.'),
@@ -60,6 +62,7 @@ type SchoolSettings = z.infer<typeof formSchema>;
 export default function InfoPage() {
   const { toast } = useToast();
   const firestore = useFirestore();
+  const router = useRouter();
 
   // --- Data Fetching ---
   const settingsRef = useMemoFirebase(
@@ -118,7 +121,12 @@ export default function InfoPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-3xl font-bold tracking-tight">School Settings</h1>
+       <div className="flex items-center gap-4">
+            <Button onClick={() => router.back()} variant="outline" size="icon">
+                <ArrowLeft className="h-4 w-4" />
+            </Button>
+            <h1 className="text-3xl font-bold tracking-tight">School Settings</h1>
+        </div>
       <Card>
         <CardHeader>
           <CardTitle>Manage General Information</CardTitle>
