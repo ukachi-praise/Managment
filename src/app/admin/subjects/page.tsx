@@ -50,7 +50,7 @@ import {
   setDocumentNonBlocking,
 } from '@/firebase';
 import { useMemoFirebase } from '@/firebase/provider';
-import { collection, query, doc, getDocs, writeBatch, updateDoc, FieldValue } from 'firebase/firestore';
+import { collection, query, doc, getDocs, writeBatch, where } from 'firebase/firestore';
 import {
   Select,
   SelectContent,
@@ -208,29 +208,9 @@ export default function SubjectsPage() {
       batch.delete(doc.ref);
     });
 
-    // 3. Go through all students and all their results to remove the score for the deleted subject
-    const allStudentsSnapshot = await getDocs(collection(firestore, 'students'));
-    for (const studentDoc of allStudentsSnapshot.docs) {
-      const resultsCollectionRef = collection(firestore, 'students', studentDoc.id, 'results');
-      const resultsSnapshot = await getDocs(resultsCollectionRef);
-
-      resultsSnapshot.forEach(resultDoc => {
-        // We can't use batch updates with FieldValue.delete(), so we must update docs individually.
-        // This is not atomic with the batch, but it's the client-side approach.
-        // For a fully atomic operation, a Cloud Function would be required.
-        const scoreFieldToDelete = `scores.${subjectIdToDelete}`;
-        updateDoc(resultDoc.ref, {
-          [scoreFieldToDelete]: FieldValue.delete()
-        }).catch(error => {
-          console.error(`Failed to delete score for subject ${subjectIdToDelete} from result ${resultDoc.id}:`, error);
-        });
-      });
-    }
-
-    // Commit the batch for subject and assignment deletion
     try {
       await batch.commit();
-      toast({ variant: 'destructive', title: 'Subject Deleted', description: `${subjectToDelete.name} and all its scores have been removed.` });
+      toast({ variant: 'destructive', title: 'Subject Deleted', description: `${subjectToDelete.name} and its assignments have been removed.` });
     } catch (error) {
       console.error("Error deleting subject and assignments:", error);
       toast({ variant: 'destructive', title: 'Error', description: 'Could not delete the subject and its assignments.' });
@@ -530,5 +510,3 @@ export default function SubjectsPage() {
     </div>
   );
 }
-
-    
