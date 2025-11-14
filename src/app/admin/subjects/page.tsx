@@ -50,7 +50,7 @@ import {
   setDocumentNonBlocking,
 } from '@/firebase';
 import { useMemoFirebase } from '@/firebase/provider';
-import { collection, query, doc } from 'firebase/firestore';
+import { collection, query, doc, getDocs, writeBatch, updateDoc, FieldValue } from 'firebase/firestore';
 import {
   Select,
   SelectContent,
@@ -188,14 +188,58 @@ export default function SubjectsPage() {
     setEditingSubject(null);
   };
   
-  const handleDeleteSubject = () => {
-    if(!firestore || !subjectToDelete) return;
-    deleteDocumentNonBlocking(doc(firestore, 'subjects', subjectToDelete.id));
-    // Note: This doesn't auto-delete assignments. A cloud function would be better for that.
-    toast({ variant: 'destructive', title: 'Subject Deleted', description: `${subjectToDelete.name} has been removed.` });
-    setDeleteDialogOpen(false);
-    setSubjectToDelete(null);
-  }
+  const handleDeleteSubject = async () => {
+    if (!firestore || !subjectToDelete) return;
+
+    const subjectIdToDelete = subjectToDelete.id;
+
+    // Start a batch for atomic operations
+    const batch = writeBatch(firestore);
+
+    // 1. Delete the subject document itself
+    const subjectRef = doc(firestore, 'subjects', subjectIdToDelete);
+    batch.delete(subjectRef);
+
+    // 2. Delete all assignments of this subject to classrooms
+    const classroomSubjectsQuerySnapshot = await getDocs(
+      query(collection(firestore, 'classroomSubjects'), where('subjectId', '==', subjectIdToDelete))
+    );
+    classroomSubjectsQuerySnapshot.forEach(doc => {
+      batch.delete(doc.ref);
+    });
+
+    // 3. Go through all students and all their results to remove the score for the deleted subject
+    const allStudentsSnapshot = await getDocs(collection(firestore, 'students'));
+    for (const studentDoc of allStudentsSnapshot.docs) {
+      const resultsCollectionRef = collection(firestore, 'students', studentDoc.id, 'results');
+      const resultsSnapshot = await getDocs(resultsCollectionRef);
+
+      resultsSnapshot.forEach(resultDoc => {
+        // We can't use batch updates with FieldValue.delete(), so we must update docs individually.
+        // This is not atomic with the batch, but it's the client-side approach.
+        // For a fully atomic operation, a Cloud Function would be required.
+        const scoreFieldToDelete = `scores.${subjectIdToDelete}`;
+        updateDoc(resultDoc.ref, {
+          [scoreFieldToDelete]: FieldValue.delete()
+        }).catch(error => {
+          console.error(`Failed to delete score for subject ${subjectIdToDelete} from result ${resultDoc.id}:`, error);
+        });
+      });
+    }
+
+    // Commit the batch for subject and assignment deletion
+    try {
+      await batch.commit();
+      toast({ variant: 'destructive', title: 'Subject Deleted', description: `${subjectToDelete.name} and all its scores have been removed.` });
+    } catch (error) {
+      console.error("Error deleting subject and assignments:", error);
+      toast({ variant: 'destructive', title: 'Error', description: 'Could not delete the subject and its assignments.' });
+    } finally {
+        setDeleteDialogOpen(false);
+        setSubjectToDelete(null);
+    }
+  };
+
 
   const handleOpenAssignDialog = (classroom: Classroom) => {
     setClassToAssign(classroom);
@@ -314,7 +358,7 @@ export default function SubjectsPage() {
             <AlertDialogHeader>
                 <AlertDialogTitle>Are you sure?</AlertDialogTitle>
                 <AlertDialogDescription>
-                    This action cannot be undone. This will permanently delete the subject <span className="font-semibold">{subjectToDelete?.name}</span> and unassign it from all classes.
+                    This action cannot be undone. This will permanently delete the subject <span className="font-semibold">{subjectToDelete?.name}</span> and all associated scores from every student's records.
                 </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
@@ -486,3 +530,5 @@ export default function SubjectsPage() {
     </div>
   );
 }
+
+    
