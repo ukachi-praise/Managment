@@ -95,7 +95,7 @@ export function ResultViewTable() {
 
     const openAndPrint = (student: Student, classroomName: string) => {
       return new Promise<void>((resolve) => {
-          const reportWindow = window.open(`/results/${student.id}`, '_blank');
+          const reportWindow = window.open(`/admin/results/${student.id}`, '_blank');
           if (reportWindow) {
               reportWindow.onload = () => {
                   setTimeout(() => {
@@ -184,7 +184,7 @@ export function ResultViewTable() {
                           </TableCell>
                            <TableCell className="text-right">
                             <Button asChild variant="outline" size="sm">
-                              <Link href={`/results/${student.id}`}>
+                              <Link href={`/admin/results/${student.id}`}>
                                 View Report
                               </Link>
                             </Button>
