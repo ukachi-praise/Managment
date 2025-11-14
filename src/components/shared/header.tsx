@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -17,6 +18,8 @@ import { useRouter } from 'next/navigation';
 import { useAuth, useUser } from '@/firebase';
 import { signOut } from 'firebase/auth';
 import { Skeleton } from '../ui/skeleton';
+import Link from 'next/link';
+
 
 export function Header() {
   const { isMobile } = useSidebar();
@@ -30,6 +33,15 @@ export function Header() {
     }
     router.push('/login');
   };
+  
+  const getProfileLink = () => {
+    // This is a simplified check. A real app might have more complex logic
+    // based on the user's role stored in Firestore.
+    if(router.toString().includes('/admin')) {
+        return '/admin/profile';
+    }
+    return '/teacher/profile';
+  }
 
   return (
     <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background/80 px-4 backdrop-blur md:px-6">
@@ -54,9 +66,11 @@ export function Header() {
         <DropdownMenuContent className="w-56" align="end">
           <DropdownMenuLabel>{user?.displayName || user?.email}</DropdownMenuLabel>
           <DropdownMenuSeparator />
-          <DropdownMenuItem>
-            <UserIcon className="mr-2" />
-            <span>Profile</span>
+          <DropdownMenuItem asChild>
+            <Link href={getProfileLink()}>
+              <UserIcon className="mr-2" />
+              <span>Profile</span>
+            </Link>
           </DropdownMenuItem>
           <DropdownMenuItem>
             <Settings className="mr-2" />
