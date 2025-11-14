@@ -38,6 +38,7 @@ const NURSERY_2_TEACHER_UID = 'Z1yDssDNRshnMOcnKlxK7wSmhpE3';
 const PRIMARY_1B_TEACHER_UID = 'lqMDWRYrbugIlhVBA083OVpJO3p1';
 const NURSERY_1A_TEACHER_UID = 'vhyAkcnmE2OD9cheoDeXdsdUL1a2';
 const NURSERY_1B_TEACHER_UID = 'VEjzC6td3HNfWBg4CjNnCtSlC7g1';
+const PRE_NURSERY_TEACHER_UID = 'YAemjwMFEAOnvp6RL6STw3GJK0I2';
 
 export function LoginForm() {
   const router = useRouter();
@@ -198,6 +199,21 @@ export function LoginForm() {
             router.push(`/teacher/class/${classroomDoc.id}`);
         } else {
              toast({ variant: 'destructive', title: 'Login Failed', description: 'Could not find "Nursery 1B" classroom.' });
+             setIsLoading(false);
+        }
+        return;
+    }
+    
+    // Hardcoded redirect for specific Teacher UID (Pre nursery)
+    if (user.uid === PRE_NURSERY_TEACHER_UID) {
+        toast({ title: 'Login Successful', description: `Welcome, Teacher! Redirecting...` });
+        const q = query(collection(firestore, 'classrooms'), where('name', '==', 'Pre nursery'));
+        const querySnapshot = await getDocs(q);
+        if (!querySnapshot.empty) {
+            const classroomDoc = querySnapshot.docs[0];
+            router.push(`/teacher/class/${classroomDoc.id}`);
+        } else {
+             toast({ variant: 'destructive', title: 'Login Failed', description: 'Could not find "Pre nursery" classroom.' });
              setIsLoading(false);
         }
         return;
