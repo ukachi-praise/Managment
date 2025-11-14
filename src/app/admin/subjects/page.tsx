@@ -17,16 +17,37 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  DialogTrigger,
 } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { PlusCircle, Trash2, Loader2 } from 'lucide-react';
+import { PlusCircle, Trash2, Loader2, Edit } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 import {
   useCollection,
   useFirestore,
   addDocumentNonBlocking,
   deleteDocumentNonBlocking,
+  setDocumentNonBlocking,
 } from '@/firebase';
 import { useMemoFirebase } from '@/firebase/provider';
 import { collection, query, doc } from 'firebase/firestore';
@@ -56,8 +77,14 @@ type ClassroomSubject = {
 };
 
 export default function SubjectsPage() {
+  const [addDialogOpen, setAddDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [assignDialogOpen, setAssignDialogOpen] = useState(false);
+
   const [classToAssign, setClassToAssign] = useState<Classroom | null>(null);
+  const [editingSubject, setEditingSubject] = useState<Subject | null>(null);
+  const [subjectToDelete, setSubjectToDelete] = useState<Subject | null>(null);
 
   const firestore = useFirestore();
   const { toast } = useToast();
@@ -83,6 +110,11 @@ export default function SubjectsPage() {
   const isLoading = subjectsLoading || classroomsLoading || classroomSubjectsLoading;
 
   // --- Data Sorting and Mapping ---
+  const sortedSubjects = useMemo(() => {
+    if (!subjects) return [];
+    return [...subjects].sort((a, b) => a.name.localeCompare(b.name));
+  }, [subjects]);
+
   const sortedClassrooms = useMemo(() => {
     if (!classrooms) return [];
     return [...classrooms].sort((a, b) => a.name.localeCompare(b.name));
@@ -115,17 +147,7 @@ export default function SubjectsPage() {
 
 
   // --- Dialog and Form Handling ---
-  const handleOpenAssignDialog = (classroom: Classroom) => {
-    setClassToAssign(classroom);
-    setAssignDialogOpen(true);
-  };
-  
-  const handleCloseAssignDialog = () => {
-    setAssignDialogOpen(false);
-    setClassToAssign(null);
-  };
-
-  const handleNewSubjectSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+  const handleNewSubjectSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!firestore) return;
 
@@ -134,8 +156,35 @@ export default function SubjectsPage() {
 
     addDocumentNonBlocking(collection(firestore, 'subjects'), { name: subjectName });
     toast({ title: "Subject Added", description: `"${subjectName}" has been created.`});
-    
+    setAddDialogOpen(false);
     event.currentTarget.reset();
+  };
+
+  const handleEditSubjectSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!firestore || !editingSubject) return;
+
+    const formData = new FormData(event.currentTarget);
+    const updatedName = formData.get('name') as string;
+
+    setDocumentNonBlocking(doc(firestore, 'subjects', editingSubject.id), { name: updatedName }, { merge: true });
+    toast({ title: "Subject Updated", description: "The subject name has been changed." });
+    setEditDialogOpen(false);
+    setEditingSubject(null);
+  };
+  
+  const handleDeleteSubject = () => {
+    if(!firestore || !subjectToDelete) return;
+    // TODO: Also delete classroom-subject assignments
+    deleteDocumentNonBlocking(doc(firestore, 'subjects', subjectToDelete.id));
+    toast({ variant: 'destructive', title: 'Subject Deleted', description: `${subjectToDelete.name} has been removed.` });
+    setDeleteDialogOpen(false);
+    setSubjectToDelete(null);
+  }
+
+  const handleOpenAssignDialog = (classroom: Classroom) => {
+    setClassToAssign(classroom);
+    setAssignDialogOpen(true);
   };
   
   const handleAssignSubmit = (event: React.FormEvent<HTMLFormElement>) => {
@@ -158,19 +207,84 @@ export default function SubjectsPage() {
 
     addDocumentNonBlocking(collection(firestore, 'classroomSubjects'), { subjectId: subjectId, classroomId: classToAssign.id });
     toast({ title: "Subject Assigned", description: `${subjectMap[subjectId].name} assigned to ${classToAssign.name}.`});
-    handleCloseAssignDialog();
+    setAssignDialogOpen(false);
   };
-
 
   const handleUnassignSubject = (assignmentId: string) => {
      if(!firestore) return;
      deleteDocumentNonBlocking(doc(firestore, 'classroomSubjects', assignmentId));
      toast({ variant: 'destructive', title: "Subject Unassigned"});
   }
+  
+  const openEditDialog = (subject: Subject) => {
+    setEditingSubject(subject);
+    setEditDialogOpen(true);
+  }
+
+  const openDeleteDialog = (subject: Subject) => {
+    setSubjectToDelete(subject);
+    setDeleteDialogOpen(true);
+  }
 
   return (
     <div className="space-y-6">
-      {/* Assign Subject Dialog */}
+      {/* Dialogs */}
+      <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Add New Subject</DialogTitle>
+              <DialogDescription>
+                Add a new subject to the list of available subjects.
+              </DialogDescription>
+            </DialogHeader>
+            <form onSubmit={handleNewSubjectSubmit} className="grid gap-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="name">Subject Name</Label>
+                <Input name="name" placeholder="e.g. Creative Arts" required />
+              </div>
+              <DialogFooter>
+                <Button type="submit">Save Subject</Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+      </Dialog>
+      
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Edit Subject</DialogTitle>
+              <DialogDescription>
+                Update the subject name.
+              </DialogDescription>
+            </DialogHeader>
+            <form onSubmit={handleEditSubjectSubmit} className="grid gap-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="name">Subject Name</Label>
+                <Input name="name" defaultValue={editingSubject?.name} required />
+              </div>
+              <DialogFooter>
+                <Button type="submit">Save Changes</Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+      </Dialog>
+
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+            <AlertDialogHeader>
+                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                <AlertDialogDescription>
+                    This action cannot be undone. This will permanently delete the subject <span className="font-semibold">{subjectToDelete?.name}</span> and unassign it from all classes.
+                </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={handleDeleteSubject} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Delete</AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+
       <Dialog open={assignDialogOpen} onOpenChange={setAssignDialogOpen}>
           <DialogContent className="sm:max-w-md">
              <DialogHeader>
@@ -200,38 +314,69 @@ export default function SubjectsPage() {
                     </Select>
                 </div>
                  <DialogFooter>
-                    <Button type="button" variant="outline" onClick={handleCloseAssignDialog}>Cancel</Button>
+                    <Button type="button" variant="outline" onClick={() => setAssignDialogOpen(false)}>Cancel</Button>
                     <Button type="submit">Assign Subject</Button>
                 </DialogFooter>
             </form>
           </DialogContent>
       </Dialog>
       
-      <div className="space-y-2">
-          <h1 className="text-3xl font-bold tracking-tight">Subjects</h1>
-          <p className="text-muted-foreground">Create new subjects and assign them to classrooms.</p>
+      <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">Subjects</h1>
+            <p className="text-muted-foreground">Create, edit, and assign subjects to classrooms.</p>
+          </div>
+          <Button onClick={() => setAddDialogOpen(true)}>
+            <PlusCircle className="mr-2 h-4 w-4" />
+            Add Subject
+          </Button>
       </div>
 
        <Card>
         <CardHeader>
-          <CardTitle>Create a New Subject</CardTitle>
+          <CardTitle>All Subjects</CardTitle>
           <CardDescription>
-            Add a new subject to the list of available subjects that can be assigned to classes.
+            The master list of all subjects offered in the school.
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleNewSubjectSubmit} className="flex gap-4">
-            <Input
-              name="name"
-              placeholder="e.g. Creative Arts"
-              required
-              className="flex-grow"
-            />
-            <Button type="submit">
-              <PlusCircle className="mr-2 h-4 w-4" />
-              Add Subject
-            </Button>
-          </form>
+            {isLoading ? (
+                <div className="flex justify-center items-center h-24">
+                    <Loader2 className="h-8 w-8 animate-spin" />
+                </div>
+            ) : (
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead>Subject Name</TableHead>
+                            <TableHead className="text-right">Actions</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {sortedSubjects.length > 0 ? (
+                            sortedSubjects.map(subject => (
+                                <TableRow key={subject.id}>
+                                    <TableCell className="font-medium">{subject.name}</TableCell>
+                                    <TableCell className="text-right">
+                                        <Button variant="ghost" size="icon" onClick={() => openEditDialog(subject)}>
+                                            <Edit className="h-4 w-4" />
+                                        </Button>
+                                        <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => openDeleteDialog(subject)}>
+                                            <Trash2 className="h-4 w-4" />
+                                        </Button>
+                                    </TableCell>
+                                </TableRow>
+                            ))
+                        ) : (
+                            <TableRow>
+                                <TableCell colSpan={2} className="text-center h-24">
+                                    No subjects created yet.
+                                </TableCell>
+                            </TableRow>
+                        )}
+                    </TableBody>
+                </Table>
+            )}
         </CardContent>
       </Card>
 
@@ -286,5 +431,3 @@ export default function SubjectsPage() {
     </div>
   );
 }
-
-    
