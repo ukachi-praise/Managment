@@ -85,10 +85,8 @@ export default function ResultSheetPage() {
         </Button>
         <Button onClick={() => window.print()}>Print Report Card</Button>
       </div>
-      <div className="max-w-4xl mx-auto">
-        <div className="aspect-[210/297] w-full bg-white shadow-lg overflow-hidden">
-            <ResultSheet student={student} classroom={classroom} />
-        </div>
+      <div className="max-w-4xl mx-auto space-y-4">
+         <ResultSheet student={student} classroom={classroom} />
       </div>
     </div>
   );
