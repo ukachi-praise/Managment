@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -26,8 +27,8 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { headTeacherRemarks as initialRemarks } from '@/lib/data';
 import { PlusCircle, Edit, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -84,14 +85,14 @@ export default function RemarksPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold tracking-tight">Manage Remarks</h1>
-        <Dialog open={open} onOpenChange={handleCloseDialog}>
+        <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
              <Button onClick={() => handleOpenDialog()}>
               <PlusCircle className="mr-2 h-4 w-4" />
               Add Remark
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-[425px]">
+          <DialogContent className="sm:max-w-lg">
             <DialogHeader>
               <DialogTitle>{editingRemark ? 'Edit' : 'Add New'} Remark</DialogTitle>
               <DialogDescription>
@@ -99,21 +100,22 @@ export default function RemarksPage() {
               </DialogDescription>
             </DialogHeader>
             <form onSubmit={handleAddOrUpdateRemark} className="grid gap-4 py-4">
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="remark" className="text-right">
-                  Remark
+              <div className="space-y-2">
+                <Label htmlFor="remark">
+                  Remark Text
                 </Label>
-                <Input
+                <Textarea
                   id="remark"
                   name="remark"
                   value={currentRemarkValue}
                   onChange={(e) => setCurrentRemarkValue(e.target.value)}
-                  placeholder="e.g. Excellent work!"
-                  className="col-span-3"
+                  placeholder="e.g. An outstanding performance, keep up the great work."
+                  className="min-h-[100px]"
                   required
                 />
               </div>
               <DialogFooter>
+                <Button type="button" variant="outline" onClick={handleCloseDialog}>Cancel</Button>
                 <Button type="submit">Save Remark</Button>
               </DialogFooter>
             </form>
@@ -139,7 +141,7 @@ export default function RemarksPage() {
             <TableBody>
               {remarks.map((remark, index) => (
                 <TableRow key={index}>
-                  <TableCell className="font-medium">{remark}</TableCell>
+                  <TableCell className="font-medium whitespace-pre-wrap">{remark}</TableCell>
                   <TableCell className="text-right">
                     <Button variant="ghost" size="icon" onClick={() => handleOpenDialog(remark)}>
                       <Edit className="h-4 w-4" />
@@ -162,3 +164,5 @@ export default function RemarksPage() {
     </div>
   );
 }
+
+    

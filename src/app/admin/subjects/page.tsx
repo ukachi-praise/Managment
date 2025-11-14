@@ -32,7 +32,7 @@ import {
 
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { PlusCircle, Trash2, Loader2, Edit } from 'lucide-react';
+import { PlusCircle, Trash2, Loader2, Edit, X } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import {
   Table,
@@ -59,10 +59,17 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
+import { MultiSelect } from '@/components/ui/multi-select';
 
 type Subject = {
   id: string;
   name: string;
+};
+
+type CombinedSubject = {
+  id: string;
+  name: string;
+  subjectIds: string[];
 };
 
 type Classroom = {
@@ -81,10 +88,16 @@ export default function SubjectsPage() {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [assignDialogOpen, setAssignDialogOpen] = useState(false);
-
+  const [combinedSubjectDialogOpen, setCombinedSubjectDialogOpen] = useState(false);
+  
   const [classToAssign, setClassToAssign] = useState<Classroom | null>(null);
   const [editingSubject, setEditingSubject] = useState<Subject | null>(null);
   const [subjectToDelete, setSubjectToDelete] = useState<Subject | null>(null);
+
+  const [editingCombinedSubject, setEditingCombinedSubject] = useState<CombinedSubject | null>(null);
+  const [combinedSubjectToDelete, setCombinedSubjectToDelete] = useState<CombinedSubject | null>(null);
+  const [deleteCombinedDialogOpen, setDeleteCombinedDialogOpen] = useState(false);
+
 
   const firestore = useFirestore();
   const { toast } = useToast();
@@ -92,6 +105,10 @@ export default function SubjectsPage() {
   // --- Data Fetching ---
   const subjectsQuery = useMemoFirebase(
     () => (firestore ? query(collection(firestore, 'subjects')) : null),
+    [firestore]
+  );
+  const combinedSubjectsQuery = useMemoFirebase(
+    () => (firestore ? query(collection(firestore, 'combinedSubjects')) : null),
     [firestore]
   );
   const classroomsQuery = useMemoFirebase(
@@ -104,10 +121,11 @@ export default function SubjectsPage() {
   );
 
   const { data: subjects, isLoading: subjectsLoading } = useCollection<Subject>(subjectsQuery);
+  const { data: combinedSubjects, isLoading: combinedSubjectsLoading } = useCollection<CombinedSubject>(combinedSubjectsQuery);
   const { data: classrooms, isLoading: classroomsLoading } = useCollection<Classroom>(classroomsQuery);
   const { data: classroomSubjects, isLoading: classroomSubjectsLoading } = useCollection<ClassroomSubject>(classroomSubjectsQuery);
 
-  const isLoading = subjectsLoading || classroomsLoading || classroomSubjectsLoading;
+  const isLoading = subjectsLoading || classroomsLoading || classroomSubjectsLoading || combinedSubjectsLoading;
 
   // --- Data Sorting and Mapping ---
   const sortedSubjects = useMemo(() => {
@@ -226,6 +244,51 @@ export default function SubjectsPage() {
     setDeleteDialogOpen(true);
   }
 
+  const handleCombinedSubjectSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!firestore) return;
+
+    const formData = new FormData(event.currentTarget);
+    const name = formData.get('name') as string;
+    const subjectIds = (formData.get('subjectIds') as string).split(',');
+
+    if (!name || subjectIds.length < 2) {
+      toast({ variant: 'destructive', title: "Invalid Input", description: "A combined subject must have a name and at least two subjects."});
+      return;
+    }
+    
+    const data = { name, subjectIds };
+
+    if (editingCombinedSubject) {
+      setDocumentNonBlocking(doc(firestore, 'combinedSubjects', editingCombinedSubject.id), data, { merge: true });
+      toast({ title: "Combined Subject Updated" });
+    } else {
+      addDocumentNonBlocking(collection(firestore, 'combinedSubjects'), data);
+      toast({ title: "Combined Subject Created" });
+    }
+    setCombinedSubjectDialogOpen(false);
+    setEditingCombinedSubject(null);
+  };
+
+  const openCombinedSubjectDialog = (subject: CombinedSubject | null) => {
+    setEditingCombinedSubject(subject);
+    setCombinedSubjectDialogOpen(true);
+  };
+
+  const openDeleteCombinedDialog = (subject: CombinedSubject) => {
+    setCombinedSubjectToDelete(subject);
+    setDeleteCombinedDialogOpen(true);
+  };
+
+  const handleDeleteCombinedSubject = () => {
+    if(!firestore || !combinedSubjectToDelete) return;
+    deleteDocumentNonBlocking(doc(firestore, 'combinedSubjects', combinedSubjectToDelete.id));
+    toast({ variant: 'destructive', title: 'Combined Subject Deleted' });
+    setDeleteCombinedDialogOpen(false);
+    setCombinedSubjectToDelete(null);
+  };
+
+
   return (
     <div className="space-y-6">
       {/* Dialogs */}
@@ -321,64 +384,173 @@ export default function SubjectsPage() {
           </DialogContent>
       </Dialog>
       
-      <div className="flex items-center justify-between">
+      {/* Combined Subject Dialogs */}
+       <Dialog open={combinedSubjectDialogOpen} onOpenChange={setCombinedSubjectDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>{editingCombinedSubject ? 'Edit' : 'Create'} Combined Subject</DialogTitle>
+            <DialogDescription>
+              Group multiple individual subjects into a single graded subject.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleCombinedSubjectSubmit} className="grid gap-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="name">Combined Subject Name</Label>
+              <Input name="name" placeholder="e.g. Basic Science & Tech" defaultValue={editingCombinedSubject?.name} required />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="subjectIds">Individual Subjects</Label>
+              <MultiSelect
+                name="subjectIds"
+                options={sortedSubjects.map(s => ({ value: s.id, label: s.name }))}
+                initialSelected={editingCombinedSubject?.subjectIds || []}
+              />
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setCombinedSubjectDialogOpen(false)}>Cancel</Button>
+              <Button type="submit">Save Combined Subject</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      <AlertDialog open={deleteCombinedDialogOpen} onOpenChange={setDeleteCombinedDialogOpen}>
+        <AlertDialogContent>
+            <AlertDialogHeader>
+                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                <AlertDialogDescription>
+                    This will permanently delete the combined subject <span className="font-semibold">{combinedSubjectToDelete?.name}</span>.
+                </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={handleDeleteCombinedSubject} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Delete</AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+
+      <div className="flex items-start justify-between">
           <div>
             <h1 className="text-3xl font-bold tracking-tight">Subjects</h1>
             <p className="text-muted-foreground">Create, edit, and assign subjects to classrooms.</p>
           </div>
-          <Button onClick={() => setAddDialogOpen(true)}>
-            <PlusCircle className="mr-2 h-4 w-4" />
-            Add Subject
-          </Button>
+          <div className="flex gap-2">
+             <Button onClick={() => openCombinedSubjectDialog(null)}>
+                <PlusCircle className="mr-2 h-4 w-4" />
+                Combine Subjects
+            </Button>
+            <Button onClick={() => setAddDialogOpen(true)}>
+                <PlusCircle className="mr-2 h-4 w-4" />
+                Add Subject
+            </Button>
+          </div>
       </div>
 
-       <Card>
-        <CardHeader>
-          <CardTitle>All Subjects</CardTitle>
-          <CardDescription>
-            The master list of all subjects offered in the school.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-            {isLoading ? (
-                <div className="flex justify-center items-center h-24">
-                    <Loader2 className="h-8 w-8 animate-spin" />
-                </div>
-            ) : (
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead>Subject Name</TableHead>
-                            <TableHead className="text-right">Actions</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {sortedSubjects.length > 0 ? (
-                            sortedSubjects.map(subject => (
-                                <TableRow key={subject.id}>
-                                    <TableCell className="font-medium">{subject.name}</TableCell>
-                                    <TableCell className="text-right">
-                                        <Button variant="ghost" size="icon" onClick={() => openEditDialog(subject)}>
-                                            <Edit className="h-4 w-4" />
-                                        </Button>
-                                        <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => openDeleteDialog(subject)}>
-                                            <Trash2 className="h-4 w-4" />
-                                        </Button>
-                                    </TableCell>
+      <div className="grid gap-6 md:grid-cols-2">
+            <Card>
+                <CardHeader>
+                <CardTitle>All Individual Subjects</CardTitle>
+                <CardDescription>
+                    The master list of all subjects offered in the school.
+                </CardDescription>
+                </CardHeader>
+                <CardContent>
+                    {isLoading ? (
+                        <div className="flex justify-center items-center h-24">
+                            <Loader2 className="h-8 w-8 animate-spin" />
+                        </div>
+                    ) : (
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Subject Name</TableHead>
+                                    <TableHead className="text-right">Actions</TableHead>
                                 </TableRow>
-                            ))
-                        ) : (
-                            <TableRow>
-                                <TableCell colSpan={2} className="text-center h-24">
-                                    No subjects created yet.
-                                </TableCell>
-                            </TableRow>
-                        )}
-                    </TableBody>
-                </Table>
-            )}
-        </CardContent>
-      </Card>
+                            </TableHeader>
+                            <TableBody>
+                                {sortedSubjects.length > 0 ? (
+                                    sortedSubjects.map(subject => (
+                                        <TableRow key={subject.id}>
+                                            <TableCell className="font-medium">{subject.name}</TableCell>
+                                            <TableCell className="text-right">
+                                                <Button variant="ghost" size="icon" onClick={() => openEditDialog(subject)}>
+                                                    <Edit className="h-4 w-4" />
+                                                </Button>
+                                                <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => openDeleteDialog(subject)}>
+                                                    <Trash2 className="h-4 w-4" />
+                                                </Button>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))
+                                ) : (
+                                    <TableRow>
+                                        <TableCell colSpan={2} className="text-center h-24">
+                                            No subjects created yet.
+                                        </TableCell>
+                                    </TableRow>
+                                )}
+                            </TableBody>
+                        </Table>
+                    )}
+                </CardContent>
+            </Card>
+             <Card>
+                <CardHeader>
+                <CardTitle>Combined Subjects</CardTitle>
+                <CardDescription>
+                    Groups of subjects that are graded as a single entity.
+                </CardDescription>
+                </CardHeader>
+                <CardContent>
+                    {combinedSubjectsLoading ? (
+                        <div className="flex justify-center items-center h-24">
+                            <Loader2 className="h-8 w-8 animate-spin" />
+                        </div>
+                    ) : (
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Combined Name</TableHead>
+                                    <TableHead>Includes</TableHead>
+                                    <TableHead className="text-right">Actions</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {combinedSubjects && combinedSubjects.length > 0 ? (
+                                    combinedSubjects.map(cs => (
+                                        <TableRow key={cs.id}>
+                                            <TableCell className="font-medium">{cs.name}</TableCell>
+                                            <TableCell>
+                                                <div className="flex flex-wrap gap-1">
+                                                    {cs.subjectIds.map(id => (
+                                                        <Badge key={id} variant="secondary">{subjectMap[id]?.name || 'Unknown'}</Badge>
+                                                    ))}
+                                                </div>
+                                            </TableCell>
+                                            <TableCell className="text-right">
+                                                <Button variant="ghost" size="icon" onClick={() => openCombinedSubjectDialog(cs)}>
+                                                    <Edit className="h-4 w-4" />
+                                                </Button>
+                                                <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => openDeleteCombinedDialog(cs)}>
+                                                    <Trash2 className="h-4 w-4" />
+                                                </Button>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))
+                                ) : (
+                                    <TableRow>
+                                        <TableCell colSpan={3} className="text-center h-24">
+                                            No combined subjects created yet.
+                                        </TableCell>
+                                    </TableRow>
+                                )}
+                            </TableBody>
+                        </Table>
+                    )}
+                </CardContent>
+            </Card>
+      </div>
 
 
         {isLoading ? (
@@ -414,7 +586,7 @@ export default function SubjectsPage() {
                                                   className="ml-1 h-5 w-5 text-muted-foreground hover:bg-destructive/20 hover:text-destructive"
                                                   onClick={() => handleUnassignSubject(assignmentId)}
                                               >
-                                                  <Trash2 className="h-3 w-3"/>
+                                                  <X className="h-3 w-3"/>
                                               </Button>
                                           </Badge>
                                       ))
@@ -431,3 +603,5 @@ export default function SubjectsPage() {
     </div>
   );
 }
+
+    
