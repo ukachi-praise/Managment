@@ -11,7 +11,7 @@ import {
 import { useMemoFirebase } from '@/firebase/provider';
 import { collection, query, where, doc } from 'firebase/firestore';
 import { ResultSheet } from '@/components/results/result-sheet';
-import { Loader2, ArrowLeft } from 'lucide-react';
+import { Loader2, ArrowLeft, Printer } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 
@@ -32,10 +32,7 @@ export default function ResultSheetPage() {
   );
   const { data: student, isLoading: studentLoading } = useDoc<Student>(studentRef);
   
-  // Since the classroomId is now on the result document, we first fetch the results
-  // to find the classroom. A bit indirect, but works with the new structure.
-  // A better approach in the future might be to denormalize classroomId onto the student doc.
-   const enrollmentsQuery = useMemoFirebase(
+  const enrollmentsQuery = useMemoFirebase(
     () => (firestore ? query(collection(firestore, 'enrollments'), where('studentId', '==', studentId)) : null),
     [firestore, studentId]
   );
@@ -83,7 +80,10 @@ export default function ResultSheetPage() {
           <ArrowLeft className="mr-2 h-4 w-4" />
           Back to Student List
         </Button>
-        <Button onClick={() => window.print()}>Print Report Card</Button>
+        <Button onClick={() => window.print()} disabled={isLoading}>
+          <Printer className="mr-2 h-4 w-4" />
+          Print Report Card
+        </Button>
       </div>
       <div className="max-w-4xl mx-auto space-y-4">
          <ResultSheet student={student} classroom={classroom} />
