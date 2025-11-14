@@ -109,20 +109,29 @@
     "Result": {
       "title": "Result",
       "type": "object",
-      "description": "Represents a student's academic scores for a specific subject in a term.",
+      "description": "Represents a student's academic scores for all subjects in a specific term.",
       "properties": {
         "studentId": { "type": "string" },
-        "subjectId": { "type": "string" },
         "termId": { "type": "string" },
         "sessionId": { "type": "string" },
         "classroomId": { "type": "string", "description": "Denormalized for security rules."},
-        "ca1": { "type": "number" }, "ca2": { "type": "number" }, "exam": { "type": "number" },
-        "total": { "type": "number" }, "grade": { "type": "string" }, "remark": { "type": "string" },
+        "scores": {
+          "type": "object",
+          "description": "A map of subject IDs to their scores.",
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "ca1": { "type": "number" },
+              "ca2": { "type": "number" },
+              "exam": { "type": "number" }
+            }
+          }
+        },
         "daysSchoolOpened": { "type": "number" },
         "daysAttended": { "type": "number" },
         "attendancePercentage": { "type": "number" }
       },
-      "required": ["studentId", "subjectId", "termId", "sessionId", "classroomId"]
+      "required": ["studentId", "termId", "sessionId", "classroomId"]
     },
     "SoftSkillResult": {
       "title": "SoftSkillResult",
@@ -224,10 +233,10 @@
       { "path": "/combinedSubjects/{combinedSubjectId}", "definition": { "schema": { "$ref": "#/backend/entities/CombinedSubject" } } },
       { "path": "/classroomSubjects/{classroomSubjectId}", "definition": { "schema": { "$ref": "#/backend/entities/ClassroomSubject" } } },
       { "path": "/students/{studentId}", "definition": { "schema": { "$ref": "#/backend/entities/Student" } } },
+      { "path": "/students/{studentId}/results/{termResultId}", "definition": { "schema": { "$ref": "#/backend/entities/Result" } } },
       { "path": "/enrollments/{enrollmentId}", "definition": { "schema": { "$ref": "#/backend/entities/Enrollment" } } },
       { "path": "/sessions/{sessionId}", "definition": { "schema": { "$ref": "#/backend/entities/AcademicSession" } } },
       { "path": "/sessions/{sessionId}/terms/{termId}", "definition": { "schema": { "$ref": "#/backend/entities/Term" } } },
-      { "path": "/results/{resultId}", "definition": { "schema": { "$ref": "#/backend/entities/Result" } } },
       { "path": "/softSkillResults/{softSkillResultId}", "definition": { "schema": { "$ref": "#/backend/entities/SoftSkillResult" } } },
       { "path": "/headTeacherRemarks/{remarkId}", "definition": { "schema": { "$ref": "#/backend/entities/HeadTeacherRemark" } } },
       { "path": "/resultSummaries/{summaryId}", "definition": { "schema": { "$ref": "#/backend/entities/ResultSummary" } } },
@@ -239,5 +248,3 @@
     ]
   }
 }
-
-    

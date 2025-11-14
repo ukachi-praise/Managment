@@ -33,27 +33,32 @@ import {
   query,
   where,
   doc,
-  getDoc,
   DocumentReference,
-  DocumentData,
+  onSnapshot,
 } from 'firebase/firestore';
 
-// Define types based on backend.json
+// --- TYPE DEFINITIONS ---
 type Student = { id: string; name: string; admissionNumber: string };
 type ScoreableSubject = { id: string; name: string; };
 type Enrollment = { id: string; studentId: string; classroomId: string };
 type SchoolSettings = { currentSession: string; currentTermId: string; }
-type Result = {
-  id?: string; 
-  studentId: string;
-  subjectId: string;
-  classroomId: string;
-  sessionId: string;
-  termId: string;
+
+// Represents a single subject's scores within the main result document
+type SubjectScore = {
   ca1: number | null;
   ca2: number | null;
   exam: number | null;
 };
+
+// Represents the entire result document for a term
+type TermResult = {
+  scores: Record<string, SubjectScore>; // subjectId -> SubjectScore
+  studentId: string;
+  termId: string;
+  sessionId: string;
+  classroomId: string;
+};
+
 
 export default function StudentResultEntryPage() {
   const params = useParams();
@@ -62,13 +67,11 @@ export default function StudentResultEntryPage() {
 
   const { toast } = useToast();
   const firestore = useFirestore();
-  const { user } = useUser();
 
-  const [results, setResults] = useState<Record<string, Result>>({}); // subjectId -> Result
+  const [termResult, setTermResult] = useState<TermResult | null>(null);
   const [isSaving, setIsSaving] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
 
-  // --- Data Fetching ---
+  // --- DATA FETCHING ---
   const studentRef = useMemoFirebase(() => (firestore ? doc(firestore, 'students', studentId) : null), [firestore, studentId]);
   const { data: student, isLoading: studentLoading } = useDoc<Student>(studentRef);
   
@@ -110,6 +113,43 @@ export default function StudentResultEntryPage() {
 
   }, [classroomSubjects, individualSubjects, combinedSubjects]);
 
+  const termResultRef = useMemoFirebase(() => {
+      if (!firestore || !studentId || !schoolSettings) return null;
+      const termResultId = `${schoolSettings.currentSession.replace('/', '-')}-${schoolSettings.currentTermId}`;
+      return doc(firestore, 'students', studentId, 'results', termResultId);
+  }, [firestore, studentId, schoolSettings]);
+
+  // --- REAL-TIME DATA SUBSCRIPTION ---
+  useEffect(() => {
+    if (!termResultRef || !classroomId || !schoolSettings) return;
+
+    const unsubscribe = onSnapshot(termResultRef, (snap) => {
+      if (snap.exists()) {
+        setTermResult(snap.data() as TermResult);
+      } else {
+        // If doc doesn't exist, create a new local state for it
+        const newScores: Record<string, SubjectScore> = {};
+        subjectsForClass.forEach(subject => {
+            newScores[subject.id] = { ca1: null, ca2: null, exam: null };
+        });
+
+        setTermResult({
+            scores: newScores,
+            studentId,
+            termId: schoolSettings.currentTermId,
+            sessionId: schoolSettings.currentSession,
+            classroomId,
+        });
+      }
+    }, (error) => {
+        console.error("Error fetching student results:", error);
+        toast({ variant: 'destructive', title: "Error", description: "Could not fetch student scores." });
+    });
+
+    return () => unsubscribe();
+  }, [termResultRef, subjectsForClass, classroomId, studentId, schoolSettings, toast]);
+
+
   const handleScoreChange = (
     subjectId: string,
     field: 'ca1' | 'ca2' | 'exam',
@@ -117,43 +157,28 @@ export default function StudentResultEntryPage() {
   ) => {
     const numericValue = value === '' ? null : Number(value);
 
-    setResults((prevResults) => ({
-      ...prevResults,
-      [subjectId]: {
-        ...prevResults[subjectId],
-        [field]: numericValue,
-      },
-    }));
+    setTermResult(prevResult => {
+      if (!prevResult) return null;
+      
+      const newScores = { ...prevResult.scores };
+      newScores[subjectId] = {
+        ...newScores[subjectId],
+        [field]: numericValue
+      };
+
+      return { ...prevResult, scores: newScores };
+    });
   };
   
   const handleSave = async () => {
-    if (!classroomId || !schoolSettings || !firestore || !user) {
+    if (!termResultRef || !termResult) {
         toast({ variant: 'destructive', title: 'Save Error', description: 'Could not save. Missing critical information.' });
         return;
     }
 
     setIsSaving(true);
     
-    for (const subjectId in results) {
-        const result = results[subjectId];
-        // Use a composite key to ensure a unique document per student-subject-term-session
-        const resultId = `${studentId}-${subjectId}-${schoolSettings.currentSession.replace('/', '-')}-${schoolSettings.currentTermId}`; 
-        const resultRef = doc(firestore, 'results', resultId);
-        
-        // Ensure all required fields are present before saving
-        const resultToSave: Result = {
-            studentId: studentId,
-            subjectId: subjectId,
-            classroomId: classroomId,
-            sessionId: schoolSettings.currentSession,
-            termId: schoolSettings.currentTermId,
-            ca1: result.ca1 ?? null,
-            ca2: result.ca2 ?? null,
-            exam: result.exam ?? null,
-        };
-
-        setDocumentNonBlocking(resultRef, resultToSave, { merge: true });
-    }
+    setDocumentNonBlocking(termResultRef, termResult, { merge: true });
     
     setTimeout(() => { 
         setIsSaving(false);
@@ -165,73 +190,15 @@ export default function StudentResultEntryPage() {
     }, 1500);
   };
 
-  useEffect(() => {
-    const areDependenciesLoaded = 
-      !studentLoading &&
-      !enrollmentsLoading &&
-      !classSubjectsLoading &&
-      !subjectsLoading &&
-      !combinedSubjectsLoading &&
-      !settingsLoading &&
-      subjectsForClass.length > 0 &&
-      schoolSettings &&
-      classroomId &&
-      firestore;
-
-    if (!areDependenciesLoaded) {
-      setIsLoading(true);
-      return;
-    }
-
-    const fetchInitialResults = async () => {
-      const initialResultsState: Record<string, Result> = {};
-      
-      for (const subject of subjectsForClass) {
-        const resultId = `${studentId}-${subject.id}-${schoolSettings.currentSession.replace('/', '-')}-${schoolSettings.currentTermId}`;
-        const resultRef = doc(firestore, 'results', resultId);
-        
-        const docSnap = await getDoc(resultRef);
-
-        if (docSnap.exists()) {
-          initialResultsState[subject.id] = { id: docSnap.id, ...docSnap.data() } as Result;
-        } else {
-          initialResultsState[subject.id] = {
-            studentId: studentId,
-            subjectId: subject.id,
-            classroomId: classroomId,
-            sessionId: schoolSettings.currentSession,
-            termId: schoolSettings.currentTermId,
-            ca1: null,
-            ca2: null,
-            exam: null,
-          };
-        }
-      }
-      setResults(initialResultsState);
-      setIsLoading(false);
-    };
-
-    fetchInitialResults();
-  
-  }, [
-      studentId, 
-      classroomId, 
-      schoolSettings, 
-      firestore, 
-      subjectsForClass, 
-      studentLoading, 
-      enrollmentsLoading, 
-      classSubjectsLoading, 
-      subjectsLoading, 
-      combinedSubjectsLoading, 
-      settingsLoading
-  ]);
-  
-  const pageIsLoading = studentLoading || isLoading;
+  const pageIsLoading = studentLoading || enrollmentsLoading || classSubjectsLoading || subjectsLoading || combinedSubjectsLoading || settingsLoading || !termResult;
 
   return (
     <div className="space-y-6">
-        <div className="flex items-center justify-between">
+       <div className="flex items-center justify-between">
+         <div className="flex items-center gap-4">
+            <Button onClick={() => router.back()} variant="outline" size="icon">
+                <ArrowLeft className="h-4 w-4" />
+            </Button>
             <div>
                 <h1 className="text-3xl font-bold tracking-tight">
                 Result Entry for {student?.name || '...'}
@@ -240,10 +207,7 @@ export default function StudentResultEntryPage() {
                 Enter CA and Exam scores for each subject below.
                 </p>
             </div>
-            <Button onClick={() => router.back()} variant="outline">
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Back to Student List
-            </Button>
+          </div>
       </div>
 
     <Card>
@@ -280,8 +244,8 @@ export default function StudentResultEntryPage() {
                      <TableRow><TableCell colSpan={6} className="text-center h-24">No subjects assigned to this class.</TableCell></TableRow>
                   )}
                   {subjectsForClass.map((subject) => {
-                      const result = results[subject.id] || { ca1: null, ca2: null, exam: null };
-                      const total = (result.ca1 || 0) + (result.ca2 || 0) + (result.exam || 0);
+                      const score = termResult?.scores?.[subject.id] || { ca1: null, ca2: null, exam: null };
+                      const total = (score.ca1 || 0) + (score.ca2 || 0) + (score.exam || 0);
                       const { grade: finalGrade } = calculateGrade(total);
 
                       return (
@@ -293,7 +257,7 @@ export default function StudentResultEntryPage() {
                               inputMode="numeric"
                               pattern="[0-9]*"
                               className="h-8 w-20 text-sm"
-                              value={result.ca1 ?? ''}
+                              value={score.ca1 ?? ''}
                               onChange={(e) => handleScoreChange(subject.id, 'ca1', e.target.value)}
                               max={20}
                             />
@@ -304,7 +268,7 @@ export default function StudentResultEntryPage() {
                               inputMode="numeric"
                               pattern="[0-9]*"
                               className="h-8 w-20 text-sm"
-                              value={result.ca2 ?? ''}
+                              value={score.ca2 ?? ''}
                               onChange={(e) => handleScoreChange(subject.id, 'ca2', e.target.value)}
                               max={20}
                             />
@@ -315,7 +279,7 @@ export default function StudentResultEntryPage() {
                               inputMode="numeric"
                               pattern="[0-9]*"
                               className="h-8 w-20 text-sm"
-                              value={result.exam ?? ''}
+                              value={score.exam ?? ''}
                               onChange={(e) => handleScoreChange(subject.id, 'exam', e.target.value)}
                               max={60}
                             />
@@ -345,3 +309,4 @@ export default function StudentResultEntryPage() {
     </div>
   );
 }
+
