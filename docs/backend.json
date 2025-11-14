@@ -116,7 +116,7 @@
         "termId": { "type": "string" },
         "sessionId": { "type": "string" },
         "classroomId": { "type": "string", "description": "Denormalized for security rules."},
-        "ca1": { "type": "number" }, "ca2": { "type": "number" }, "ca3": { "type": "number" }, "exam": { "type": "number" },
+        "ca1": { "type": "number" }, "ca2": { "type": "number" }, "exam": { "type": "number" },
         "total": { "type": "number" }, "grade": { "type": "string" }, "remark": { "type": "string" },
         "daysSchoolOpened": { "type": "number" },
         "daysAttended": { "type": "number" },
@@ -239,3 +239,5 @@
     ]
   }
 }
+
+    

@@ -502,22 +502,20 @@ export default function TemplatesPage() {
                             <TableHeader>
                             <TableRow>
                                 <TableHead className="border border-black p-1 h-auto text-sm text-black">Subject</TableHead>
-                                <TableHead className="text-center border border-black p-1 h-auto text-sm text-black">CA1 (10)</TableHead>
-                                <TableHead className="text-center border border-black p-1 h-auto text-sm text-black">CA2 (10)</TableHead>
-                                <TableHead className="text-center border border-black p-1 h-auto text-sm text-black">CA3 (10)</TableHead>
-                                <TableHead className="text-center border border-black p-1 h-auto text-sm text-black">Exam (70)</TableHead>
+                                <TableHead className="text-center border border-black p-1 h-auto text-sm text-black">CA1 (20)</TableHead>
+                                <TableHead className="text-center border border-black p-1 h-auto text-sm text-black">CA2 (20)</TableHead>
+                                <TableHead className="text-center border border-black p-1 h-auto text-sm text-black">Exam (60)</TableHead>
                                 <TableHead className="text-center border border-black p-1 h-auto text-sm text-black">Total (100)</TableHead>
                                 <TableHead className="border border-black p-1 h-auto text-sm text-black">Remark</TableHead>
                             </TableRow>
                             </TableHeader>
                             <TableBody>
                             {isLoading ? (
-                                <TableRow><TableCell colSpan={7} className="text-center border-b border-black p-1 text-sm">Loading subjects...</TableCell></TableRow>
+                                <TableRow><TableCell colSpan={6} className="text-center border-b border-black p-1 text-sm">Loading subjects...</TableCell></TableRow>
                             ) : displayedSubjects.length > 0 ? (
                                 displayedSubjects.map(subject => (
                                 <TableRow key={subject.id}>
                                     <TableCell className="border-b border-r border-black p-1 text-sm">{subject.name}</TableCell>
-                                    <TableCell className="text-center border-b border-r border-black p-1 text-sm">--</TableCell>
                                     <TableCell className="text-center border-b border-r border-black p-1 text-sm">--</TableCell>
                                     <TableCell className="text-center border-b border-r border-black p-1 text-sm">--</TableCell>
                                     <TableCell className="text-center border-b border-r border-black p-1 text-sm">--</TableCell>
@@ -529,7 +527,6 @@ export default function TemplatesPage() {
                                 Array.from({ length: 9 }).map((_, index) => (
                                 <TableRow key={`placeholder-${index}`}>
                                     <TableCell className="border-b border-r border-black p-1 text-sm">Subject Name</TableCell>
-                                    <TableCell className="text-center border-b border-r border-black p-1 text-sm">--</TableCell>
                                     <TableCell className="text-center border-b border-r border-black p-1 text-sm">--</TableCell>
                                     <TableCell className="text-center border-b border-r border-black p-1 text-sm">--</TableCell>
                                     <TableCell className="text-center border-b border-r border-black p-1 text-sm">--</TableCell>
@@ -684,3 +681,5 @@ export default function TemplatesPage() {
     </div>
   );
 }
+
+    

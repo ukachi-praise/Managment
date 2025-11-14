@@ -56,7 +56,6 @@ type Result = {
   termId: string;
   ca1: number | null;
   ca2: number | null;
-  ca3: number | null;
   exam: number | null;
 };
 type UserData = { assignedClassroomId?: string; };
@@ -131,10 +130,10 @@ export default function StudentResultEntryPage() {
 
 
   useEffect(() => {
-    if (!classroomId || !schoolSettings || !firestore || !teacherData || !studentId || !subjectsForClass) {
+    if (!classroomId || !schoolSettings || !firestore || !teacherData || !studentId ) {
       return;
     }
-
+    
     if (teacherData.assignedClassroomId !== classroomId) {
         toast({ variant: 'destructive', title: 'Unauthorized', description: 'You are not assigned to this classroom.' });
         return;
@@ -169,7 +168,7 @@ export default function StudentResultEntryPage() {
                 classroomId: classroomId,
                 sessionId: schoolSettings.currentSession,
                 termId: schoolSettings.currentTermId,
-                ca1: null, ca2: null, ca3: null, exam: null
+                ca1: null, ca2: null, exam: null
               };
             }
           });
@@ -192,7 +191,7 @@ export default function StudentResultEntryPage() {
 
   const handleScoreChange = (
     subjectId: string,
-    field: 'ca1' | 'ca2' | 'ca3' | 'exam',
+    field: 'ca1' | 'ca2' | 'exam',
     value: string
   ) => {
     const numericValue = value === '' ? null : Number(value);
@@ -221,7 +220,8 @@ export default function StudentResultEntryPage() {
     setIsSaving(true);
     
     for (const result of Object.values(results)) {
-        if (result.ca1 !== null || result.ca2 !== null || result.ca3 !== null || result.exam !== null) {
+        // Save if any score has been entered for this subject.
+        if (result.ca1 !== null || result.ca2 !== null || result.exam !== null) {
              const resultWithIds = {
                 ...result,
                 studentId: studentId,
@@ -285,21 +285,20 @@ export default function StudentResultEntryPage() {
                 <TableHeader>
                   <TableRow>
                     <TableHead className="w-[250px]">Subject</TableHead>
-                    <TableHead>CA1 (10)</TableHead>
-                    <TableHead>CA2 (10)</TableHead>
-                    <TableHead>CA3 (10)</TableHead>
-                    <TableHead>Exam (70)</TableHead>
+                    <TableHead>CA1 (20)</TableHead>
+                    <TableHead>CA2 (20)</TableHead>
+                    <TableHead>Exam (60)</TableHead>
                     <TableHead>Total (100)</TableHead>
                     <TableHead>Grade</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {subjectsForClass.length === 0 && (
-                     <TableRow><TableCell colSpan={7} className="text-center h-24">No subjects assigned to this class.</TableCell></TableRow>
+                     <TableRow><TableCell colSpan={6} className="text-center h-24">No subjects assigned to this class.</TableCell></TableRow>
                   )}
                   {subjectsForClass.map((subject) => {
-                      const result = results[subject.id] || { ca1: null, ca2: null, ca3: null, exam: null };
-                      const total = (result.ca1 || 0) + (result.ca2 || 0) + (result.ca3 || 0) + (result.exam || 0);
+                      const result = results[subject.id] || { ca1: null, ca2: null, exam: null };
+                      const total = (result.ca1 || 0) + (result.ca2 || 0) + (result.exam || 0);
                       const { grade: finalGrade } = calculateGrade(total);
 
                       return (
@@ -313,7 +312,7 @@ export default function StudentResultEntryPage() {
                               className="h-8 w-20"
                               value={result.ca1 ?? ''}
                               onChange={(e) => handleScoreChange(subject.id, 'ca1', e.target.value)}
-                              max={10}
+                              max={20}
                             />
                           </TableCell>
                            <TableCell>
@@ -324,18 +323,7 @@ export default function StudentResultEntryPage() {
                               className="h-8 w-20"
                               value={result.ca2 ?? ''}
                               onChange={(e) => handleScoreChange(subject.id, 'ca2', e.target.value)}
-                              max={10}
-                            />
-                          </TableCell>
-                           <TableCell>
-                            <Input
-                              type="text"
-                              inputMode="numeric"
-                              pattern="[0-9]*"
-                              className="h-8 w-20"
-                              value={result.ca3 ?? ''}
-                              onChange={(e) => handleScoreChange(subject.id, 'ca3', e.target.value)}
-                              max={10}
+                              max={20}
                             />
                           </TableCell>
                           <TableCell>
@@ -346,7 +334,7 @@ export default function StudentResultEntryPage() {
                               className="h-8 w-20"
                               value={result.exam ?? ''}
                               onChange={(e) => handleScoreChange(subject.id, 'exam', e.target.value)}
-                              max={70}
+                              max={60}
                             />
                           </TableCell>
                           <TableCell className="font-semibold">{total}</TableCell>
@@ -374,3 +362,5 @@ export default function StudentResultEntryPage() {
     </div>
   );
 }
+
+    

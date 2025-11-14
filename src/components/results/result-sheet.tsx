@@ -34,11 +34,11 @@ import { Separator } from '@/components/ui/separator';
 type StudentData = { id: string; name: string; admissionNumber: string };
 type Subject = { id: string; name: string };
 type Classroom = { id: string; name: string; teacherName?: string; };
-type Result = { subjectId: string; ca1: number; ca2: number; ca3: number; exam: number; daysAttended: number; sessionId: string; termId: string; };
+type Result = { subjectId: string; ca1: number; ca2: number; exam: number; daysAttended: number; sessionId: string; termId: string; };
 type SchoolSettingsData = { currentSession: string; currentTermId: string; daysSchoolOpened: number; nextTermResumptionDate: Timestamp | Date | string; };
 type TemplateSettings = { studentInfo: { fontSize: number; visible: boolean; }; header: { visible: boolean; }; subjectsTable: { visible: boolean; }; summary: { visible: boolean; }; softSkills: { visible: boolean; }; gradingKey: { visible: boolean; }; remarks: { visible: boolean; }; signatures: { visible: boolean; }; };
 type SavedTemplateData = { name: string; schoolName: string; settings: TemplateSettings; };
-type ResultEntry = { subjectName: string; ca1: number; ca2: number; ca3: number; exam: number; total: number; grade: string; remark: string; };
+type ResultEntry = { subjectName: string; ca1: number; ca2: number; exam: number; total: number; grade: string; remark: string; };
 
 const termNames: Record<string, string> = { term1: '1st Term', term2: '2nd Term', term3: '3rd Term' };
 
@@ -109,15 +109,14 @@ export function ResultSheet({ student, classroom }: ResultSheetProps) {
         const subjectName = subjectsMap[subjectId];
         if (!subjectName) return null;
         
-        const result = resultsMap[subjectId] || { ca1: 0, ca2: 0, ca3: 0, exam: 0 };
-        const total = (result.ca1 || 0) + (result.ca2 || 0) + (result.ca3 || 0) + (result.exam || 0);
+        const result = resultsMap[subjectId] || { ca1: 0, ca2: 0, exam: 0 };
+        const total = (result.ca1 || 0) + (result.ca2 || 0) + (result.exam || 0);
         const { grade, remark } = calculateGrade(total);
 
         return {
           subjectName,
           ca1: result.ca1 || 0,
           ca2: result.ca2 || 0,
-          ca3: result.ca3 || 0,
           exam: result.exam || 0,
           total,
           grade,
@@ -219,10 +218,9 @@ export function ResultSheet({ student, classroom }: ResultSheetProps) {
                             <TableHeader>
                                 <TableRow>
                                     <TableHead className="border border-black p-1 h-auto text-sm text-black">Subject</TableHead>
-                                    <TableHead className="text-center border border-black p-1 h-auto text-sm text-black">CA1 (10)</TableHead>
-                                    <TableHead className="text-center border border-black p-1 h-auto text-sm text-black">CA2 (10)</TableHead>
-                                    <TableHead className="text-center border border-black p-1 h-auto text-sm text-black">CA3 (10)</TableHead>
-                                    <TableHead className="text-center border border-black p-1 h-auto text-sm text-black">Exam (70)</TableHead>
+                                    <TableHead className="text-center border border-black p-1 h-auto text-sm text-black">CA1 (20)</TableHead>
+                                    <TableHead className="text-center border border-black p-1 h-auto text-sm text-black">CA2 (20)</TableHead>
+                                    <TableHead className="text-center border border-black p-1 h-auto text-sm text-black">Exam (60)</TableHead>
                                     <TableHead className="text-center border border-black p-1 h-auto text-sm text-black">Total (100)</TableHead>
                                     <TableHead className="border border-black p-1 h-auto text-sm text-black">Remark</TableHead>
                                 </TableRow>
@@ -234,7 +232,6 @@ export function ResultSheet({ student, classroom }: ResultSheetProps) {
                                             <TableCell className="border-b border-r border-black p-1 text-sm">{entry.subjectName}</TableCell>
                                             <TableCell className="text-center border-b border-r border-black p-1 text-sm">{entry.ca1}</TableCell>
                                             <TableCell className="text-center border-b border-r border-black p-1 text-sm">{entry.ca2}</TableCell>
-                                            <TableCell className="text-center border-b border-r border-black p-1 text-sm">{entry.ca3}</TableCell>
                                             <TableCell className="text-center border-b border-r border-black p-1 text-sm">{entry.exam}</TableCell>
                                             <TableCell className="text-center border-b border-r border-black p-1 text-sm">{entry.total}</TableCell>
                                             <TableCell className="border-b border-black p-1 text-sm">{entry.remark}</TableCell>
@@ -242,7 +239,7 @@ export function ResultSheet({ student, classroom }: ResultSheetProps) {
                                     ))
                                 ) : (
                                     <TableRow>
-                                      <TableCell colSpan={7} className="h-24 text-center border-b border-black p-1 text-sm">
+                                      <TableCell colSpan={6} className="h-24 text-center border-b border-black p-1 text-sm">
                                         No subjects assigned or scores entered for this term.
                                       </TableCell>
                                     </TableRow>
@@ -322,3 +319,5 @@ export function ResultSheet({ student, classroom }: ResultSheetProps) {
     </div>
   );
 }
+
+    
