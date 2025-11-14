@@ -5,11 +5,16 @@ import { useParams, notFound, useRouter } from 'next/navigation';
 import { ResultSheet } from '@/components/results/result-sheet';
 import { Button } from '@/components/ui/button';
 import { Download, Loader2, ArrowLeft } from 'lucide-react';
-import { useDoc, useCollection, useFirestore } from '@/firebase';
+import { useDoc, useFirestore } from '@/firebase';
 import { useMemoFirebase } from '@/firebase/provider';
 import { doc, collection, query, where } from 'firebase/firestore';
-import { useMemo } from 'react';
+import { useMemo, useEffect, useState } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
+
+type Student = { id: string; name: string };
+type Classroom = { id: string; name: string };
+type SchoolSettings = { currentSession: string; currentTermId: string; };
+type TermResult = { classroomId: string };
 
 
 export default function StudentResultsPage() {
@@ -23,25 +28,34 @@ export default function StudentResultsPage() {
     () => (firestore && studentId ? doc(firestore, 'students', studentId) : null),
     [firestore, studentId]
   );
-  const { data: student, isLoading: studentLoading } = useDoc(studentRef);
+  const { data: student, isLoading: studentLoading } = useDoc<Student>(studentRef);
 
-  const enrollmentsQuery = useMemoFirebase(
-    () => (firestore && studentId ? query(collection(firestore, 'enrollments'), where('studentId', '==', studentId)) : null),
-    [firestore, studentId]
-  );
-  const { data: enrollments, isLoading: enrollmentsLoading } = useCollection(enrollmentsQuery);
+  const settingsRef = useMemoFirebase(() => (firestore ? doc(firestore, 'schoolSettings', 'current') : null), [firestore]);
+  const { data: schoolSettings, isLoading: settingsLoading } = useDoc<SchoolSettings>(settingsRef);
   
-  const classroomId = useMemo(() => enrollments?.[0]?.classroomId, [enrollments]);
+  const termResultId = useMemo(() => {
+    if (!schoolSettings) return null;
+    return `${schoolSettings.currentSession.replace('/', '-')}-${schoolSettings.currentTermId}`;
+  }, [schoolSettings]);
+
+  const termResultRef = useMemoFirebase(
+    () => (firestore && studentId && termResultId ? doc(firestore, 'students', studentId, 'results', termResultId) : null),
+    [firestore, studentId, termResultId]
+  );
+  const { data: termResult, isLoading: termResultLoading } = useDoc<TermResult>(termResultRef);
+
+  const classroomId = useMemo(() => termResult?.classroomId, [termResult]);
 
   const classroomRef = useMemoFirebase(
     () => (firestore && classroomId ? doc(firestore, 'classrooms', classroomId) : null),
     [firestore, classroomId]
   );
-  const { data: classroom, isLoading: classroomLoading } = useDoc(classroomRef);
+  const { data: classroom, isLoading: classroomLoading } = useDoc<Classroom>(classroomRef);
   
-  const isLoading = studentLoading || enrollmentsLoading || classroomLoading;
+  const isLoading = studentLoading || settingsLoading || termResultLoading || classroomLoading;
+  const isDataReady = !isLoading && student && classroom;
 
-  if (!isLoading && !student) {
+  if (!isLoading && (!student || !termResult)) {
     notFound();
   }
 
@@ -68,9 +82,9 @@ export default function StudentResultsPage() {
             <ArrowLeft className="mr-2 h-4 w-4" />
             Go Back
           </Button>
-          <Button onClick={handleDownload} variant="default" disabled={isLoading}>
-            {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" /> }
-            {isLoading ? 'Loading...' : 'Download Result'}
+          <Button onClick={handleDownload} variant="default" disabled={!isDataReady}>
+            {!isDataReady ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" /> }
+            {!isDataReady ? 'Loading...' : 'Download Result'}
           </Button>
         </div>
       </div>
@@ -79,11 +93,11 @@ export default function StudentResultsPage() {
         <div className="relative mx-auto aspect-[210/297] w-full max-w-[210mm] bg-white p-6 shadow-lg">
           <Skeleton className="h-full w-full" />
         </div>
-      ) : student && classroom ? (
+      ) : isDataReady ? (
         <ResultSheet student={student} classroom={classroom} />
       ) : (
         <div className="text-center text-muted-foreground py-12">
-            Could not load student or classroom data.
+            Could not load all required data. Ensure school settings are correct and results have been entered for this term.
         </div>
       )}
 
