@@ -189,7 +189,12 @@ export default function StudentResultEntryPage() {
         }
     };
 
-    fetchResults();
+    if (subjectsForClass.length > 0) {
+      fetchResults();
+    } else {
+      setIsSaving(false);
+      setInitialFetchDone(true);
+    }
   }, [classroomId, studentId, schoolSettings, firestore, toast, teacherData, subjectsForClass, router]);
 
   const handleScoreChange = (
@@ -222,21 +227,19 @@ export default function StudentResultEntryPage() {
 
     setIsSaving(true);
     
-    for (const result of Object.values(results)) {
-        // Only save if at least one score has been entered.
-        if (result.ca1 !== null || result.ca2 !== null || result.exam !== null) {
-             const resultWithIds = {
-                ...result,
-                studentId: studentId,
-                classroomId: classroomId,
-                sessionId: schoolSettings.currentSession,
-                termId: schoolSettings.currentTermId,
-            };
-            // Use a composite key to ensure a unique document per student-subject-term
-            const resultId = result.id || `${studentId}_${result.subjectId}_${schoolSettings.currentTermId}`; 
-            const resultRef = doc(firestore, 'results', resultId);
-            setDocumentNonBlocking(resultRef, resultWithIds, { merge: true });
-        }
+    for (const subjectId in results) {
+        const result = results[subjectId];
+        const resultWithIds = {
+            ...result,
+            studentId: studentId,
+            classroomId: classroomId,
+            sessionId: schoolSettings.currentSession,
+            termId: schoolSettings.currentTermId,
+        };
+        // Use a composite key to ensure a unique document per student-subject-term
+        const resultId = result.id || `${studentId}_${result.subjectId}_${schoolSettings.currentTermId}`; 
+        const resultRef = doc(firestore, 'results', resultId);
+        setDocumentNonBlocking(resultRef, resultWithIds, { merge: true });
     }
     
     setTimeout(() => { 
@@ -367,4 +370,3 @@ export default function StudentResultEntryPage() {
     </div>
   );
 }
-
