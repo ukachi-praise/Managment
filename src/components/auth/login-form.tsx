@@ -31,6 +31,7 @@ const formSchema = z.object({
 const ADMIN_UID = 'GOpbb9SsavhpATk1p0KNmPGGQ0S2';
 const TEACHER_UID = 'u3krP4g02DgPJ6Avv1XhVNvvb8R2';
 const PRIMARY_2_TEACHER_UID = '41N67kFTBqYVataTwg5UuIxAwHq2';
+const CRECHE_TEACHER_UID = 'vzT4PhW7g5SipKPScj89DGodBZF2';
 
 export function LoginForm() {
   const router = useRouter();
@@ -86,6 +87,21 @@ export function LoginForm() {
             router.push(`/teacher/class/${classroomDoc.id}`);
         } else {
              toast({ variant: 'destructive', title: 'Login Failed', description: 'Could not find "Primary 2" classroom.' });
+             setIsLoading(false);
+        }
+        return;
+    }
+
+    // Hardcoded redirect for specific Teacher UID (Creche)
+    if (user.uid === CRECHE_TEACHER_UID) {
+        toast({ title: 'Login Successful', description: `Welcome, Teacher! Redirecting...` });
+        const q = query(collection(firestore, 'classrooms'), where('name', '==', 'Creche'));
+        const querySnapshot = await getDocs(q);
+        if (!querySnapshot.empty) {
+            const classroomDoc = querySnapshot.docs[0];
+            router.push(`/teacher/class/${classroomDoc.id}`);
+        } else {
+             toast({ variant: 'destructive', title: 'Login Failed', description: 'Could not find "Creche" classroom.' });
              setIsLoading(false);
         }
         return;
