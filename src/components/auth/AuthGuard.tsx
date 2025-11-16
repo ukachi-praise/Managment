@@ -3,7 +3,7 @@
 
 import { useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import { useAuth, useFirestore } from '@/firebase';
+import { useAuth, useFirestore, useFirebase } from '@/firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 import { Loader2 } from 'lucide-react';
 import { doc, getDoc } from 'firebase/firestore';
@@ -16,21 +16,27 @@ export default function AuthGuard({
   allow: ("admin" | "teacher")[];
 }) {
   const router = useRouter();
-  const auth = useAuth();
-  const firestore = useFirestore();
-  const [allowed, setAllowed] = useState<boolean | null>(null);
+  const { auth, firestore, isCoreLoading, isUserLoading, user } = useFirebase();
+  const [isCheckingPermissions, setIsCheckingPermissions] = useState(true);
 
   useEffect(() => {
-    if (!auth || !firestore) {
+    // Don't do anything until Firebase is ready and the initial user state is known.
+    if (isCoreLoading || isUserLoading) {
       return;
     }
 
-    const unsub = onAuthStateChanged(auth, async (user) => {
+    const checkPermissions = async () => {
       if (!user) {
         // Depending on the route, redirect to the correct login page
         const loginPath = window.location.pathname.startsWith('/admin') ? '/admin/login' : '/login';
         router.replace(loginPath);
         return;
+      }
+
+      if (!firestore) {
+         console.error("Firestore is not available for permission check.");
+         router.replace("/unauthorized");
+         return;
       }
 
       const snap = await getDoc(doc(firestore, "users", user.uid));
@@ -44,18 +50,18 @@ export default function AuthGuard({
       const role = snap.data().role as "Admin" | "Teacher";
       const lowerCaseRole = role.toLowerCase() as "admin" | "teacher";
 
-
       if (!allow.includes(lowerCaseRole)) {
         router.replace("/unauthorized");
       } else {
-        setAllowed(true);
+        setIsCheckingPermissions(false);
       }
-    });
+    };
 
-    return () => unsub();
-  }, [router, allow, auth, firestore]);
+    checkPermissions();
 
-  if (allowed === null) {
+  }, [router, allow, auth, firestore, user, isCoreLoading, isUserLoading]);
+
+  if (isCheckingPermissions) {
     return (
       <div className="flex h-screen w-full items-center justify-center">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />

@@ -248,6 +248,7 @@ export function LoginForm() {
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
     if (!auth) {
+        toast({ variant: 'destructive', title: 'Error', description: 'Authentication service not available. Please try again in a moment.' });
         setIsLoading(false);
         return;
     };

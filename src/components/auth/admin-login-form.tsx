@@ -19,10 +19,10 @@ import { toast } from '@/hooks/use-toast';
 import { useState, useEffect } from 'react';
 import { Loader2, Eye, EyeOff } from 'lucide-react';
 import Link from 'next/link';
-import { useAuth, useUser } from '@/firebase';
+import { useAuth, useUser, useFirestore } from '@/firebase';
 import { signInWithEmailAndPassword, User } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
-import { useFirestore } from '@/firebase';
+
 
 const formSchema = z.object({
   email: z.string().email({ message: 'Please enter a valid email.' }),
@@ -79,7 +79,7 @@ export function AdminLoginForm() {
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
     if (!auth) {
-        toast({ variant: 'destructive', title: 'Error', description: 'Authentication service not ready.' });
+        toast({ variant: 'destructive', title: 'Error', description: 'Authentication service not ready. Please try again in a moment.' });
         setIsLoading(false);
         return;
     };

@@ -30,6 +30,7 @@ export interface FirebaseContextState {
   firebaseApp: FirebaseApp | null;
   firestore: Firestore | null;
   auth: Auth | null; // The Auth service instance
+  isCoreLoading: boolean; // True if core services are not ready
   // User authentication state
   user: User | null;
   isUserLoading: boolean; // True during initial auth check
@@ -42,6 +43,7 @@ export interface FirebaseServicesAndUser {
   firestore: Firestore | null;
   auth: Auth | null;
   user: User | null;
+  isCoreLoading: boolean;
   isUserLoading: boolean;
   userError: Error | null;
 }
@@ -65,7 +67,7 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
     userError: null,
   });
 
-  const isCoreLoading = !auth || !firestore || !firebaseApp || userAuthState.isUserLoading;
+  const isCoreLoading = !auth || !firestore || !firebaseApp;
 
   // Effect to subscribe to Firebase auth state changes
   useEffect(() => {
@@ -93,11 +95,12 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
       firebaseApp: firebaseApp,
       firestore: firestore,
       auth: auth,
+      isCoreLoading: isCoreLoading,
       user: userAuthState.user,
       isUserLoading: userAuthState.isUserLoading,
       userError: userAuthState.userError,
     };
-  }, [firebaseApp, firestore, auth, userAuthState]);
+  }, [firebaseApp, firestore, auth, userAuthState, isCoreLoading]);
 
   return (
     <FirebaseContext.Provider value={contextValue}>
@@ -123,6 +126,7 @@ export const useFirebase = (): FirebaseServicesAndUser => {
     firestore: context.firestore,
     auth: context.auth,
     user: context.user,
+    isCoreLoading: context.isCoreLoading,
     isUserLoading: context.isUserLoading,
     userError: context.userError,
   };

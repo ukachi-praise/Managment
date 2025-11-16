@@ -14,11 +14,11 @@ interface FirebaseClientProviderProps {
 const { firebaseApp, auth, firestore } = initializeFirebase();
 
 function FirebaseGate({ children }: { children: ReactNode }) {
-    const { isUserLoading } = useFirebase();
+    const { isUserLoading, isCoreLoading } = useFirebase();
 
-    // The gate will show a loader only during the initial user check.
-    // After that, AuthGuard and other components will handle their own loading states.
-    if (isUserLoading) {
+    // The gate will show a loader only during the initial user check
+    // or if core services are not yet available.
+    if (isCoreLoading) {
         return (
             <div className="flex h-screen w-full items-center justify-center">
                 <Loader2 className="h-12 w-12 animate-spin text-primary" />
