@@ -58,6 +58,7 @@ const formSchema = z.object({
   termEndingDate: z.date({
     required_error: 'Term ending date is required.',
   }),
+  admissionNumberPrefix: z.string().optional(),
 });
 
 type SchoolSettings = z.infer<typeof formSchema>;
@@ -82,6 +83,7 @@ export default function InfoPage() {
         currentSession: '',
         currentTermId: '',
         daysSchoolOpened: 0,
+        admissionNumberPrefix: 'JKS',
     },
   });
   
@@ -191,6 +193,20 @@ export default function InfoPage() {
                         <Input type="number" placeholder="e.g. 65" {...field} />
                       </FormControl>
                       <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="admissionNumberPrefix"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Admission Number Prefix</FormLabel>
+                      <FormControl>
+                        <Input placeholder="e.g. JKS" {...field} />
+                      </FormControl>
+                       <FormMessage />
                     </FormItem>
                   )}
                 />

@@ -24,9 +24,10 @@ import {
   useCollection,
   useFirestore,
   addDocumentNonBlocking,
+  useDoc,
 } from '@/firebase';
 import { useMemoFirebase } from '@/firebase/provider';
-import { collection, query, addDoc } from 'firebase/firestore';
+import { collection, query, addDoc, doc } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   Dialog,
@@ -63,6 +64,10 @@ type Enrollment = {
     studentId: string;
 }
 
+type SchoolSettings = {
+    admissionNumberPrefix?: string;
+}
+
 
 export default function StudentsPage() {
   const [open, setOpen] = useState(false);
@@ -82,12 +87,15 @@ export default function StudentsPage() {
     () => (firestore ? query(collection(firestore, 'enrollments')) : null),
     [firestore]
   );
+  const settingsRef = useMemoFirebase(() => (firestore ? doc(firestore, 'schoolSettings', 'current') : null), [firestore]);
+
  
   const { data: classrooms, isLoading: classroomsLoading } = useCollection<Classroom>(classroomsQuery);
   const { data: allStudents, isLoading: allStudentsLoading } = useCollection<Student>(allStudentsQuery);
   const { data: enrollments, isLoading: enrollmentsLoading } = useCollection<Enrollment>(enrollmentsQuery);
+  const { data: settings, isLoading: settingsLoading } = useDoc<SchoolSettings>(settingsRef);
   
-  const isLoading = classroomsLoading || enrollmentsLoading || allStudentsLoading;
+  const isLoading = classroomsLoading || enrollmentsLoading || allStudentsLoading || settingsLoading;
   
   const validStudentIds = useMemo(() => {
     if (!allStudents) return new Set<string>();
@@ -109,13 +117,19 @@ export default function StudentsPage() {
   // --- Event Handlers ---
   const handleAddStudent = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!firestore) return;
+    if (!firestore || !allStudents) return;
     
     const form = event.currentTarget;
     const formData = new FormData(form);
+    
+    // Auto-generate admission number
+    const prefix = settings?.admissionNumberPrefix || 'JKS';
+    const nextStudentNumber = allStudents.length + 1;
+    const admissionNumber = `${prefix}-${String(nextStudentNumber).padStart(5, '0')}`;
+
     const newStudentData = {
       name: formData.get('name') as string,
-      admissionNumber: formData.get('admissionNumber') as string,
+      admissionNumber: admissionNumber,
       dob: formData.get('dob') as string,
       gender: formData.get('gender') as string,
       parentName: formData.get('parentName') as string,
@@ -124,7 +138,7 @@ export default function StudentsPage() {
     };
     const classroomId = formData.get('classroomId') as string;
 
-    if (!newStudentData.name || !classroomId || !newStudentData.admissionNumber) return;
+    if (!newStudentData.name || !classroomId) return;
 
     // 1. Create the student
     const studentRef = await addDoc(
@@ -171,7 +185,7 @@ export default function StudentsPage() {
             <DialogHeader>
               <DialogTitle>Add New Student</DialogTitle>
               <DialogDescription>
-                Enter the student's details and assign them to a class.
+                Enter the student's details and assign them to a class. An admission number will be generated automatically.
               </DialogDescription>
             </DialogHeader>
             <form onSubmit={handleAddStudent} className="grid gap-4 py-4">
@@ -179,10 +193,6 @@ export default function StudentsPage() {
                 <div className="space-y-2">
                   <Label htmlFor="name">Student Name</Label>
                   <Input id="name" name="name" placeholder="John Doe" required />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="admissionNumber">Admission Number</Label>
-                  <Input id="admissionNumber" name="admissionNumber" placeholder="JKS-00123" required />
                 </div>
                  <div className="space-y-2">
                    <Label htmlFor="classroomId">Classroom</Label>
