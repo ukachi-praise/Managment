@@ -31,12 +31,12 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Separator } from '@/components/ui/separator';
 
 // --- TYPE DEFINITIONS ---
-type StudentData = { id: string; name: string; admissionNumber: string };
-type Classroom = { id: string; name: string; teacherName?: string; };
-type SchoolSettingsData = { currentSession: string; currentTermId: string; daysSchoolOpened: number; nextTermResumptionDate: Timestamp | Date | string; };
-type TemplateSettings = { studentInfo: { fontSize: number; visible: boolean; }; header: { visible: boolean; }; subjectsTable: { visible: boolean; }; summary: { visible: boolean; }; softSkills: { visible: boolean; }; gradingKey: { visible: boolean; }; remarks: { visible: boolean; }; signatures: { visible: boolean; }; };
-type SavedTemplateData = { name: string; schoolName: string; settings: TemplateSettings; };
-type ResultEntry = { subjectName: string; ca1: number | null; ca2: number | null; exam: number | null; total: number; grade: string; remark: string; subSubjects?: string[] };
+export type StudentData = { id: string; name: string; admissionNumber: string };
+export type Classroom = { id: string; name: string; teacherName?: string; };
+export type SchoolSettingsData = { currentSession: string; currentTermId: string; daysSchoolOpened: number; nextTermResumptionDate: Timestamp | Date | string; };
+export type TemplateSettings = { studentInfo: { fontSize: number; visible: boolean; }; header: { visible: boolean; }; subjectsTable: { visible: boolean; }; summary: { visible: boolean; }; softSkills: { visible: boolean; }; gradingKey: { visible: boolean; }; remarks: { visible: boolean; }; signatures: { visible: boolean; }; };
+export type SavedTemplateData = { name: string; schoolName: string; settings: TemplateSettings; };
+export type ResultEntry = { subjectName: string; ca1: number | null; ca2: number | null; exam: number | null; total: number; grade: string; remark: string; subSubjects?: string[] };
 type Subject = { id: string; name: string; subSubjects?: string[] };
 
 // Represents a single subject's scores within the main result document
@@ -47,7 +47,7 @@ type SubjectScore = {
 };
 
 // Represents the entire result document for a term
-type TermResult = {
+export type TermResult = {
   scores: Record<string, SubjectScore>; // subjectId -> SubjectScore
   studentId: string;
   termId: string;
@@ -74,55 +74,59 @@ const StudentInfoDetail = ({ label, value, isLoading = false }: { label: string,
 interface ResultSheetProps {
   student: StudentData;
   classroom: Classroom;
+  templateData?: SavedTemplateData; // Optional, for template builder
+  isForTemplateBuilder?: boolean; // Flag to indicate context
+  resultEntries?: ResultEntry[]; // Optional, for template builder
+  overall?: { average: string, grade: string }; // Optional, for template builder
 }
 
 // --- MAIN COMPONENT ---
-export function ResultSheet({ student, classroom }: ResultSheetProps) {
+export function ResultSheet({ 
+  student, 
+  classroom, 
+  templateData,
+  isForTemplateBuilder = false,
+  resultEntries: templateResultEntries, // Renamed to avoid conflict
+  overall: templateOverall // Renamed to avoid conflict
+}: ResultSheetProps) {
   const firestore = useFirestore();
   const studentId = student.id;
-  const classroomId = classroom.id;
-
+  
   const [termResult, setTermResult] = useState<TermResult | null>(null);
 
   // --- DATA FETCHING ---
-  const settingsRef = useMemoFirebase(() => (firestore ? doc(firestore, 'schoolSettings', 'current') : null), [firestore]);
+  const settingsRef = useMemoFirebase(() => (!isForTemplateBuilder && firestore ? doc(firestore, 'schoolSettings', 'current') : null), [firestore, isForTemplateBuilder]);
   const { data: schoolSettings, isLoading: settingsLoading } = useDoc<SchoolSettingsData>(settingsRef);
   
-  const templateRef = useMemoFirebase(() => (firestore ? doc(firestore, 'resultTemplates', 'main-template') : null), [firestore]);
+  const templateRef = useMemoFirebase(() => (!isForTemplateBuilder && firestore ? doc(firestore, 'resultTemplates', 'main-template') : null), [firestore, isForTemplateBuilder]);
   const { data: savedTemplateData, isLoading: templateLoading } = useDoc<SavedTemplateData>(templateRef);
   
-  const subjectsQuery = useMemoFirebase(() => (firestore ? collection(firestore, 'subjects') : null), [firestore]);
+  const subjectsQuery = useMemoFirebase(() => (!isForTemplateBuilder && firestore ? collection(firestore, 'subjects') : null), [firestore, isForTemplateBuilder]);
   const { data: allSubjects, isLoading: subjectsLoading } = useCollection<Subject>(subjectsQuery);
 
   const termResultRef = useMemoFirebase(() => {
-      if (!firestore || !studentId || !schoolSettings) return null;
-      // Construct the ID for the result document based on the current school settings
+      if (isForTemplateBuilder || !firestore || !studentId || !schoolSettings) return null;
       const termResultId = `${schoolSettings.currentSession.replace('/', '-')}-${schoolSettings.currentTermId}`;
       return doc(firestore, 'students', studentId, 'results', termResultId);
-  }, [firestore, studentId, schoolSettings]);
+  }, [firestore, studentId, schoolSettings, isForTemplateBuilder]);
   
-  // Real-time subscription to the student's result document for the current term
   useEffect(() => {
-    if (!termResultRef) {
-        setTermResult(null); // Clear data if settings change and ref becomes null
+    if (isForTemplateBuilder || !termResultRef) {
+        setTermResult(null);
         return;
     };
-
     const unsubscribe = onSnapshot(termResultRef, (snap) => {
-      if (snap.exists()) {
-        setTermResult(snap.data() as TermResult);
-      } else {
-        setTermResult(null); // Document doesn't exist for this term
-      }
+      if (snap.exists()) setTermResult(snap.data() as TermResult);
+      else setTermResult(null);
     });
-
     return () => unsubscribe();
-  }, [termResultRef]);
+  }, [termResultRef, isForTemplateBuilder]);
 
 
   // --- DATA PROCESSING & MEMOIZATION ---
-  const settings = savedTemplateData?.settings || initialSettings;
-  const schoolName = savedTemplateData?.schoolName || 'JustVision Kiddies School';
+  const finalTemplateData = templateData || savedTemplateData;
+  const settings = finalTemplateData?.settings || initialSettings;
+  const schoolName = finalTemplateData?.schoolName || 'JustVision Kiddies School';
 
   const allSubjectsMap = useMemo(() => {
     if (!allSubjects) return new Map();
@@ -130,65 +134,52 @@ export function ResultSheet({ student, classroom }: ResultSheetProps) {
   }, [allSubjects]);
 
 
-  const resultEntries: ResultEntry[] = useMemo(() => {
-    if (!termResult || !termResult.scores || !allSubjectsMap.size) return [];
-
+  const liveResultEntries: ResultEntry[] = useMemo(() => {
+    if (isForTemplateBuilder || !termResult || !termResult.scores || !allSubjectsMap.size) return [];
     return Object.entries(termResult.scores)
       .map(([subjectId, score]) => {
         const subject = allSubjectsMap.get(subjectId);
         if (!subject) return null;
-        
         const total = (score.ca1 || 0) + (score.ca2 || 0) + (score.exam || 0);
         const { grade, remark } = calculateGrade(total);
-
-        return {
-          subjectName: subject.name,
-          subSubjects: subject.subSubjects,
-          ca1: score.ca1,
-          ca2: score.ca2,
-          exam: score.exam,
-          total,
-          grade,
-          remark,
-        };
+        return { subjectName: subject.name, subSubjects: subject.subSubjects, ca1: score.ca1, ca2: score.ca2, exam: score.exam, total, grade, remark };
       })
       .filter((r): r is ResultEntry => r !== null)
       .sort((a, b) => a.subjectName.localeCompare(b.subjectName));
-  }, [termResult, allSubjectsMap]);
+  }, [termResult, allSubjectsMap, isForTemplateBuilder]);
 
-  const overall = useMemo(() => {
-    if (resultEntries.length === 0) return { average: 0, grade: 'N/A' };
-    const totalSum = resultEntries.reduce((sum, entry) => sum + entry.total, 0);
-    const average = totalSum / resultEntries.length;
+  const liveOverall = useMemo(() => {
+    if (isForTemplateBuilder || liveResultEntries.length === 0) return { average: '0.00', grade: 'N/A' };
+    const totalSum = liveResultEntries.reduce((sum, entry) => sum + entry.total, 0);
+    const average = totalSum / liveResultEntries.length;
     const { grade } = calculateGrade(average);
     return { average: average.toFixed(2), grade };
-  }, [resultEntries]);
+  }, [liveResultEntries, isForTemplateBuilder]);
+
+  const resultEntries = isForTemplateBuilder ? templateResultEntries : liveResultEntries;
+  const overall = isForTemplateBuilder ? templateOverall : liveOverall;
 
   const formattedResumptionDate = useMemo(() => {
+    if (isForTemplateBuilder) return format(new Date(), 'PPP');
     if (!schoolSettings?.nextTermResumptionDate) return 'N/A';
     const date = schoolSettings.nextTermResumptionDate instanceof Timestamp
       ? schoolSettings.nextTermResumptionDate.toDate()
       : new Date(schoolSettings.nextTermResumptionDate);
     return format(date, 'PPP');
-  }, [schoolSettings]);
+  }, [schoolSettings, isForTemplateBuilder]);
 
-  // Use the session/term from the fetched result document, which is the source of truth
-  const reportSession = termResult?.sessionId || schoolSettings?.currentSession;
-  const reportTermId = termResult?.termId || schoolSettings?.currentTermId;
+  const reportSession = isForTemplateBuilder ? '2023/2024' : (termResult?.sessionId || schoolSettings?.currentSession);
+  const reportTermId = isForTemplateBuilder ? 'term1' : (termResult?.termId || schoolSettings?.currentTermId);
   const reportTermName = reportTermId ? termNames[reportTermId] : 'N/A';
 
-  const isLoading = settingsLoading || templateLoading || subjectsLoading || !termResultRef;
+  const isLoading = !isForTemplateBuilder && (settingsLoading || templateLoading || subjectsLoading || !termResultRef);
 
 
   if (isLoading) {
-    return (
-        <div className="relative mx-auto w-full aspect-[210/297] bg-white p-6 shadow-lg">
-            <Skeleton className="h-full w-full" />
-        </div>
-    );
+    return <div className="relative mx-auto w-full aspect-[210/297] bg-white p-6 shadow-lg"><Skeleton className="h-full w-full" /></div>;
   }
   
-  if (!student) {
+  if (!isForTemplateBuilder && !student) {
       return <div className="rounded-lg border bg-card p-8">Student data could not be loaded.</div>
   }
 
@@ -236,10 +227,10 @@ export function ResultSheet({ student, classroom }: ResultSheetProps) {
                             <div className="flex gap-4">
                                 <div className="w-1/3"><StudentInfoDetail label="Term" value={reportTermName} /></div>
                                 <div className="w-1/3"><StudentInfoDetail label="Session" value={reportSession} /></div>
-                                <div className="w-1/3"><StudentInfoDetail label="Days Attended" value={termResult?.daysAttended?.toString() || '--'} /></div>
+                                <div className="w-1/3"><StudentInfoDetail label="Days Attended" value={isForTemplateBuilder ? '--' : termResult?.daysAttended?.toString() || '--'} /></div>
                             </div>
                             <div className="flex gap-4">
-                                <div className="w-1/3"><StudentInfoDetail label="School Open" value={schoolSettings?.daysSchoolOpened?.toString()} /></div>
+                                <div className="w-1/3"><StudentInfoDetail label="School Open" value={isForTemplateBuilder ? '65' : schoolSettings?.daysSchoolOpened?.toString()} /></div>
                                 <div className="w-1/3"><StudentInfoDetail label="Resumption" value={formattedResumptionDate} /></div>
                                 <div className="w-1/3"><StudentInfoDetail label="Class Teacher" value={classroom?.teacherName || 'N/A'} /></div>
                             </div>
@@ -261,9 +252,9 @@ export function ResultSheet({ student, classroom }: ResultSheetProps) {
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                            {resultEntries.length > 0 ? (
-                                    resultEntries.map(entry => (
-                                        <TableRow key={entry.subjectName}>
+                            {resultEntries && resultEntries.length > 0 ? (
+                                    resultEntries.map((entry, index) => (
+                                        <TableRow key={entry.subjectName + index}>
                                             <TableCell className="border-b border-r border-black p-2 text-base">
                                                 <div className="font-semibold">{entry.subjectName}</div>
                                                 {entry.subSubjects && entry.subSubjects.length > 0 && (
@@ -284,7 +275,7 @@ export function ResultSheet({ student, classroom }: ResultSheetProps) {
                                 ) : (
                                     <TableRow>
                                       <TableCell colSpan={6} className="h-24 text-center border-b border-black p-2 text-base">
-                                        No scores entered for this term.
+                                        {isForTemplateBuilder ? 'Subjects will be shown here.' : 'No scores entered for this term.'}
                                       </TableCell>
                                     </TableRow>
                                 )}
@@ -295,8 +286,8 @@ export function ResultSheet({ student, classroom }: ResultSheetProps) {
                  {settings.summary.visible && (
                     <div className="mt-2 flex justify-end">
                         <div className="w-1/2 rounded-md border border-black p-2 text-sm space-y-1">
-                            <div className="flex justify-between"><span className="font-semibold text-black">Overall Average:</span><span className="text-black">{overall.average}%</span></div>
-                            <div className="flex justify-between"><span className="font-semibold text-black">Overall Grade:</span><span className="text-black">{overall.grade}</span></div>
+                            <div className="flex justify-between"><span className="font-semibold text-black">Overall Average:</span><span className="text-black">{overall?.average}%</span></div>
+                            <div className="flex justify-between"><span className="font-semibold text-black">Overall Grade:</span><span className="text-black">{overall?.grade}</span></div>
                         </div>
                     </div>
                 )}
@@ -348,8 +339,8 @@ export function ResultSheet({ student, classroom }: ResultSheetProps) {
                                     </TableHeader>
                                     <TableBody>
                                         <TableRow><TableCell className="p-0.5 h-auto text-[9px] border border-black">80 – 100</TableCell><TableCell className="p-0.5 h-auto text-[9px] border border-black">A</TableCell><TableCell className="p-0.5 h-auto text-[9px] border border-black">Excellent</TableCell></TableRow>
-                                        <TableRow><TableCell className="p-0.5 h-auto text-[9px] border border-black">70 – 79</TableCell><TableCell className="p-0.5 h-auto text-[9px] border border-black">B</TableCell><TableCell className="p-0.5 h-auto text-[9px] border border-black">Very Good</TableCell></TableRow>
-                                        <TableRow><TableCell className="p-0.5 h-auto text-[9px] border border-black">60 – 69</TableCell><TableCell className="p-0.5 h-auto text-[9px] border border-black">C</TableCell><TableCell className="p-0.5 h-auto text-[9px] border border-black">Good</TableCell></TableRow>
+                                        <TableRow><TableCell className="p-0.5 h-auto text-[9px] border border-black">70 – 79</TableCell><TableCell className="p-0.5 h-auto text-[9px] border border-black">B</TableCell><TableCell className="p-0.5 h-auto text-[9px] border-black">Very Good</TableCell></TableRow>
+                                        <TableRow><TableCell className="p-0.5 h-auto text-[9px] border border-black">60 – 69</TableCell><TableCell className="p-0.5 h-auto text-[9px] border-black">C</TableCell><TableCell className="p-0.5 h-auto text-[9px] border border-black">Good</TableCell></TableRow>
                                         <TableRow><TableCell className="p-0.5 h-auto text-[9px] border border-black">50 – 59</TableCell><TableCell className="p-0.5 h-auto text-[9px] border border-black">D</TableCell><TableCell className="p-0.5 h-auto text-[9px] border border-black">Fair</TableCell></TableRow>
                                         <TableRow><TableCell className="p-0.5 h-auto text-[9px] border border-black">0 – 49</TableCell><TableCell className="p-0.5 h-auto text-[9px] border border-black">F</TableCell><TableCell className="p-0.5 h-auto text-[9px] border border-black">Fail</TableCell></TableRow>
                                     </TableBody>
@@ -391,5 +382,3 @@ export function ResultSheet({ student, classroom }: ResultSheetProps) {
     </>
   );
 }
-
-    
