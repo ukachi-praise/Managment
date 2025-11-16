@@ -18,8 +18,15 @@ export default function AuthGuard({
   const router = useRouter();
   const { auth, firestore, isCoreLoading, isUserLoading, user } = useFirebase();
   const [isCheckingPermissions, setIsCheckingPermissions] = useState(true);
+  const pathname = usePathname();
 
   useEffect(() => {
+    // Exclude login pages from the auth guard logic
+    if (pathname.endsWith('/login')) {
+      setIsCheckingPermissions(false);
+      return;
+    }
+
     // Don't do anything until Firebase is ready and the initial user state is known.
     if (isCoreLoading || isUserLoading) {
       return;
@@ -28,7 +35,7 @@ export default function AuthGuard({
     const checkPermissions = async () => {
       if (!user) {
         // Depending on the route, redirect to the correct login page
-        const loginPath = window.location.pathname.startsWith('/admin') ? '/admin/login' : '/login';
+        const loginPath = pathname.startsWith('/admin') ? '/admin/login' : '/login';
         router.replace(loginPath);
         return;
       }
@@ -59,7 +66,12 @@ export default function AuthGuard({
 
     checkPermissions();
 
-  }, [router, allow, auth, firestore, user, isCoreLoading, isUserLoading]);
+  }, [router, allow, auth, firestore, user, isCoreLoading, isUserLoading, pathname]);
+
+  // If the page is a login page, render it directly without a loader.
+  if (pathname.endsWith('/login')) {
+    return <>{children}</>;
+  }
 
   if (isCheckingPermissions) {
     return (

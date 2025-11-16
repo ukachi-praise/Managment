@@ -5,21 +5,12 @@ import { Header } from '@/components/shared/header';
 import { SidebarNav } from '@/components/shared/sidebar-nav';
 import { SidebarProvider } from '@/components/ui/sidebar';
 import AuthGuard from '@/components/auth/AuthGuard';
-import { usePathname } from 'next/navigation';
-
 
 export default function TeacherLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const pathname = usePathname();
-
-  // Login pages should not have the main layout
-  if (pathname === '/login' || pathname === '/admin/login') {
-      return <>{children}</>;
-  }
-
   return (
     <AuthGuard allow={["teacher", "admin"]}>
       <SidebarProvider>
