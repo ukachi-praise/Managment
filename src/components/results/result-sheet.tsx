@@ -56,6 +56,8 @@ export type TermResult = {
   sessionId: string;
   classroomId: string;
   daysAttended?: number;
+  teacherRemark?: string;
+  headTeacherRemark?: string;
 };
 
 
@@ -349,7 +351,7 @@ export function ResultSheet({
                                     <TableBody>
                                         <TableRow><TableCell className="p-0.5 h-auto text-[8px] border border-black">80 – 100</TableCell><TableCell className="p-0.5 h-auto text-[8px] border border-black">A</TableCell><TableCell className="p-0.5 h-auto text-[8px] border border-black">Excellent</TableCell></TableRow>
                                         <TableRow><TableCell className="p-0.5 h-auto text-[8px] border border-black">70 – 79</TableCell><TableCell className="p-0.5 h-auto text-[8px] border border-black">B</TableCell><TableCell className="p-0.5 h-auto text-[8px] border border-black">Very Good</TableCell></TableRow>
-                                        <TableRow><TableCell className="p-0.5 h-auto text-[8px] border border-black">60 – 69</TableCell><TableCell className="p-0.5 h-auto text-[8px] border-black">C</TableCell><TableCell className="p-0.5 h-auto text-[8px] border border-black">Good</TableCell></TableRow>
+                                        <TableRow><TableCell className="p-0.5 h-auto text-[8px] border border-black">60 – 69</TableCell><TableCell className="p-0.5 h-auto text-[8px] border border-black">C</TableCell><TableCell className="p-0.5 h-auto text-[8px] border border-black">Good</TableCell></TableRow>
                                         <TableRow><TableCell className="p-0.5 h-auto text-[8px] border border-black">50 – 59</TableCell><TableCell className="p-0.5 h-auto text-[8px] border border-black">D</TableCell><TableCell className="p-0.5 h-auto text-[8px] border border-black">Fair</TableCell></TableRow>
                                         <TableRow><TableCell className="p-0.5 h-auto text-[8px] border border-black">0 – 49</TableCell><TableCell className="p-0.5 h-auto text-[8px] border border-black">F</TableCell><TableCell className="p-0.5 h-auto text-[8px] border border-black">Fail</TableCell></TableRow>
                                     </TableBody>
@@ -406,8 +408,8 @@ export function ResultSheet({
 
                         {settings.remarks.visible && (
                             <div className="pt-1 space-y-1">
-                                <div><h3 className="font-bold text-black text-[8px]">Teacher's Remarks:</h3><p className="min-h-[20px] rounded-md border-b border-black p-1 text-[8px]">A brilliant student...</p></div>
-                                <div><h3 className="font-bold text-black text-[8px]">Head Teacher's Remarks:</h3><p className="min-h-[20px] rounded-md border-b border-black p-1 text-[8px]">Excellent performance...</p></div>
+                                <div><h3 className="font-bold text-black text-[8px]">Teacher's Remarks:</h3><p className="min-h-[20px] rounded-md border-b border-black p-1 text-[8px]">{termResult?.teacherRemark || ' '}</p></div>
+                                <div><h3 className="font-bold text-black text-[8px]">Head Teacher's Remarks:</h3><p className="min-h-[20px] rounded-md border-b border-black p-1 text-[8px]">{termResult?.headTeacherRemark || ' '}</p></div>
                             </div>
                         )}
                         {settings.signatures.visible && (
