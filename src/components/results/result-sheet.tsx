@@ -201,7 +201,7 @@ export function ResultSheet({
 
   // --- RENDER ---
   return (
-    <div className="relative w-[794px] h-[1123px] bg-white text-black print:shadow-none print:m-0 print:p-0 print:w-full print:h-auto flex flex-col p-6">
+    <div className="relative w-[794px] min-h-[1123px] bg-white text-black print:shadow-none print:m-0 print:p-0 print:w-full print:h-auto flex flex-col p-6">
         <div className="absolute inset-0 z-0 flex items-center justify-center pointer-events-none">
             <Image src="/Logo.jpg" alt="School Watermark" width={400} height={400} className="opacity-10" />
         </div>
@@ -256,19 +256,19 @@ export function ResultSheet({
                         <Table>
                             <TableHeader>
                                 <TableRow>
-                                    <TableHead className="border border-black p-0.5 h-auto text-[10px] text-black">Subject</TableHead>
-                                    <TableHead className="text-center border border-black p-0.5 h-auto text-[10px] text-black">CA1 (20)</TableHead>
-                                    <TableHead className="text-center border border-black p-0.5 h-auto text-[10px] text-black">CA2 (20)</TableHead>
-                                    <TableHead className="text-center border border-black p-0.5 h-auto text-[10px] text-black">Exam (60)</TableHead>
-                                    <TableHead className="text-center border border-black p-0.5 h-auto text-[10px] text-black">Total (100)</TableHead>
-                                    <TableHead className="border border-black p-0.5 h-auto text-[10px] text-black">Remark</TableHead>
+                                    <TableHead className="border border-black p-0.5 h-auto text-[8px] text-black">Subject</TableHead>
+                                    <TableHead className="text-center border border-black p-0.5 h-auto text-[8px] text-black">CA1 (20)</TableHead>
+                                    <TableHead className="text-center border border-black p-0.5 h-auto text-[8px] text-black">CA2 (20)</TableHead>
+                                    <TableHead className="text-center border border-black p-0.5 h-auto text-[8px] text-black">Exam (60)</TableHead>
+                                    <TableHead className="text-center border border-black p-0.5 h-auto text-[8px] text-black">Total (100)</TableHead>
+                                    <TableHead className="border border-black p-0.5 h-auto text-[8px] text-black">Remark</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
                             {resultEntries && resultEntries.length > 0 ? (
                                     resultEntries.map((entry, index) => (
                                         <TableRow key={entry.subjectName + index}>
-                                            <TableCell className="border-b border-r border-black p-0.5 text-[10px]">
+                                            <TableCell className="border-b border-r border-black p-0.5 text-[8px]">
                                                 <div className="font-semibold">{entry.subjectName}</div>
                                                 {entry.subSubjects && entry.subSubjects.length > 0 && (
                                                     <div className="pl-2 text-xs text-muted-foreground">
@@ -278,11 +278,11 @@ export function ResultSheet({
                                                     </div>
                                                 )}
                                             </TableCell>
-                                            <TableCell className="text-center border-b border-r border-black p-0.5 text-[10px]">{entry.ca1 ?? '--'}</TableCell>
-                                            <TableCell className="text-center border-b border-r border-black p-0.5 text-[10px]">{entry.ca2 ?? '--'}</TableCell>
-                                            <TableCell className="text-center border-b border-r border-black p-0.5 text-[10px]">{entry.exam ?? '--'}</TableCell>
-                                            <TableCell className="text-center border-b border-r border-black p-0.5 text-[10px] font-semibold">{entry.total}</TableCell>
-                                            <TableCell className="border-b border-black p-0.5 text-[10px]">{entry.remark}</TableCell>
+                                            <TableCell className="text-center border-b border-r border-black p-0.5 text-[8px]">{entry.ca1 ?? '--'}</TableCell>
+                                            <TableCell className="text-center border-b border-r border-black p-0.5 text-[8px]">{entry.ca2 ?? '--'}</TableCell>
+                                            <TableCell className="text-center border-b border-r border-black p-0.5 text-[8px]">{entry.exam ?? '--'}</TableCell>
+                                            <TableCell className="text-center border-b border-r border-black p-0.5 text-[8px] font-semibold">{entry.total}</TableCell>
+                                            <TableCell className="border-b border-black p-0.5 text-[8px]">{entry.remark}</TableCell>
                                         </TableRow>
                                     ))
                                 ) : (
@@ -312,14 +312,14 @@ export function ResultSheet({
                           {settings.gradingKey.visible && (
                               <div className="pt-1 flex gap-x-4">
                                   <div className="space-y-1">
-                                      <h3 className="font-bold text-black text-[9px]">Grading Key</h3>
+                                      <h3 className="font-bold text-black text-[8px]">Grading Key</h3>
                                       <Table>
                                           <TableHeader>
                                               <TableRow><TableHead className="p-0.5 h-auto text-[8px] border border-black text-black">Score</TableHead><TableHead className="p-0.5 h-auto text-[8px] border border-black text-black">Grade</TableHead><TableHead className="p-0.5 h-auto text-[8px] border border-black text-black">Remark</TableHead></TableRow>
                                           </TableHeader>
                                           <TableBody>
                                               <TableRow><TableCell className="p-0.5 h-auto text-[8px] border border-black">80 – 100</TableCell><TableCell className="p-0.5 h-auto text-[8px] border border-black">A</TableCell><TableCell className="p-0.5 h-auto text-[8px] border border-black">Excellent</TableCell></TableRow>
-                                              <TableRow><TableCell className="p-0.5 h-auto text-[8px] border border-black">70 – 79</TableCell><TableCell className="p-0.5 h-auto text-[8px] border border-black">B</TableCell><TableCell className="p-0.5 h-auto text-[8px] border border-black">Very Good</TableCell></TableRow>
+                                              <TableRow><TableCell className="p-0.5 h-auto text-[8px] border border-black">70 – 79</TableCell><TableCell className="p-0.5 h-auto text-[8px] border-black">B</TableCell><TableCell className="p-0.5 h-auto text-[8px] border border-black">Very Good</TableCell></TableRow>
                                               <TableRow><TableCell className="p-0.5 h-auto text-[8px] border border-black">60 – 69</TableCell><TableCell className="p-0.5 h-auto text-[8px] border border-black">C</TableCell><TableCell className="p-0.5 h-auto text-[8px] border border-black">Good</TableCell></TableRow>
                                               <TableRow><TableCell className="p-0.5 h-auto text-[8px] border border-black">50 – 59</TableCell><TableCell className="p-0.5 h-auto text-[8px] border border-black">D</TableCell><TableCell className="p-0.5 h-auto text-[8px] border border-black">Fair</TableCell></TableRow>
                                               <TableRow><TableCell className="p-0.5 h-auto text-[8px] border border-black">0 – 49</TableCell><TableCell className="p-0.5 h-auto text-[8px] border border-black">F</TableCell><TableCell className="p-0.5 h-auto text-[8px] border border-black">Fail</TableCell></TableRow>
@@ -327,9 +327,9 @@ export function ResultSheet({
                                       </Table>
                                   </div>
                                   
-                                  <div className="flex-1 grid grid-cols-2 gap-x-4">
+                                  <div className="flex-1 grid grid-cols-[1fr_2fr] gap-x-4">
                                       <div className="space-y-1">
-                                          <h3 className="font-bold text-black text-[9px]">Skill Score Rating</h3>
+                                          <h3 className="font-bold text-black text-[8px]">Skill Score Rating</h3>
                                           <Table>
                                               <TableHeader>
                                                   <TableRow><TableHead className="p-0.5 h-auto text-[8px] border border-black text-black">Score</TableHead><TableHead className="p-0.5 h-auto text-[8px] border border-black text-black">Remark</TableHead></TableRow>
@@ -345,7 +345,7 @@ export function ResultSheet({
                                       </div>
                                       {settings.softSkills.visible && (
                                           <div className="space-y-1">
-                                              <h3 className="font-bold text-black text-[9px]">Soft Skills Assessment</h3>
+                                              <h3 className="font-bold text-black text-[8px]">Soft Skills Assessment</h3>
                                                 <div className="flex gap-x-2">
                                                     <Table>
                                                         <TableBody>
@@ -375,14 +375,14 @@ export function ResultSheet({
                           )}
                           {settings.remarks.visible && (
                               <div className="pt-1 space-y-1">
-                                  <div><h3 className="font-bold text-black text-[10px]">Teacher's Remarks:</h3><p className="min-h-[20px] rounded-md border-b border-black p-1 text-[10px]">A brilliant student...</p></div>
-                                  <div><h3 className="font-bold text-black text-[10px]">Head Teacher's Remarks:</h3><p className="min-h-[20px] rounded-md border-b border-black p-1 text-[10px]">Excellent performance...</p></div>
+                                  <div><h3 className="font-bold text-black text-[8px]">Teacher's Remarks:</h3><p className="min-h-[20px] rounded-md border-b border-black p-1 text-[8px]">A brilliant student...</p></div>
+                                  <div><h3 className="font-bold text-black text-[8px]">Head Teacher's Remarks:</h3><p className="min-h-[20px] rounded-md border-b border-black p-1 text-[8px]">Excellent performance...</p></div>
                               </div>
                           )}
                           {settings.signatures.visible && (
                               <div className="flex justify-between items-end pt-2">
-                                  <div className="text-center w-36"><div className="border-t border-black pt-1 text-[10px]">Class Teacher's Signature</div></div>
-                                  <div className="text-center w-36"><div className="border-t border-black pt-1 text-[10px]">Head Teacher's Signature</div></div>
+                                  <div className="text-center w-36"><div className="border-t border-black pt-1 text-[8px]">Class Teacher's Signature</div></div>
+                                  <div className="text-center w-36"><div className="border-t border-black pt-1 text-[8px]">Head Teacher's Signature</div></div>
                               </div>
                           )}
                       </section>
