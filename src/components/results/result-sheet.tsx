@@ -339,7 +339,7 @@ export function ResultSheet({
                 <footer className="text-[9px] print:break-before-page" style={{ pageBreakBefore: 'always' }}>
                       <section className='border border-black p-1 flex flex-col gap-1'>
                           {settings.gradingKey.visible && (
-                               <div className="grid grid-cols-2 gap-x-4 pt-1">
+                               <div className="grid grid-cols-[auto_auto_1fr] gap-x-2 pt-1">
                                     <div className="space-y-1">
                                       <h3 className="font-bold text-black text-[8px]">Grading Key</h3>
                                       <Table>
@@ -357,7 +357,7 @@ export function ResultSheet({
                                   </div>
                                   
                                     {settings.softSkills.visible && (
-                                        <div className="grid grid-cols-[1fr_2fr] gap-x-2">
+                                        <>
                                             <div className="space-y-1">
                                                 <h3 className="font-bold text-black text-[8px]">Skill Score Rating</h3>
                                                 <Table>
@@ -398,7 +398,7 @@ export function ResultSheet({
                                                         </Table>
                                                     </div>
                                             </div>
-                                        </div>
+                                        </>
                                     )}
                                   </div>
                           )}
