@@ -200,6 +200,17 @@ export function ResultSheet({
   const reportTermName = reportTermId ? termNames[reportTermId] : 'N/A';
 
   const isLoading = !isForTemplateBuilder && (settingsLoading || templateLoading || subjectsLoading || !termResultRef);
+  
+  const daysAbsent = useMemo(() => {
+    if (isForTemplateBuilder) return '--';
+    const attended = termResult?.daysAttended;
+    const opened = schoolSettings?.daysSchoolOpened;
+    if (typeof attended === 'number' && typeof opened === 'number' && attended >= 0 && opened >= 0) {
+      const absent = opened - attended;
+      return absent >= 0 ? absent.toString() : 'N/A';
+    }
+    return '--';
+  }, [isForTemplateBuilder, termResult, schoolSettings]);
 
 
   if (isLoading) {
@@ -259,7 +270,7 @@ export function ResultSheet({
                             </div>
                             <div className="flex gap-4">
                                 <div className="w-1/3"><StudentInfoDetail label="Term" value={reportTermName} /></div>
-                                <div className="w-1/3"><StudentInfoDetail label="Session" value={reportSession} /></div>
+                                <div className="w-1/3"><StudentInfoDetail label="Days Absent" value={daysAbsent} /></div>
                                 <div className="w-1/3"><StudentInfoDetail label="Days Attended" value={isForTemplateBuilder ? '--' : termResult?.daysAttended?.toString() || '--'} /></div>
                             </div>
                             <div className="flex gap-4">
@@ -371,7 +382,7 @@ export function ResultSheet({
                                             <TableRow><TableCell className="p-0.5 h-auto text-[8px] border border-black">3</TableCell><TableCell className="p-0.5 h-auto text-[8px] border border-black">Good</TableCell></TableRow>
                                             <TableRow><TableCell className="p-0.5 h-auto text-[8px] border border-black">2</TableCell><TableCell className="p-0.5 h-auto text-[8px] border border-black">Fair</TableCell></TableRow>
                                             <TableRow><TableCell className="p-0.5 h-auto text-[8px] border border-black">1</TableCell><TableCell className="p-0.5 h-auto text-[8px] border border-black">Poor</TableCell></TableRow>
-                                            <TableRow><TableCell className="p-0.5 h-auto text-[8px] border-black opacity-0">0</TableCell><TableCell className="p-0.5 h-auto text-[8px] border-black opacity-0">Hidden</TableCell></TableRow>
+                                            <TableRow><TableCell className="p-0.5 h-auto text-[8px] border border-black opacity-0">0</TableCell><TableCell className="p-0.5 h-auto text-[8px] border-black opacity-0">Hidden</TableCell></TableRow>
                                         </TableBody>
                                     </Table>
                                 </div>
