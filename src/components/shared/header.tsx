@@ -14,7 +14,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { LogOut, Settings, User as UserIcon } from 'lucide-react';
 import { SidebarTrigger } from '../ui/sidebar';
 import { useSidebar } from '../ui/sidebar';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname, useParams } from 'next/navigation';
 import { useAuth, useUser } from '@/firebase/provider';
 import { signOut } from 'firebase/auth';
 import { Skeleton } from '../ui/skeleton';
@@ -24,6 +24,8 @@ import Link from 'next/link';
 export function Header() {
   const { isMobile } = useSidebar();
   const router = useRouter();
+  const pathname = usePathname();
+  const params = useParams();
   const auth = useAuth();
   const { user, isLoading } = useUser();
 
@@ -35,12 +37,14 @@ export function Header() {
   };
   
   const getProfileLink = () => {
-    // This is a simplified check. A real app might have more complex logic
-    // based on the user's role stored in Firestore.
-    if(router.toString().includes('/admin')) {
-        return '/admin/profile';
+    if (pathname.startsWith('/admin')) {
+        return '/admin/profile'; // Assuming admins have a profile page
     }
-    return '/teacher/profile';
+    if (pathname.startsWith('/teacher/class/')) {
+        const classroomId = params.classroomId;
+        return `/teacher/class/${classroomId}/profile`;
+    }
+    return '/teacher/dashboard'; // Fallback
   }
 
   return (
