@@ -306,8 +306,8 @@ export function ResultSheet({
                             </div>
                             <div className="flex gap-4">
                                 <div className="w-1/3"><StudentInfoDetail label="School Open" value={isForTemplateBuilder ? '65' : schoolSettings?.daysSchoolOpened?.toString()} /></div>
+                                <div className="w-1/3"><StudentInfoDetail label="Term Ending" value={reportTermName} /></div>
                                 <div className="w-1/3"><StudentInfoDetail label="Resumption" value={formattedResumptionDate} /></div>
-                                <div className="w-1/3"><StudentInfoDetail label="Class Teacher" value={classroom?.teacherName || 'N/A'} /></div>
                             </div>
                         </div>
                     </div>
@@ -468,3 +468,6 @@ export function ResultSheet({
   );
 }
 
+
+
+    
