@@ -18,12 +18,12 @@ import { calculateGrade } from '@/lib/utils';
 import { Loader2, Save, ArrowLeft } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
+import { RemarkGenerator } from '@/components/teacher/remark-generator';
 
 import {
   useFirestore,
   useCollection,
   useDoc,
-  useUser,
   setDocumentNonBlocking,
 } from '@/firebase';
 
@@ -57,6 +57,8 @@ type TermResult = {
   termId: string;
   sessionId: string;
   classroomId: string;
+  teacherRemark?: string;
+  headTeacherRemark?: string;
 };
 
 
@@ -144,6 +146,8 @@ export default function StudentResultEntryPage() {
           termId: schoolSettings.currentTermId,
           sessionId: schoolSettings.currentSession,
           classroomId,
+          teacherRemark: existingData?.teacherRemark,
+          headTeacherRemark: existingData?.headTeacherRemark,
       });
 
     }, (error) => {
@@ -183,7 +187,13 @@ export default function StudentResultEntryPage() {
 
     setIsSaving(true);
     
-    setDocumentNonBlocking(termResultRef, termResult, { merge: true });
+    // We only want to save the scores part of the object
+    const dataToSave = {
+        ...termResult,
+        scores: termResult.scores 
+    };
+
+    setDocumentNonBlocking(termResultRef, dataToSave, { merge: true });
     
     setTimeout(() => { 
         setIsSaving(false);
@@ -198,6 +208,21 @@ export default function StudentResultEntryPage() {
         }
     }, 1500);
   };
+  
+  const overallAverage = useMemo(() => {
+    if (!termResult?.scores) return 0;
+
+    const scoresArray = Object.values(termResult.scores);
+    if (scoresArray.length === 0) return 0;
+    
+    const totalSum = scoresArray.reduce((sum, score) => {
+        const subjectTotal = (score.ca1 || 0) + (score.ca2 || 0) + (score.exam || 0);
+        return sum + subjectTotal;
+    }, 0);
+    
+    return totalSum / scoresArray.length;
+  }, [termResult]);
+
 
   const pageIsLoading = studentLoading || enrollmentsLoading || classSubjectsLoading || subjectsLoading || settingsLoading || !termResult;
 
@@ -311,13 +336,24 @@ export default function StudentResultEntryPage() {
                 ) : (
                   <Save className="mr-2 h-4 w-4" />
                 )}
-                Save All Scores
+                Save Scores
               </Button>
             </div>
           </>
         )}
       </CardContent>
     </Card>
+
+    {!pageIsLoading && student && (
+        <RemarkGenerator 
+            studentName={student.name}
+            overallAverage={overallAverage}
+            resultRef={termResultRef}
+            initialTeacherRemark={termResult?.teacherRemark}
+            initialHeadTeacherRemark={termResult?.headTeacherRemark}
+        />
+    )}
+
     </div>
   );
 }

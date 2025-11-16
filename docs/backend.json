@@ -125,7 +125,9 @@
         },
         "daysSchoolOpened": { "type": "number" },
         "daysAttended": { "type": "number" },
-        "attendancePercentage": { "type": "number" }
+        "attendancePercentage": { "type": "number" },
+        "teacherRemark": { "type": "string", "description": "The class teacher's remark for the term." },
+        "headTeacherRemark": { "type": "string", "description": "The head teacher's remark for the term." }
       },
       "required": ["studentId", "termId", "sessionId", "classroomId"]
     },
