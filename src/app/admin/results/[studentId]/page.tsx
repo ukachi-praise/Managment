@@ -2,7 +2,7 @@
 'use client';
 
 import { useParams, useRouter } from 'next/navigation';
-import { useMemo } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import {
   useFirestore,
   useDoc,
@@ -14,6 +14,10 @@ import { ResultSheet } from '@/components/results/result-sheet';
 import { Loader2, ArrowLeft, Printer } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import * as htmlToImage from 'html-to-image';
+import jsPDF from 'jspdf';
+import { useToast } from '@/hooks/use-toast';
+
 
 // --- TYPE DEFINITIONS ---
 type Student = { id: string; name: string; admissionNumber: string; };
@@ -24,6 +28,10 @@ export default function ResultSheetPage() {
   const router = useRouter();
   const studentId = params.studentId as string;
   const firestore = useFirestore();
+  const resultSheetRef = useRef<HTMLDivElement>(null);
+  const { toast } = useToast();
+  const [isExporting, setIsExporting] = useState(false);
+
 
   // --- DATA FETCHING ---
   const studentRef = useMemoFirebase(
@@ -47,6 +55,74 @@ export default function ResultSheetPage() {
   const { data: classroom, isLoading: classroomLoading } = useDoc<Classroom>(classroomRef);
 
   const isLoading = studentLoading || classroomLoading || enrollmentsLoading;
+  
+  const exportA4PDF = async () => {
+    const node = resultSheetRef.current;
+    if (!node || !student) {
+        toast({
+            variant: "destructive",
+            title: "Export Error",
+            description: "Could not find the result sheet content to export.",
+        });
+        return;
+    }
+
+    setIsExporting(true);
+    toast({
+        title: "Generating PDF...",
+        description: "Please wait while the report card is being created.",
+    });
+
+    try {
+        // Convert HTML to image
+        const dataUrl = await htmlToImage.toPng(node, { quality: 1.0, pixelRatio: 2 });
+
+        // Create PDF
+        const pdf = new jsPDF("p", "mm", "a4");
+
+        // Get image properties
+        const img = new Image();
+        img.src = dataUrl;
+
+        img.onload = () => {
+            const pageWidth = pdf.internal.pageSize.getWidth(); // 210mm
+            const pageHeight = pdf.internal.pageSize.getHeight(); // 297mm
+
+            const imgWidth = img.width;
+            const imgHeight = img.height;
+
+            // Scale image to fit A4 page while maintaining aspect ratio
+            const ratio = Math.min(pageWidth / imgWidth, pageHeight / imgHeight);
+
+            const renderWidth = imgWidth * ratio;
+            const renderHeight = imgHeight * ratio;
+
+            // Center image on the page
+            const x = (pageWidth - renderWidth) / 2;
+            const y = (pageHeight - renderHeight) / 2;
+
+            pdf.addImage(dataUrl, "PNG", x, y, renderWidth, renderHeight, undefined, "FAST");
+            pdf.save(`${student.name.replace(/ /g, '_')}_Report.pdf`);
+            
+            toast({
+                title: "Download Started",
+                description: "Your PDF has been successfully generated.",
+            });
+        };
+        img.onerror = () => {
+            throw new Error("Failed to load the generated image for PDF creation.");
+        }
+    } catch (error: any) {
+        console.error("PDF Export Error:", error);
+        toast({
+            variant: "destructive",
+            title: "Export Failed",
+            description: error.message || "An unexpected error occurred during PDF generation.",
+        });
+    } finally {
+        setIsExporting(false);
+    }
+  };
   
   if (isLoading) {
     return (
@@ -80,12 +156,12 @@ export default function ResultSheetPage() {
           <ArrowLeft className="mr-2 h-4 w-4" />
           Back to Student List
         </Button>
-        <Button onClick={() => window.print()} disabled={isLoading}>
-          <Printer className="mr-2 h-4 w-4" />
-          Print Report Card
+        <Button onClick={exportA4PDF} disabled={isLoading || isExporting}>
+          {isExporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Printer className="mr-2 h-4 w-4" />}
+          Export as PDF
         </Button>
       </div>
-      <div className="max-w-4xl mx-auto space-y-4">
+      <div className="max-w-4xl mx-auto space-y-4" ref={resultSheetRef}>
          <ResultSheet student={student} classroom={classroom} />
       </div>
     </div>
