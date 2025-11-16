@@ -42,7 +42,7 @@ import { saveAs } from 'file-saver';
 
 
 // --- TYPE DEFINITIONS ---
-type Student = { id: string; name: string; admissionNumber: string };
+type Student = { id: string; name: string; admissionNumber: string; };
 type Classroom = { id: string; name: string; teacherName?: string; };
 type Enrollment = { id: string; studentId: string; classroomId: string };
 type Subject = { id: string; name: string; subSubjects?: string[] };

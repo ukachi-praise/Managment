@@ -2,7 +2,7 @@
 'use client';
 
 import { useParams, useRouter } from 'next/navigation';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import {
   Card,
   CardContent,
@@ -23,15 +23,28 @@ import {
   useCollection,
   useDoc,
   useUser,
+  setDocumentNonBlocking,
 } from '@/firebase';
 import { useMemoFirebase } from '@/firebase/provider';
 import { collection, query, where, doc } from 'firebase/firestore';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { Loader2, ArrowLeft } from 'lucide-react';
+import { Loader2, ArrowLeft, Trash2 } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+import { useToast } from '@/hooks/use-toast';
 
-type Student = { id: string; name: string };
+
+type Student = { id: string; name: string; isDeleted?: boolean; admissionNumber: string };
 type Classroom = { id: string; name: string };
 type Enrollment = { studentId: string; classroomId: string };
 
@@ -41,6 +54,9 @@ export default function TeacherClassPage() {
   const classroomId = params.classroomId as string;
   const firestore = useFirestore();
   const { user } = useUser();
+  const { toast } = useToast();
+
+  const [studentToDelete, setStudentToDelete] = useState<Student | null>(null);
 
   // --- Data Fetching ---
   const classroomRef = useMemoFirebase(
@@ -62,7 +78,7 @@ export default function TeacherClassPage() {
   const { data: enrollments, isLoading: enrollmentsLoading } = useCollection<Enrollment>(enrollmentsQuery);
 
   const allStudentsQuery = useMemoFirebase(
-    () => (firestore && user ? collection(firestore, 'students') : null),
+    () => (firestore && user ? query(collection(firestore, 'students'), where('isDeleted', '!=', true)) : null),
     [firestore, user]
   );
   const { data: allStudents, isLoading: allStudentsLoading } = useCollection<Student>(allStudentsQuery);
@@ -70,13 +86,44 @@ export default function TeacherClassPage() {
   const studentsInClass = useMemo(() => {
       if (!enrollments || !allStudents) return [];
       const studentIds = new Set(enrollments.map(e => e.studentId));
-      return allStudents.filter(s => studentIds.has(s.id)).sort((a,b) => a.name.localeCompare(b.name));
+      return allStudents.filter(s => studentIds.has(s.id) && !s.isDeleted).sort((a,b) => a.name.localeCompare(b.name));
   }, [enrollments, allStudents]);
 
   const isLoading = classroomLoading || enrollmentsLoading || allStudentsLoading;
 
+  const handleDeleteStudent = () => {
+    if (!firestore || !studentToDelete) return;
+    
+    const studentRef = doc(firestore, 'students', studentToDelete.id);
+    setDocumentNonBlocking(studentRef, { isDeleted: true }, { merge: true });
+
+    toast({
+        variant: 'destructive',
+        title: 'Student Removed',
+        description: `${studentToDelete.name} has been removed from the class.`,
+    });
+    setStudentToDelete(null);
+  }
+
   return (
     <div className="space-y-6">
+      <AlertDialog open={!!studentToDelete} onOpenChange={(open) => !open && setStudentToDelete(null)}>
+        <AlertDialogContent>
+            <AlertDialogHeader>
+                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                <AlertDialogDescription>
+                    This will remove <span className="font-semibold">{studentToDelete?.name}</span> from the class. This action marks the student as deleted but does not permanently erase their data.
+                </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={handleDeleteStudent} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                  Continue
+                </AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <div className="flex items-center justify-between">
         <div>
             {classroomLoading ? <h1 className="text-3xl font-bold tracking-tight">Loading...</h1> : <h1 className="text-3xl font-bold tracking-tight">{classroom?.name}</h1>}
@@ -126,8 +173,7 @@ export default function TeacherClassPage() {
                           </Link>
                         </TableCell>
                         <TableCell>
-                          {/* This assumes admissionNumber is on the student doc */}
-                          {(student as any).admissionNumber || 'N/A'}
+                          {student.admissionNumber || 'N/A'}
                         </TableCell>
                          <TableCell className="text-right">
                           <Button asChild variant="outline" size="sm">
@@ -135,6 +181,12 @@ export default function TeacherClassPage() {
                               Enter/View Scores
                             </Link>
                           </Button>
+                          {/* Only show delete for admins. A proper role check from a user hook would be better. */}
+                          {user?.email?.includes('admin') && (
+                            <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => setStudentToDelete(student)}>
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          )}
                         </TableCell>
                       </TableRow>
                     ))
