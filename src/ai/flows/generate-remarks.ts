@@ -20,7 +20,7 @@ const GenerateRemarksInputSchema = z.object({
 export type GenerateRemarksInput = z.infer<typeof GenerateRemarksInputSchema>;
 
 const GenerateRemarksOutputSchema = z.object({
-  teacherRemark: z.string().describe("A personalized remark from the class teacher. It should be encouraging and based on their average. Must be concise (1-2 sentences) and must NOT mention the student's name."),
+  teacherRemark: z.string().describe("A personalized remark from the class teacher. It should be encouraging and based on their average. Must be a single sentence and must NOT mention the student's name."),
   headTeacherRemark: z.string().describe("A formal and concise remark from the head teacher, reflecting the student's overall performance. Must be one sentence and must NOT mention the student's name."),
 });
 
@@ -41,22 +41,22 @@ const prompt = ai.definePrompt({
 
   Based on the student's average score, generate two remarks. CRITICAL: Do NOT mention the student's name in either remark.
 
-  1.  A Teacher's Remark: This should be warm, encouraging, and directly address the student's effort and potential. Keep it to 1-2 sentences.
-  2.  A Head Teacher's Remark: This should be more formal, concise, and provide a summary of the student's academic standing. Keep it to a single sentence.
+  1.  A Teacher's Remark: This should be a warm, encouraging, and direct single sentence.
+  2.  A Head Teacher's Remark: This should be a formal, concise single sentence summarizing academic standing.
 
   Example for a high score:
-  - Teacher: "An excellent performance this term! All the hard work is clearly paying off. Keep up the brilliant effort."
+  - Teacher: "An excellent performance this term, your hard work is clearly paying off!"
   - Head Teacher: "An outstanding and impressive academic achievement."
   
   Example for an average score:
-  - Teacher: "A satisfactory performance. With a bit more focus in class, there is clear potential to achieve even better results."
+  - Teacher: "A satisfactory performance that shows clear potential for even better results."
   - Head Teacher: "A fair performance that shows potential for improvement."
 
   Example for a low score:
-  - Teacher: "This result doesn't reflect true capabilities. We will work together next term to focus on studies and improve these scores."
+  - Teacher: "This result doesn't reflect true capabilities, and we will work together to improve next term."
   - Head Teacher: "Significant improvement is required in academic performance."
   
-  Generate new remarks in the same style. Do not use the student's name.`,
+  Generate new, single-sentence remarks in the same style. Do not use the student's name.`,
 });
 
 const generateRemarksFlow = ai.defineFlow(
