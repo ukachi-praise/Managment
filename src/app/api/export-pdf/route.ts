@@ -84,7 +84,7 @@ export async function POST(req: NextRequest) {
 
     // --- 3. Launch Puppeteer and Generate PDF ---
     const browser = await puppeteer.launch({ 
-        headless: 'new',
+        headless: true,
         args: ['--no-sandbox', '--disable-setuid-sandbox'] 
     });
     const page = await browser.newPage();
