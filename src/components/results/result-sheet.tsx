@@ -10,6 +10,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
+  TableFooter,
 } from '@/components/ui/table';
 import {
   useCollection,
@@ -162,6 +163,24 @@ export function ResultSheet({
     const { grade } = calculateGrade(average);
     return { average: average.toFixed(2), grade };
   }, [liveResultEntries, isForTemplateBuilder]);
+  
+  const scoreTotals = useMemo(() => {
+    const entries = isForTemplateBuilder ? templateResultEntries : liveResultEntries;
+    if (!entries || entries.length === 0) {
+      return { ca1: 0, ca2: 0, exam: 0, total: 0 };
+    }
+    return entries.reduce(
+      (acc, entry) => {
+        acc.ca1 += entry.ca1 || 0;
+        acc.ca2 += entry.ca2 || 0;
+        acc.exam += entry.exam || 0;
+        acc.total += entry.total || 0;
+        return acc;
+      },
+      { ca1: 0, ca2: 0, exam: 0, total: 0 }
+    );
+  }, [isForTemplateBuilder, templateResultEntries, liveResultEntries]);
+
 
   const resultEntries = isForTemplateBuilder ? templateResultEntries : liveResultEntries;
   const overall = isForTemplateBuilder ? templateOverall : liveOverall;
@@ -293,6 +312,16 @@ export function ResultSheet({
                                     </TableRow>
                                 )}
                             </TableBody>
+                             <TableFooter>
+                                <TableRow>
+                                  <TableCell className="border-b border-r border-black p-0.5 text-[8px] font-bold">Total</TableCell>
+                                  <TableCell className="text-center border-b border-r border-black p-0.5 text-[8px] font-bold">{scoreTotals.ca1}</TableCell>
+                                  <TableCell className="text-center border-b border-r border-black p-0.5 text-[8px] font-bold">{scoreTotals.ca2}</TableCell>
+                                  <TableCell className="text-center border-b border-r border-black p-0.5 text-[8px] font-bold">{scoreTotals.exam}</TableCell>
+                                  <TableCell className="text-center border-b border-r border-black p-0.5 text-[8px] font-bold">{scoreTotals.total}</TableCell>
+                                  <TableCell className="border-b border-black p-0.5 text-[8px]"></TableCell>
+                                </TableRow>
+                              </TableFooter>
                         </Table>
                     </div>
                 )}
@@ -310,8 +339,8 @@ export function ResultSheet({
                 <footer className="text-[9px] print:break-before-page" style={{ pageBreakBefore: 'always' }}>
                       <section className='border border-black p-1 flex flex-col gap-1'>
                           {settings.gradingKey.visible && (
-                              <div className="pt-1 flex gap-x-4">
-                                  <div className="space-y-1">
+                               <div className="grid grid-cols-2 gap-x-4 pt-1">
+                                    <div className="space-y-1">
                                       <h3 className="font-bold text-black text-[8px]">Grading Key</h3>
                                       <Table>
                                           <TableHeader>
@@ -319,7 +348,7 @@ export function ResultSheet({
                                           </TableHeader>
                                           <TableBody>
                                               <TableRow><TableCell className="p-0.5 h-auto text-[8px] border border-black">80 – 100</TableCell><TableCell className="p-0.5 h-auto text-[8px] border border-black">A</TableCell><TableCell className="p-0.5 h-auto text-[8px] border border-black">Excellent</TableCell></TableRow>
-                                              <TableRow><TableCell className="p-0.5 h-auto text-[8px] border border-black">70 – 79</TableCell><TableCell className="p-0.5 h-auto text-[8px] border-black">B</TableCell><TableCell className="p-0.5 h-auto text-[8px] border border-black">Very Good</TableCell></TableRow>
+                                              <TableRow><TableCell className="p-0.5 h-auto text-[8px] border border-black">70 – 79</TableCell><TableCell className="p-0.5 h-auto text-[8px] border border-black">B</TableCell><TableCell className="p-0.5 h-auto text-[8px] border border-black">Very Good</TableCell></TableRow>
                                               <TableRow><TableCell className="p-0.5 h-auto text-[8px] border border-black">60 – 69</TableCell><TableCell className="p-0.5 h-auto text-[8px] border border-black">C</TableCell><TableCell className="p-0.5 h-auto text-[8px] border border-black">Good</TableCell></TableRow>
                                               <TableRow><TableCell className="p-0.5 h-auto text-[8px] border border-black">50 – 59</TableCell><TableCell className="p-0.5 h-auto text-[8px] border border-black">D</TableCell><TableCell className="p-0.5 h-auto text-[8px] border border-black">Fair</TableCell></TableRow>
                                               <TableRow><TableCell className="p-0.5 h-auto text-[8px] border border-black">0 – 49</TableCell><TableCell className="p-0.5 h-auto text-[8px] border border-black">F</TableCell><TableCell className="p-0.5 h-auto text-[8px] border border-black">Fail</TableCell></TableRow>
@@ -327,51 +356,51 @@ export function ResultSheet({
                                       </Table>
                                   </div>
                                   
-                                  <div className="flex-1 grid grid-cols-[1fr_2fr] gap-x-4">
-                                      <div className="space-y-1">
-                                          <h3 className="font-bold text-black text-[8px]">Skill Score Rating</h3>
-                                          <Table>
-                                              <TableHeader>
-                                                  <TableRow><TableHead className="p-0.5 h-auto text-[8px] border border-black text-black">Score</TableHead><TableHead className="p-0.5 h-auto text-[8px] border border-black text-black">Remark</TableHead></TableRow>
-                                              </TableHeader>
-                                              <TableBody>
-                                                  <TableRow><TableCell className="p-0.5 h-auto text-[8px] border border-black">5</TableCell><TableCell className="p-0.5 h-auto text-[8px] border border-black">Excellent</TableCell></TableRow>
-                                                  <TableRow><TableCell className="p-0.5 h-auto text-[8px] border border-black">4</TableCell><TableCell className="p-0.5 h-auto text-[8px] border border-black">Very Good</TableCell></TableRow>
-                                                  <TableRow><TableCell className="p-0.5 h-auto text-[8px] border border-black">3</TableCell><TableCell className="p-0.5 h-auto text-[8px] border border-black">Good</TableCell></TableRow>
-                                                  <TableRow><TableCell className="p-0.5 h-auto text-[8px] border border-black">2</TableCell><TableCell className="p-0.5 h-auto text-[8px] border border-black">Fair</TableCell></TableRow>
-                                                  <TableRow><TableCell className="p-0.5 h-auto text-[8px] border border-black">1</TableCell><TableCell className="p-0.5 h-auto text-[8px] border border-black">Poor</TableCell></TableRow>
-                                              </TableBody>
-                                          </Table>
-                                      </div>
-                                      {settings.softSkills.visible && (
-                                          <div className="space-y-1">
-                                              <h3 className="font-bold text-black text-[8px]">Soft Skills Assessment</h3>
-                                                <div className="flex gap-x-2">
-                                                    <Table>
-                                                        <TableBody>
-                                                            {softSkillsCol1.map((skill, skillIndex) => (
-                                                                <TableRow key={skillIndex}>
-                                                                    <TableCell className="font-medium p-0.5 h-auto text-[8px] border border-black text-black">{skill}</TableCell>
-                                                                    <TableCell className="text-right p-0.5 h-auto text-[8px] border border-black w-[20px]">5</TableCell>
-                                                                </TableRow>
-                                                            ))}
-                                                        </TableBody>
-                                                    </Table>
-                                                     <Table>
-                                                        <TableBody>
-                                                            {softSkillsCol2.map((skill, skillIndex) => (
-                                                                <TableRow key={skillIndex}>
-                                                                    <TableCell className="font-medium p-0.5 h-auto text-[8px] border border-black text-black">{skill}</TableCell>
-                                                                    <TableCell className="text-right p-0.5 h-auto text-[8px] border border-black w-[20px]">5</TableCell>
-                                                                </TableRow>
-                                                            ))}
-                                                        </TableBody>
-                                                    </Table>
-                                                </div>
-                                          </div>
-                                      )}
+                                    {settings.softSkills.visible && (
+                                        <div className="grid grid-cols-[1fr_2fr] gap-x-2">
+                                            <div className="space-y-1">
+                                                <h3 className="font-bold text-black text-[8px]">Skill Score Rating</h3>
+                                                <Table>
+                                                    <TableHeader>
+                                                        <TableRow><TableHead className="p-0.5 h-auto text-[8px] border border-black text-black">Score</TableHead><TableHead className="p-0.5 h-auto text-[8px] border border-black text-black">Remark</TableHead></TableRow>
+                                                    </TableHeader>
+                                                    <TableBody>
+                                                        <TableRow><TableCell className="p-0.5 h-auto text-[8px] border border-black">5</TableCell><TableCell className="p-0.5 h-auto text-[8px] border border-black">Excellent</TableCell></TableRow>
+                                                        <TableRow><TableCell className="p-0.5 h-auto text-[8px] border border-black">4</TableCell><TableCell className="p-0.5 h-auto text-[8px] border border-black">Very Good</TableCell></TableRow>
+                                                        <TableRow><TableCell className="p-0.5 h-auto text-[8px] border border-black">3</TableCell><TableCell className="p-0.5 h-auto text-[8px] border border-black">Good</TableCell></TableRow>
+                                                        <TableRow><TableCell className="p-0.5 h-auto text-[8px] border border-black">2</TableCell><TableCell className="p-0.5 h-auto text-[8px] border border-black">Fair</TableCell></TableRow>
+                                                        <TableRow><TableCell className="p-0.5 h-auto text-[8px] border border-black">1</TableCell><TableCell className="p-0.5 h-auto text-[8px] border border-black">Poor</TableCell></TableRow>
+                                                    </TableBody>
+                                                </Table>
+                                            </div>
+                                            <div className="space-y-1">
+                                                <h3 className="font-bold text-black text-[8px]">Soft Skills Assessment</h3>
+                                                    <div className="flex gap-x-2">
+                                                        <Table>
+                                                            <TableBody>
+                                                                {softSkillsCol1.map((skill, skillIndex) => (
+                                                                    <TableRow key={skillIndex}>
+                                                                        <TableCell className="font-medium p-0.5 h-auto text-[8px] border border-black text-black">{skill}</TableCell>
+                                                                        <TableCell className="text-right p-0.5 h-auto text-[8px] border border-black w-[20px]">5</TableCell>
+                                                                    </TableRow>
+                                                                ))}
+                                                            </TableBody>
+                                                        </Table>
+                                                        <Table>
+                                                            <TableBody>
+                                                                {softSkillsCol2.map((skill, skillIndex) => (
+                                                                    <TableRow key={skillIndex}>
+                                                                        <TableCell className="font-medium p-0.5 h-auto text-[8px] border border-black text-black">{skill}</TableCell>
+                                                                        <TableCell className="text-right p-0.5 h-auto text-[8px] border border-black w-[20px]">5</TableCell>
+                                                                    </TableRow>
+                                                                ))}
+                                                            </TableBody>
+                                                        </Table>
+                                                    </div>
+                                            </div>
+                                        </div>
+                                    )}
                                   </div>
-                              </div>
                           )}
                           {settings.remarks.visible && (
                               <div className="pt-1 space-y-1">
