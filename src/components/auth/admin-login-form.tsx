@@ -29,8 +29,6 @@ const formSchema = z.object({
   password: z.string().min(1, { message: 'Password is required.' }),
 });
 
-const ADMIN_UID = 'GOpbb9SsavhpATk1p0KNmPGGQ0S2';
-
 export function AdminLoginForm() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
@@ -56,20 +54,11 @@ export function AdminLoginForm() {
         setIsLoading(false);
         return;
     }
-    // Temporary: Hardcoded admin check
-    if (user.uid === ADMIN_UID) {
-      toast({
-        title: 'Login Successful',
-        description: 'Welcome, Admin! Redirecting...',
-      });
-      router.push('/admin/dashboard');
-      return;
-    }
 
-    // Original logic
-    const adminRoleRef = doc(firestore, 'roles_admin', user.uid);
-    const adminDoc = await getDoc(adminRoleRef);
-    if (adminDoc.exists()) {
+    const userDocRef = doc(firestore, 'users', user.uid);
+    const userDoc = await getDoc(userDocRef);
+
+    if (userDoc.exists() && userDoc.data().role === 'Admin') {
       toast({
         title: 'Login Successful',
         description: 'Welcome, Admin! Redirecting...',
@@ -81,6 +70,7 @@ export function AdminLoginForm() {
         title: 'Permission Denied',
         description: 'You do not have admin privileges.',
       });
+       await auth?.signOut(); // Sign out the non-admin user
        setIsLoading(false);
     }
   }
@@ -89,6 +79,7 @@ export function AdminLoginForm() {
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
     if (!auth) {
+        toast({ variant: 'destructive', title: 'Error', description: 'Authentication service not ready.' });
         setIsLoading(false);
         return;
     };

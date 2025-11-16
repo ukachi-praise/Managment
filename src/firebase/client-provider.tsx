@@ -13,15 +13,12 @@ interface FirebaseClientProviderProps {
 // Get the singleton instances of Firebase services
 const { firebaseApp, auth, firestore } = initializeFirebase();
 
-function FirebaseLoadingGate({ children }: { children: ReactNode }) {
+function FirebaseGate({ children }: { children: ReactNode }) {
     const { isUserLoading } = useFirebase();
-    const [isClient, setIsClient] = useState(false);
 
-    useEffect(() => {
-        setIsClient(true);
-    }, []);
-
-    if (isClient && isUserLoading) {
+    // The gate will show a loader only during the initial user check.
+    // After that, AuthGuard and other components will handle their own loading states.
+    if (isUserLoading) {
         return (
             <div className="flex h-screen w-full items-center justify-center">
                 <Loader2 className="h-12 w-12 animate-spin text-primary" />
@@ -40,9 +37,9 @@ export function FirebaseClientProvider({ children }: FirebaseClientProviderProps
       auth={auth}
       firestore={firestore}
     >
-      <FirebaseLoadingGate>
+      <FirebaseGate>
         {children}
-      </FirebaseLoadingGate>
+      </FirebaseGate>
     </FirebaseProvider>
   );
 }
