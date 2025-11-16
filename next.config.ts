@@ -30,9 +30,7 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  experimental: {
-    serverComponentsExternalPackages: ['puppeteer'],
-  },
+  serverExternalPackages: ['puppeteer'],
 };
 
 export default nextConfig;

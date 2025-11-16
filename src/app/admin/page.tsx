@@ -1,5 +1,13 @@
-import { redirect } from 'next/navigation'
+
+'use client';
+
+import { redirect } from 'next/navigation';
+import { useEffect } from 'react';
 
 export default function AdminPage() {
-  redirect('/admin/login')
+  useEffect(() => {
+    redirect('/admin/login');
+  }, []);
+
+  return null; // Render nothing while the redirect occurs
 }
