@@ -2,12 +2,21 @@
 'use client';
 
 import React, { createContext, useContext, ReactNode, useState, useEffect, useMemo, DependencyList } from 'react';
-import { FirebaseApp } from 'firebase/app';
-import { Firestore, doc } from 'firebase/firestore';
-import { Auth, User, onAuthStateChanged } from 'firebase/auth';
+import { FirebaseApp, initializeApp } from 'firebase/app';
+import { Firestore, doc, getFirestore } from 'firebase/firestore';
+import { Auth, User, onAuthStateChanged, getAuth } from 'firebase/auth';
 import { Loader2 } from 'lucide-react';
-import { app, auth as firebaseAuth, firestore as firebaseFirestore } from './config';
 import { FirebaseErrorListener } from '@/components/FirebaseErrorListener';
+
+const firebaseConfig = {
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+};
+
 
 // --- PROFILE TYPE ---
 export type UserProfile = {
@@ -39,23 +48,25 @@ export function FirebaseProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [error, setError] = useState<Error | null>(null);
+  
+  const services = useMemo(() => {
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const firestore = getFirestore(app);
+    return { app, auth, firestore };
+  }, []);
 
   useEffect(() => {
-    if (!firebaseAuth) {
-      setError(new Error("Firebase Auth is not initialized."));
-      setIsLoading(false);
-      setIsLoggedIn(false);
-      return;
-    }
+    const { auth, firestore } = services;
 
     const unsubscribe = onAuthStateChanged(
-      firebaseAuth,
+      auth,
       async (authUser) => {
         setIsLoading(true);
         if (authUser) {
           // User is signed in, now fetch their profile
           try {
-            const userDocRef = doc(firebaseFirestore!, 'users', authUser.uid);
+            const userDocRef = doc(firestore, 'users', authUser.uid);
             const userDoc = await (await import('firebase/firestore')).getDoc(userDocRef);
 
             if (userDoc.exists()) {
@@ -95,12 +106,12 @@ export function FirebaseProvider({ children }: { children: ReactNode }) {
     );
 
     return () => unsubscribe();
-  }, []);
+  }, [services]);
 
   const value = {
-    app: app || null,
-    auth: firebaseAuth || null,
-    firestore: firebaseFirestore || null,
+    app: services.app,
+    auth: services.auth,
+    firestore: services.firestore,
     user,
     isLoading,
     isLoggedIn,
