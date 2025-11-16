@@ -1,4 +1,6 @@
 
+'use client';
+
 import Image from 'next/image';
 import { LoginForm } from '@/components/auth/login-form';
 import { Logo } from '@/components/shared/logo';
