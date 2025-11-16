@@ -78,7 +78,7 @@ export default function TeacherClassPage() {
   const { data: enrollments, isLoading: enrollmentsLoading } = useCollection<Enrollment>(enrollmentsQuery);
 
   const allStudentsQuery = useMemoFirebase(
-    () => (firestore && user ? query(collection(firestore, 'students'), where('isDeleted', '!=', true)) : null),
+    () => (firestore && user ? query(collection(firestore, 'students')) : null),
     [firestore, user]
   );
   const { data: allStudents, isLoading: allStudentsLoading } = useCollection<Student>(allStudentsQuery);
