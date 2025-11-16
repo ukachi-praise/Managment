@@ -34,7 +34,6 @@ export interface FirebaseContextState {
   user: User | null;
   isUserLoading: boolean; // True during initial auth check
   userError: Error | null; // Error from auth listener
-  isCoreLoading: boolean; // True until core services are available AND first auth check is complete
 }
 
 // Return type for useFirebase()
@@ -66,7 +65,6 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
     userError: null,
   });
 
-  // isCoreLoading is true if services aren't provided OR the first auth check hasn't completed.
   const isCoreLoading = !auth || !firestore || !firebaseApp || userAuthState.isUserLoading;
 
   // Effect to subscribe to Firebase auth state changes
@@ -75,9 +73,6 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
       setUserAuthState({ user: null, isUserLoading: false, userError: new Error("Auth service not provided.") });
       return;
     }
-
-    // This check is now implicit. The initial state of isUserLoading handles this.
-    // setUserAuthState({ user: null, isUserLoading: true, userError: null });
 
     const unsubscribe = onAuthStateChanged(
       auth,
@@ -101,9 +96,8 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
       user: userAuthState.user,
       isUserLoading: userAuthState.isUserLoading,
       userError: userAuthState.userError,
-      isCoreLoading,
     };
-  }, [firebaseApp, firestore, auth, userAuthState, isCoreLoading]);
+  }, [firebaseApp, firestore, auth, userAuthState]);
 
   return (
     <FirebaseContext.Provider value={contextValue}>
