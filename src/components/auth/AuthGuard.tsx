@@ -2,7 +2,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { usePathname, useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { useFirebase } from '@/firebase/provider';
 import { Loader2 } from 'lucide-react';
 import { doc, getDoc } from 'firebase/firestore';
@@ -17,15 +17,8 @@ export default function AuthGuard({
   const router = useRouter();
   const { auth, firestore, isCoreLoading, user, isUserLoading } = useFirebase();
   const [loading, setLoading] = useState(true);
-  const pathname = usePathname();
 
   useEffect(() => {
-    // Exclude login pages from the auth guard logic
-    if (pathname.endsWith('/login')) {
-      setLoading(false);
-      return;
-    }
-
     // Don't do anything until Firebase is ready and the initial user state is known.
     if (isCoreLoading || isUserLoading) {
       return;
@@ -34,8 +27,7 @@ export default function AuthGuard({
     const checkPermissions = async () => {
       if (!user) {
         setLoading(false); 
-        const loginPath = pathname.startsWith('/admin') ? '/admin/login' : '/login';
-        router.replace(loginPath);
+        router.replace('/login');
         return;
       }
 
@@ -48,7 +40,9 @@ export default function AuthGuard({
 
       try {
         const snap = await getDoc(doc(firestore, "users", user.uid));
-        if (!snap.exists() || !allow.includes(snap.data().role as "Admin" | "Teacher")) {
+        const role = snap.data()?.role as "Admin" | "Teacher";
+
+        if (!snap.exists() || !allow.includes(role)) {
           setLoading(false);
           router.replace("/unauthorized");
           return;
@@ -64,7 +58,7 @@ export default function AuthGuard({
 
     checkPermissions();
 
-  }, [router, allow, auth, firestore, user, isCoreLoading, isUserLoading, pathname]);
+  }, [router, allow, auth, firestore, user, isCoreLoading, isUserLoading]);
 
 
   if (loading) {
