@@ -59,6 +59,7 @@ const formSchema = z.object({
     required_error: 'Term ending date is required.',
   }),
   admissionNumberPrefix: z.string().optional(),
+  totalStudentCapacity: z.coerce.number().min(1, 'Must be greater than 0.'),
 });
 
 type SchoolSettings = z.infer<typeof formSchema>;
@@ -84,6 +85,7 @@ export default function InfoPage() {
         currentTermId: '',
         daysSchoolOpened: 0,
         admissionNumberPrefix: 'JKS',
+        totalStudentCapacity: 500,
     },
   });
   
@@ -141,7 +143,7 @@ export default function InfoPage() {
         <CardContent>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+              <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
                 <FormField
                   control={form.control}
                   name="currentSession"
@@ -210,6 +212,22 @@ export default function InfoPage() {
                     </FormItem>
                   )}
                 />
+
+                <FormField
+                  control={form.control}
+                  name="totalStudentCapacity"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Total Student Capacity</FormLabel>
+                      <FormControl>
+                        <Input type="number" placeholder="e.g. 800" {...field} />
+                      </FormControl>
+                       <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <div />
 
                 <FormField
                   control={form.control}

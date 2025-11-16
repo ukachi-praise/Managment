@@ -66,6 +66,7 @@ type Enrollment = {
 
 type SchoolSettings = {
     admissionNumberPrefix?: string;
+    totalStudentCapacity?: number;
 }
 
 
@@ -124,8 +125,10 @@ export default function StudentsPage() {
     
     // Auto-generate admission number
     const prefix = settings?.admissionNumberPrefix || 'JKS';
+    const capacity = settings?.totalStudentCapacity || 500;
+    const padding = String(capacity).length;
     const nextStudentNumber = allStudents.length + 1;
-    const admissionNumber = `${prefix}-${String(nextStudentNumber).padStart(5, '0')}`;
+    const admissionNumber = `${prefix}-${String(nextStudentNumber).padStart(padding, '0')}`;
 
     const newStudentData = {
       name: formData.get('name') as string,
