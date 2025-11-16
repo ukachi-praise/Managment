@@ -21,7 +21,7 @@ export default function TeacherLayout({
   }
 
   return (
-    <AuthGuard>
+    <AuthGuard allow={["teacher", "admin"]}>
       <SidebarProvider>
         <div className="flex min-h-screen">
           <SidebarNav role="teacher" />

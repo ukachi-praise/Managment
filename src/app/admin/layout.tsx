@@ -20,7 +20,7 @@ export default function AdminLayout({
   }
 
   return (
-    <AuthGuard>
+    <AuthGuard allow={["admin"]}>
         <SidebarProvider>
         <div className="flex min-h-screen">
             <SidebarNav role="admin" />
