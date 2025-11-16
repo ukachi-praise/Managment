@@ -12,7 +12,7 @@ export default function AuthGuard({
   allow,
 }: {
   children: React.ReactNode;
-  allow: ("admin" | "teacher")[];
+  allow: ("Admin" | "Teacher")[];
 }) {
   const router = useRouter();
   const { auth, firestore, isCoreLoading, user, isUserLoading } = useFirebase();
@@ -33,8 +33,7 @@ export default function AuthGuard({
 
     const checkPermissions = async () => {
       if (!user) {
-        setLoading(false); // Stop loader before redirect
-        // Depending on the route, redirect to the correct login page
+        setLoading(false); 
         const loginPath = pathname.startsWith('/admin') ? '/admin/login' : '/login';
         router.replace(loginPath);
         return;
@@ -42,30 +41,25 @@ export default function AuthGuard({
 
       if (!firestore) {
          console.error("Firestore is not available for permission check.");
-         setLoading(false); // Stop loader before redirect
+         setLoading(false);
          router.replace("/unauthorized");
          return;
       }
 
-      const snap = await getDoc(doc(firestore, "users", user.uid));
+      try {
+        const snap = await getDoc(doc(firestore, "users", user.uid));
+        if (!snap.exists() || !allow.includes(snap.data().role as "Admin" | "Teacher")) {
+          setLoading(false);
+          router.replace("/unauthorized");
+          return;
+        }
 
-      if (!snap.exists()) {
-        console.error("User document not found for uid:", user.uid);
-        setLoading(false); // Stop loader before redirect
-        router.replace("/unauthorized");
-        return;
+        setLoading(false); // auth + role OK
+      } catch (e) {
+          console.error("Permission check failed:", e);
+          setLoading(false);
+          router.replace('/login');
       }
-
-      const role = (snap.data().role as "Admin" | "Teacher")?.toLowerCase();
-
-      if (!role || !allow.includes(role as "admin" | "teacher")) {
-        setLoading(false); // Stop loader before redirect
-        router.replace("/unauthorized");
-        return;
-      }
-
-      // If all checks pass, user is allowed
-      setLoading(false);
     };
 
     checkPermissions();
@@ -80,13 +74,6 @@ export default function AuthGuard({
         <span className="sr-only">Checking permissions...</span>
       </div>
     );
-  }
-
-  // If we are not loading and on a login page, we shouldn't render children
-  // as the redirect should have already been queued. This prevents flicker.
-  // The main check handles the redirect itself. We render children only when loading is done AND it's not a login page.
-  if (pathname.endsWith('/login')) {
-    return null;
   }
   
   return <>{children}</>;

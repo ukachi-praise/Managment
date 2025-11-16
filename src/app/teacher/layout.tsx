@@ -12,7 +12,7 @@ export default function TeacherLayout({
   children: React.ReactNode;
 }) {
   return (
-    <AuthGuard allow={["teacher", "admin"]}>
+    <AuthGuard allow={["Teacher", "Admin"]}>
       <SidebarProvider>
         <div className="flex min-h-screen">
           <SidebarNav role="teacher" />

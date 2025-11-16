@@ -12,7 +12,7 @@ export default function AdminLayout({
   children: React.ReactNode;
 }) {
   return (
-    <AuthGuard allow={["admin"]}>
+    <AuthGuard allow={["Admin"]}>
         <SidebarProvider>
         <div className="flex min-h-screen">
             <SidebarNav role="admin" />
