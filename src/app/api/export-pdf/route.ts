@@ -1,4 +1,6 @@
 
+export const runtime = "nodejs"; // IMPORTANT: Force Node.js runtime
+
 import { NextRequest, NextResponse } from 'next/server';
 import puppeteer from 'puppeteer';
 import fs from 'fs/promises';
@@ -57,10 +59,17 @@ export async function POST(req: NextRequest) {
     // Robust date handling
     let resumptionDate;
     if (schoolSettings.nextTermResumptionDate) {
+        // Handle both Timestamp-like objects and date strings
         const dateValue = schoolSettings.nextTermResumptionDate.seconds 
             ? new Date(schoolSettings.nextTermResumptionDate.seconds * 1000)
             : new Date(schoolSettings.nextTermResumptionDate);
-        resumptionDate = format(dateValue, 'PPP');
+
+        // Check if date is valid
+        if (!isNaN(dateValue.getTime())) {
+            resumptionDate = format(dateValue, 'PPP');
+        } else {
+            resumptionDate = 'N/A';
+        }
     } else {
         resumptionDate = 'N/A';
     }
@@ -115,9 +124,9 @@ export async function POST(req: NextRequest) {
       },
     });
 
-  } catch (error) {
-    console.error('PDF Generation Error:', error);
-    return new NextResponse(JSON.stringify({ error: 'Failed to generate PDF.' }), {
+  } catch (error: any) {
+    console.error('PDF Generation Error:', error.message);
+    return new NextResponse(JSON.stringify({ error: 'Failed to generate PDF.', details: error.message }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },
     });

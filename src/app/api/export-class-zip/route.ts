@@ -1,4 +1,6 @@
 
+export const runtime = "nodejs"; // IMPORTANT: Force Node.js runtime
+
 import { NextRequest, NextResponse } from 'next/server';
 import JSZip from 'jszip';
 import puppeteer from 'puppeteer';
@@ -64,10 +66,17 @@ async function generateStudentPDF(
     // Robust date handling
     let resumptionDate;
     if (schoolSettings.nextTermResumptionDate) {
+        // Handle both Timestamp-like objects and date strings
         const dateValue = schoolSettings.nextTermResumptionDate.seconds 
             ? new Date(schoolSettings.nextTermResumptionDate.seconds * 1000)
             : new Date(schoolSettings.nextTermResumptionDate);
-        resumptionDate = format(dateValue, 'PPP');
+        
+        // Check if date is valid
+        if (!isNaN(dateValue.getTime())) {
+            resumptionDate = format(dateValue, 'PPP');
+        } else {
+            resumptionDate = 'N/A';
+        }
     } else {
         resumptionDate = 'N/A';
     }
@@ -105,43 +114,46 @@ async function generateStudentPDF(
 
 export async function POST(req: NextRequest) {
     try {
-        const { students, classroom, schoolSettings, allSubjects, schoolName } = await req.json();
+        const body = await req.json();
 
-        if (!students || !Array.isArray(students) || students.length === 0) {
+        if (!body.students || !Array.isArray(body.students) || body.students.length === 0) {
             return new NextResponse(JSON.stringify({ error: 'No student data provided.' }), { status: 400 });
         }
         
-        const zip = new JSZip();
-        const allSubjectsMap = new Map(allSubjects.map((s: any) => [s.id, s]));
+        const { classroom, schoolSettings, allSubjects, schoolName } = body;
+        const validStudents = body.students.filter(Boolean); // Filter out any null/undefined entries
 
-        for (const studentData of students) {
+        const zip = new JSZip();
+        
+        for (const studentData of validStudents) {
             const { student, termResult, scores, overall } = studentData;
             
+            if (!student || !student.name || !scores) {
+                console.warn("Skipping invalid student entry:", studentData);
+                continue;
+            }
+
+            const studentFolder = zip.folder(student.name.replace(/[^a-z0-9]/gi, "_"));
+            if(!studentFolder) continue;
+
             // Generate PDF
-            const pdfBuffer = await generateStudentPDF(
-                student,
-                classroom,
-                termResult,
-                schoolSettings,
-                scores,
-                overall,
-                schoolName
-            );
+            try {
+                const pdfBuffer = await generateStudentPDF(
+                    student, classroom, termResult, schoolSettings, scores, overall, schoolName
+                );
+                studentFolder.file(`${student.name.replace(/ /g, '_')}_Report.pdf`, pdfBuffer);
+            } catch(err: any) {
+                console.error(`PDF generation failed for ${student.name}:`, err.message);
+            }
             
             // Generate Excel
-            const excelBuffer = await generateStudentExcel(
-                student,
-                classroom,
-                scores,
-                overall,
-                schoolSettings
-            );
-
-            // Add to zip
-            const studentFolder = zip.folder(student.name.replace(/ /g, '_'));
-            if(studentFolder){
-                studentFolder.file(`${student.name.replace(/ /g, '_')}_Report.pdf`, pdfBuffer);
+            try {
+                const excelBuffer = await generateStudentExcel(
+                    student, classroom, scores, overall, schoolSettings
+                );
                 studentFolder.file(`${student.name.replace(/ /g, '_')}_Report.xlsx`, excelBuffer);
+            } catch (err: any) {
+                 console.error(`Excel generation failed for ${student.name}:`, err.message);
             }
         }
 
@@ -155,9 +167,9 @@ export async function POST(req: NextRequest) {
             },
         });
 
-    } catch (error) {
-        console.error('ZIP Generation Error:', error);
-        return new NextResponse(JSON.stringify({ error: 'Failed to generate ZIP file.' }), {
+    } catch (error: any) {
+        console.error('ZIP Generation Error:', error.message);
+        return new NextResponse(JSON.stringify({ error: 'Failed to generate ZIP file.', details: error.message }), {
             status: 500,
             headers: { 'Content-Type': 'application/json' },
         });
