@@ -18,8 +18,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, Download } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Loader2, Download, FileArchive } from 'lucide-react';
 import {
   useFirestore,
   useCollection,
@@ -38,6 +38,7 @@ import {
 import { Button } from '../ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { calculateGrade } from '@/lib/utils';
+import { saveAs } from 'file-saver';
 
 
 // --- TYPE DEFINITIONS ---
@@ -59,7 +60,8 @@ export function ResultViewTable() {
   const { user } = useUser();
 
   const [selectedClass, setSelectedClass] = useState<string | null>(null);
-  const [isExporting, setIsExporting] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
+  const [isZipping, setIsZipping] = useState(false);
   
   // --- Data Fetching ---
   const classroomsQuery = useMemoFirebase(
@@ -107,128 +109,115 @@ export function ResultViewTable() {
   }
 
   const handleBulkDownload = async () => {
-    if (!studentsInClass || studentsInClass.length === 0 || !firestore || !schoolSettings || !allSubjects) return;
-    setIsExporting(true);
+    if (!studentsInClass || studentsInClass.length === 0) return;
+
+    setIsDownloading(true);
     toast({
-      title: 'Initiating Bulk Export...',
-      description: `Preparing to export ${studentsInClass.length} report(s).`,
+        title: "Pop-ups Required",
+        description: `Your browser may block pop-ups. Please allow pop-ups for this site to download all ${studentsInClass.length} reports.`,
+        duration: 10000,
+    });
+    
+    // Stagger the window opening to reduce the chance of browser blocking
+    for (let i = 0; i < studentsInClass.length; i++) {
+      await new Promise(resolve => setTimeout(resolve, 300)); // 300ms delay between opening each tab
+      window.open(`/admin/results/${studentsInClass[i].id}`, '_blank');
+    }
+    
+    setIsDownloading(false);
+  };
+  
+    const handleBulkZip = async () => {
+    if (!studentsInClass || studentsInClass.length === 0 || !firestore || !schoolSettings || !allSubjects) return;
+    setIsZipping(true);
+    toast({
+      title: 'Initiating ZIP Export...',
+      description: `Preparing to export reports for ${studentsInClass.length} student(s). This may take a moment.`,
     });
 
-    const schoolName = savedTemplateData?.schoolName || 'JustVision Kiddies School';
+    try {
+        const schoolName = savedTemplateData?.schoolName || 'JustVision Kiddies School';
+        const classroom = classrooms?.find(c => c.id === selectedClass);
+        if(!classroom) throw new Error("Classroom not found");
 
-    const allSubjectsMap = new Map(allSubjects.map(s => [s.id, s]));
-
-    for (const student of studentsInClass) {
-        try {
-            // 1. Fetch the specific term result for the student
-            const termResultId = `${schoolSettings.currentSession.replace('/', '-')}-${schoolSettings.currentTermId}`;
-            const resultDocRef = doc(firestore, 'students', student.id, 'results', termResultId);
+        const studentDataForApi = await Promise.all(studentsInClass.map(async (student) => {
             const resultDocSnap = await getDocs(query(collection(firestore, 'students', student.id, 'results'), where('termId', '==', schoolSettings.currentTermId), where('sessionId', '==', schoolSettings.currentSession)));
-
-            if (resultDocSnap.empty) {
-                console.warn(`No result found for ${student.name} for the current term. Skipping.`);
-                continue;
-            }
+            
+            if (resultDocSnap.empty) return null;
 
             const termResult = resultDocSnap.docs[0].data() as TermResult;
             
-            // 2. Process scores
             const scores = Object.entries(termResult.scores).map(([subjectId, score]) => {
-                const subject = allSubjectsMap.get(subjectId);
+                const subject = allSubjects.find(s => s.id === subjectId);
                 const total = (score.ca1 || 0) + (score.ca2 || 0) + (score.exam || 0);
                 const { grade, remark } = calculateGrade(total);
-                return {
-                    subjectName: subject?.name || 'Unknown Subject',
-                    subSubjects: subject?.subSubjects,
-                    ca1: score.ca1,
-                    ca2: score.ca2,
-                    exam: score.exam,
-                    total,
-                    grade,
-                    remark,
-                };
-            }).sort((a, b) => a.subjectName.localeCompare(b.subjectName));
+                return { subjectName: subject?.name || 'Unknown', ca1: score.ca1, ca2: score.ca2, exam: score.exam, total, grade, remark };
+            });
 
             const totalSum = scores.reduce((sum, entry) => sum + entry.total, 0);
             const average = scores.length > 0 ? (totalSum / scores.length) : 0;
-            const overall = {
-                average: average.toFixed(2),
-                grade: calculateGrade(average).grade,
-            };
-            
-            const classroom = classrooms?.find(c => c.id === selectedClass);
-            
-            // 3. Prepare payload for API
-            const payload = {
-                student,
-                classroom: { ...classroom },
-                termResult: { ...termResult, daysAttended: termResult.daysAttended || 0 },
-                schoolSettings,
-                scores,
-                overall,
-                schoolName: schoolName,
-            };
+            const overall = { average: average.toFixed(2), grade: calculateGrade(average).grade };
 
-            // 4. Call API route
-            const response = await fetch('/api/export-pdf', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload),
-            });
+            return { student, termResult, scores, overall };
+        }));
 
-            if (!response.ok) {
-                throw new Error(`PDF generation failed for ${student.name}`);
-            }
+        const validStudentData = studentDataForApi.filter(data => data !== null);
 
-            // 5. Trigger download
-            const blob = await response.blob();
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `${student.name.replace(/ /g, '_')}-Report_Card.pdf`;
-            document.body.appendChild(a);
-            a.click();
-            a.remove();
-            window.URL.revokeObjectURL(url);
-            
-            toast({ title: 'Success', description: `Downloaded report for ${student.name}.` });
-            
-            // Stagger downloads slightly to prevent browser from blocking them
-            await new Promise(resolve => setTimeout(resolve, 500));
-
-        } catch (error) {
-            console.error(`Failed to export for ${student.name}:`, error);
-            toast({ variant: "destructive", title: "Export Error", description: `Could not generate PDF for ${student.name}.` });
+        if (validStudentData.length === 0) {
+            toast({ variant: "destructive", title: "No Data", description: "No result data found for any student in this class for the current term." });
+            setIsZipping(false);
+            return;
         }
+
+        const payload = {
+            students: validStudentData,
+            classroom,
+            schoolSettings,
+            allSubjects,
+            schoolName,
+        };
+
+        const response = await fetch('/api/export-class-zip', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+        });
+
+        if (!response.ok) {
+            throw new Error(`ZIP generation failed with status ${response.status}`);
+        }
+
+        const blob = await response.blob();
+        saveAs(blob, `${classroom.name.replace(/ /g, '_')}_Results.zip`);
+
+        toast({ title: 'Success', description: `Downloaded ZIP file for ${classroom.name}.` });
+
+    } catch (error) {
+        console.error("Failed to generate ZIP:", error);
+        toast({ variant: "destructive", title: "ZIP Export Error", description: "Could not generate the ZIP file." });
+    } finally {
+        setIsZipping(false);
     }
-
-
-    setIsExporting(false);
-    toast({
-      title: 'Bulk Export Complete',
-      description: 'All student reports have been downloaded.',
-    });
   };
-  
+
+
   const isLoading = classroomsLoading;
   const isFetchingStudents = enrollmentsLoading || allStudentsLoading;
-  const isDisplayingData = selectedClass;
-
-  if (isLoading) {
-    return <Card><CardHeader><CardTitle>Loading Data...</CardTitle></CardHeader><CardContent><Loader2 className="animate-spin" /></CardContent></Card>
-  }
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>View Results by Class</CardTitle>
+        <CardTitle>View & Export Results</CardTitle>
+        <CardDescription>
+            Select a class to view the student list and export their report cards.
+        </CardDescription>
         <div className="mt-4 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <Select onValueChange={handleClassChange} value={selectedClass || ''}>
-            <SelectTrigger className="w-full md:w-1/2">
+            <SelectTrigger className="w-full md:w-[300px]">
               <SelectValue placeholder="Select a Class" />
             </SelectTrigger>
             <SelectContent>
-              {classrooms?.map((c) => (
+              {classrooms?.sort((a, b) => a.name.localeCompare(b.name)).map((c) => (
                 <SelectItem key={c.id} value={c.id}>
                   {c.name}
                 </SelectItem>
@@ -236,22 +225,24 @@ export function ResultViewTable() {
             </SelectContent>
           </Select>
            {selectedClass && (
-            <Button onClick={handleBulkDownload} disabled={isExporting || isFetchingStudents || studentsInClass.length === 0} className="w-full md:w-auto">
-              {isExporting ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <Download className="mr-2 h-4 w-4" />
-              )}
-              {isExporting ? 'Exporting...' : 'Export All as PDF'}
-            </Button>
+            <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
+                <Button onClick={handleBulkDownload} disabled={isDownloading || isZipping || isFetchingStudents || studentsInClass.length === 0} className="w-full">
+                    {isDownloading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
+                    Export PDFs (Multi-Tab)
+                </Button>
+                <Button onClick={handleBulkZip} disabled={isDownloading || isZipping || isFetchingStudents || studentsInClass.length === 0} className="w-full">
+                    {isZipping ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileArchive className="mr-2 h-4 w-4" />}
+                    Export All as ZIP
+                </Button>
+            </div>
            )}
         </div>
       </CardHeader>
       <CardContent>
-        {isDisplayingData ? (
+        {selectedClass ? (
           <>
             <p className="text-sm text-muted-foreground mb-4">
-              Click &quot;Export All as PDF&quot; to download all report cards for the selected class. You can also view an individual report by clicking the button in the table.
+              Click &quot;Export PDFs&quot; to open each report in a new tab (allow pop-ups), or &quot;Export All as ZIP&quot; to get a single file with all reports. You can also view an individual report by clicking the button in the table.
             </p>
             <div className="overflow-x-auto">
               <Table>
@@ -299,5 +290,3 @@ export function ResultViewTable() {
     </Card>
   );
 }
-
-    

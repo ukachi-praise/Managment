@@ -21,7 +21,7 @@ export default function ResultsPage() {
                 View Student Results
                 </h1>
                 <p className="text-muted-foreground">
-                Select a class to view all student scores for that class.
+                    Select a class to view and export student report cards.
                 </p>
             </div>
         </div>
