@@ -9,6 +9,9 @@ export const metadata: Metadata = {
   title: 'JustVision Kiddies School',
   description: 'Database & Result Management System',
   keywords: ['school management', 'result portal', 'education', 'JustVision Kiddies School', 'student database', 'JustVision Kiddies', 'JustVision'],
+  icons: {
+    icon: '/favicon.ico',
+  },
 };
 
 export default function RootLayout({
