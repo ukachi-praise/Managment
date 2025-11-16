@@ -327,11 +327,25 @@ export function ResultSheet({
                                       </Table>
                                   </div>
                                   
-                                  <div className="flex-1 space-y-1">
-                                    <div className="flex gap-x-4 justify-between">
-                                        {settings.softSkills.visible && (
-                                            <div className="space-y-1">
-                                                <h3 className="font-bold text-black text-[9px]">Soft Skills Assessment</h3>
+                                  <div className="flex-1 grid grid-cols-2 gap-x-4">
+                                      <div className="space-y-1">
+                                          <h3 className="font-bold text-black text-[9px]">Skill Score Rating</h3>
+                                          <Table>
+                                              <TableHeader>
+                                                  <TableRow><TableHead className="p-0.5 h-auto text-[8px] border border-black text-black">Score</TableHead><TableHead className="p-0.5 h-auto text-[8px] border border-black text-black">Remark</TableHead></TableRow>
+                                              </TableHeader>
+                                              <TableBody>
+                                                  <TableRow><TableCell className="p-0.5 h-auto text-[8px] border border-black">5</TableCell><TableCell className="p-0.5 h-auto text-[8px] border border-black">Excellent</TableCell></TableRow>
+                                                  <TableRow><TableCell className="p-0.5 h-auto text-[8px] border border-black">4</TableCell><TableCell className="p-0.5 h-auto text-[8px] border border-black">Very Good</TableCell></TableRow>
+                                                  <TableRow><TableCell className="p-0.5 h-auto text-[8px] border border-black">3</TableCell><TableCell className="p-0.5 h-auto text-[8px] border border-black">Good</TableCell></TableRow>
+                                                  <TableRow><TableCell className="p-0.5 h-auto text-[8px] border border-black">2</TableCell><TableCell className="p-0.5 h-auto text-[8px] border border-black">Fair</TableCell></TableRow>
+                                                  <TableRow><TableCell className="p-0.5 h-auto text-[8px] border border-black">1</TableCell><TableCell className="p-0.5 h-auto text-[8px] border border-black">Poor</TableCell></TableRow>
+                                              </TableBody>
+                                          </Table>
+                                      </div>
+                                      {settings.softSkills.visible && (
+                                          <div className="space-y-1">
+                                              <h3 className="font-bold text-black text-[9px]">Soft Skills Assessment</h3>
                                                 <div className="flex gap-x-2">
                                                     <Table>
                                                         <TableBody>
@@ -354,24 +368,8 @@ export function ResultSheet({
                                                         </TableBody>
                                                     </Table>
                                                 </div>
-                                            </div>
-                                        )}
-                                        <div className="space-y-1">
-                                            <h3 className="font-bold text-black text-[9px]">Skill Score Rating</h3>
-                                            <Table>
-                                                <TableHeader>
-                                                    <TableRow><TableHead className="p-0.5 h-auto text-[8px] border border-black text-black">Score</TableHead><TableHead className="p-0.5 h-auto text-[8px] border border-black text-black">Remark</TableHead></TableRow>
-                                                </TableHeader>
-                                                <TableBody>
-                                                    <TableRow><TableCell className="p-0.5 h-auto text-[8px] border border-black">5</TableCell><TableCell className="p-0.5 h-auto text-[8px] border border-black">Excellent</TableCell></TableRow>
-                                                    <TableRow><TableCell className="p-0.5 h-auto text-[8px] border border-black">4</TableCell><TableCell className="p-0.5 h-auto text-[8px] border border-black">Very Good</TableCell></TableRow>
-                                                    <TableRow><TableCell className="p-0.5 h-auto text-[8px] border border-black">3</TableCell><TableCell className="p-0.5 h-auto text-[8px] border border-black">Good</TableCell></TableRow>
-                                                    <TableRow><TableCell className="p-0.5 h-auto text-[8px] border border-black">2</TableCell><TableCell className="p-0.5 h-auto text-[8px] border border-black">Fair</TableCell></TableRow>
-                                                    <TableRow><TableCell className="p-0.5 h-auto text-[8px] border border-black">1</TableCell><TableCell className="p-0.5 h-auto text-[8px] border border-black">Poor</TableCell></TableRow>
-                                                </TableBody>
-                                            </Table>
-                                        </div>
-                                    </div>
+                                          </div>
+                                      )}
                                   </div>
                               </div>
                           )}
@@ -394,3 +392,5 @@ export function ResultSheet({
     </div>
   );
 }
+
+    
