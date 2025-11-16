@@ -25,5 +25,7 @@ export const useUserProfile = (uid: string | undefined) => {
     [firestore, uid]
   );
 
-  return useDoc<UserProfile>(userProfileRef);
+  const { data: profile, isLoading, error } = useDoc<UserProfile>(userProfileRef);
+
+  return { profile, isLoading, error };
 };

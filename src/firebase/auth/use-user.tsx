@@ -23,12 +23,27 @@ export const useUser = (): UserHookResult => {
   const { user: authUser, isUserLoading: isAuthLoading, userError: authError } = useFirebase();
   const { profile, isLoading: isProfileLoading, error: profileError } = useUserProfile(authUser?.uid);
 
-  // If there's an auth user and we have their profile, combine them.
-  const combinedUser = authUser && profile ? { ...authUser, ...profile } : null;
+  // Determine the combined loading state. Loading is true if:
+  // 1. The initial auth state is still being determined.
+  // 2. We have an authenticated user, but their Firestore profile is still loading.
+  const isUserLoading = isAuthLoading || (!!authUser && isProfileLoading);
+  
+  // If we are still loading, or if there's no authenticated user, the user is null.
+  if (isUserLoading || !authUser) {
+    return {
+      user: null,
+      isUserLoading: isUserLoading,
+      userError: authError || profileError,
+    };
+  }
+  
+  // If we have an authUser but are done loading the profile (and it might be null/non-existent),
+  // we can now construct the final user object.
+  const combinedUser = profile ? { ...authUser, ...profile } : authUser;
 
   return {
-    user: combinedUser,
-    isUserLoading: isAuthLoading || (!!authUser && isProfileLoading), // Loading if auth is loading, or if we have an auth user but are still fetching their profile.
+    user: combinedUser as AppUser,
+    isUserLoading: false,
     userError: authError || profileError,
   };
 };
