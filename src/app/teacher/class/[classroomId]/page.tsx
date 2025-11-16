@@ -78,8 +78,8 @@ export default function TeacherClassPage() {
   const { data: enrollments, isLoading: enrollmentsLoading } = useCollection<Enrollment>(enrollmentsQuery);
 
   const allStudentsQuery = useMemoFirebase(
-    () => (firestore && user ? query(collection(firestore, 'students')) : null),
-    [firestore, user]
+    () => (firestore ? query(collection(firestore, 'students')) : null),
+    [firestore]
   );
   const { data: allStudents, isLoading: allStudentsLoading } = useCollection<Student>(allStudentsQuery);
   
@@ -181,8 +181,7 @@ export default function TeacherClassPage() {
                               Enter/View Scores
                             </Link>
                           </Button>
-                          {/* Only show delete for admins. A proper role check from a user hook would be better. */}
-                          {user?.email?.includes('admin') && (
+                          {user?.role === 'Admin' && (
                             <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => setStudentToDelete(student)}>
                               <Trash2 className="h-4 w-4" />
                             </Button>
