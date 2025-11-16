@@ -4,7 +4,6 @@
 import { Header } from '@/components/shared/header';
 import { SidebarNav } from '@/components/shared/sidebar-nav';
 import { SidebarProvider } from '@/components/ui/sidebar';
-import AuthGuard from '@/components/auth/AuthGuard';
 import { usePathname } from 'next/navigation';
 
 
@@ -21,7 +20,6 @@ export default function TeacherLayout({
   }
 
   return (
-    <AuthGuard allow={["teacher", "admin"]}>
       <SidebarProvider>
         <div className="flex min-h-screen">
           <SidebarNav role="teacher" />
@@ -31,6 +29,5 @@ export default function TeacherLayout({
           </div>
         </div>
       </SidebarProvider>
-    </AuthGuard>
   );
 }
