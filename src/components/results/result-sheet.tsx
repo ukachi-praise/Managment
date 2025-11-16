@@ -200,9 +200,9 @@ export function ResultSheet({
                 <header className="mb-4 p-2 border border-black">
                     <div className="flex items-start justify-between">
                         <div className="flex items-center gap-4">
-                            <div className="relative h-20 w-20"><Image src="/Logo.jpg" alt="School Logo" layout="fill" objectFit="contain" /></div>
+                            <div className="relative h-16 w-16"><Image src="/Logo.jpg" alt="School Logo" layout="fill" objectFit="contain" /></div>
                             <div className="text-black">
-                                <h1 className="text-lg font-bold text-black">{schoolName}</h1>
+                                <h1 className="text-base font-bold text-black">{schoolName}</h1>
                                 <p className="text-sm text-black">Katampe 2 Mpape Abuja</p>
                                 <p className="text-sm font-semibold text-black">Motto: Exceeding Great</p>
                             </div>
@@ -246,19 +246,19 @@ export function ResultSheet({
                         <Table>
                             <TableHeader>
                                 <TableRow>
-                                    <TableHead className="border border-black p-1 h-auto text-sm text-black">Subject</TableHead>
-                                    <TableHead className="text-center border border-black p-1 h-auto text-sm text-black">CA1 (20)</TableHead>
-                                    <TableHead className="text-center border border-black p-1 h-auto text-sm text-black">CA2 (20)</TableHead>
-                                    <TableHead className="text-center border border-black p-1 h-auto text-sm text-black">Exam (60)</TableHead>
-                                    <TableHead className="text-center border border-black p-1 h-auto text-sm text-black">Total (100)</TableHead>
-                                    <TableHead className="border border-black p-1 h-auto text-sm text-black">Remark</TableHead>
+                                    <TableHead className="border border-black p-0.5 h-auto text-xs text-black">Subject</TableHead>
+                                    <TableHead className="text-center border border-black p-0.5 h-auto text-xs text-black">CA1 (20)</TableHead>
+                                    <TableHead className="text-center border border-black p-0.5 h-auto text-xs text-black">CA2 (20)</TableHead>
+                                    <TableHead className="text-center border border-black p-0.5 h-auto text-xs text-black">Exam (60)</TableHead>
+                                    <TableHead className="text-center border border-black p-0.5 h-auto text-xs text-black">Total (100)</TableHead>
+                                    <TableHead className="border border-black p-0.5 h-auto text-xs text-black">Remark</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
                             {resultEntries && resultEntries.length > 0 ? (
                                     resultEntries.map((entry, index) => (
                                         <TableRow key={entry.subjectName + index}>
-                                            <TableCell className="border-b border-r border-black p-1 text-sm">
+                                            <TableCell className="border-b border-r border-black p-0.5 text-xs">
                                                 <div className="font-semibold">{entry.subjectName}</div>
                                                 {entry.subSubjects && entry.subSubjects.length > 0 && (
                                                     <div className="pl-2 text-xs text-muted-foreground">
@@ -268,11 +268,11 @@ export function ResultSheet({
                                                     </div>
                                                 )}
                                             </TableCell>
-                                            <TableCell className="text-center border-b border-r border-black p-1 text-sm">{entry.ca1 ?? '--'}</TableCell>
-                                            <TableCell className="text-center border-b border-r border-black p-1 text-sm">{entry.ca2 ?? '--'}</TableCell>
-                                            <TableCell className="text-center border-b border-r border-black p-1 text-sm">{entry.exam ?? '--'}</TableCell>
-                                            <TableCell className="text-center border-b border-r border-black p-1 text-sm font-semibold">{entry.total}</TableCell>
-                                            <TableCell className="border-b border-black p-1 text-sm">{entry.remark}</TableCell>
+                                            <TableCell className="text-center border-b border-r border-black p-0.5 text-xs">{entry.ca1 ?? '--'}</TableCell>
+                                            <TableCell className="text-center border-b border-r border-black p-0.5 text-xs">{entry.ca2 ?? '--'}</TableCell>
+                                            <TableCell className="text-center border-b border-r border-black p-0.5 text-xs">{entry.exam ?? '--'}</TableCell>
+                                            <TableCell className="text-center border-b border-r border-black p-0.5 text-xs font-semibold">{entry.total}</TableCell>
+                                            <TableCell className="border-b border-black p-0.5 text-xs">{entry.remark}</TableCell>
                                         </TableRow>
                                     ))
                                 ) : (
@@ -349,7 +349,7 @@ export function ResultSheet({
                                           </TableHeader>
                                           <TableBody>
                                               <TableRow><TableCell className="p-0.5 h-auto text-[9px] border border-black">5</TableCell><TableCell className="p-0.5 h-auto text-[9px] border border-black">Excellent</TableCell></TableRow>
-                                              <TableRow><TableCell className="p-0.5 h-auto text-[9px] border border-black">4</TableCell><TableCell className="p-0.5 h-auto text-[9px] border-black">Very Good</TableCell></TableRow>
+                                              <TableRow><TableCell className="p-0.5 h-auto text-[9px] border border-black">4</TableCell><TableCell className="p-0.5 h-auto text-[9px] border border-black">Very Good</TableCell></TableRow>
                                               <TableRow><TableCell className="p-0.5 h-auto text-[9px] border border-black">3</TableCell><TableCell className="p-0.5 h-auto text-[9px] border border-black">Good</TableCell></TableRow>
                                               <TableRow><TableCell className="p-0.5 h-auto text-[9px] border border-black">2</TableCell><TableCell className="p-0.5 h-auto text-[9px] border border-black">Fair</TableCell></TableRow>
                                               <TableRow><TableCell className="p-0.5 h-auto text-[9px] border border-black">1</TableCell><TableCell className="p-0.5 h-auto text-[9px] border border-black">Poor</TableCell></TableRow>
@@ -377,3 +377,5 @@ export function ResultSheet({
     </div>
   );
 }
+
+    
