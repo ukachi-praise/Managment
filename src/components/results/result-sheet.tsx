@@ -191,7 +191,7 @@ export function ResultSheet({
 
   // --- RENDER ---
   return (
-    <div className="relative w-[794px] h-[1123px] bg-white text-black print:shadow-none print:m-0 print:p-0 print:w-full print:h-auto print:block flex flex-col p-6">
+    <div className="relative w-[794px] h-[1123px] bg-white text-black print:shadow-none print:m-0 print:p-0 print:w-full print:h-auto flex flex-col p-6">
         <div className="absolute inset-0 z-0 flex items-center justify-center pointer-events-none">
             <Image src="/Logo.jpg" alt="School Watermark" width={400} height={400} className="opacity-10" />
         </div>
@@ -287,8 +287,8 @@ export function ResultSheet({
                     </div>
                 )}
                 {settings.summary.visible && (
-                    <div className="mt-2 flex justify-end">
-                        <div className="w-1/2 rounded-md border border-black p-2 text-sm space-y-1">
+                    <div className="mt-1 flex justify-end">
+                        <div className="w-1/2 rounded-md border border-black p-1 text-sm">
                             <div className="flex justify-between"><span className="font-semibold text-black">Overall Average:</span><span className="text-black">{overall?.average}%</span></div>
                             <div className="flex justify-between"><span className="font-semibold text-black">Overall Grade:</span><span className="text-black">{overall?.grade}</span></div>
                         </div>
@@ -298,7 +298,7 @@ export function ResultSheet({
                 
                  {/* This footer now acts as the second page content */}
                 <footer className="text-xs print:break-before-page" style={{ pageBreakBefore: 'always' }}>
-                      <section className='border border-black p-2 flex flex-col gap-1'>
+                      <section className='border border-black p-1 flex flex-col gap-1'>
                           {settings.softSkills.visible && (
                           <div className="space-y-1">
                               <h3 className="font-bold text-black text-[10px]">Soft Skills Assessment</h3>
@@ -349,7 +349,7 @@ export function ResultSheet({
                                           </TableHeader>
                                           <TableBody>
                                               <TableRow><TableCell className="p-0.5 h-auto text-[9px] border border-black">5</TableCell><TableCell className="p-0.5 h-auto text-[9px] border border-black">Excellent</TableCell></TableRow>
-                                              <TableRow><TableCell className="p-0.5 h-auto text-[9px] border border-black">4</TableCell><TableCell className="p-0.5 h-auto text-[9px] border border-black">Very Good</TableCell></TableRow>
+                                              <TableRow><TableCell className="p-0.5 h-auto text-[9px] border border-black">4</TableCell><TableCell className="p-0.5 h-auto text-[9px] border-black">Very Good</TableCell></TableRow>
                                               <TableRow><TableCell className="p-0.5 h-auto text-[9px] border border-black">3</TableCell><TableCell className="p-0.5 h-auto text-[9px] border border-black">Good</TableCell></TableRow>
                                               <TableRow><TableCell className="p-0.5 h-auto text-[9px] border border-black">2</TableCell><TableCell className="p-0.5 h-auto text-[9px] border border-black">Fair</TableCell></TableRow>
                                               <TableRow><TableCell className="p-0.5 h-auto text-[9px] border border-black">1</TableCell><TableCell className="p-0.5 h-auto text-[9px] border border-black">Poor</TableCell></TableRow>
