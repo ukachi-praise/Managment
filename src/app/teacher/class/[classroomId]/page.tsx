@@ -18,14 +18,10 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import {
-  useFirestore,
-  useCollection,
-  useDoc,
-  useUser,
-  setDocumentNonBlocking,
-} from '@/firebase';
-import { useMemoFirebase } from '@/firebase/provider';
+import { useFirestore, useUser, useMemoFirebase } from '@/firebase/provider';
+import { useCollection } from '@/firebase/firestore/use-collection';
+import { useDoc } from '@/firebase/firestore/use-doc';
+import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { collection, query, where, doc } from 'firebase/firestore';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
