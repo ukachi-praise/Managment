@@ -13,14 +13,15 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     const { 
-        student, classroom, termResult, schoolSettings, scores, overall, schoolName 
+        student, classroom, termResult, schoolSettings, scores, overall, templateData 
     } = body;
     
     // --- 1. Load HTML Template ---
     const templatePath = path.join(process.cwd(), 'src', 'lib', 'result-template.html');
     let html = await fs.readFile(templatePath, 'utf8');
 
-    // --- 2. Prepare Data and Inject into Template ---
+    const settings = templateData?.settings;
+    const schoolName = templateData?.schoolName || 'JustVision Kiddies School';
 
     // Subjects Table
     const subjectsHtml = scores.map((score: any) => `
@@ -83,7 +84,7 @@ export async function POST(req: NextRequest) {
     // Replace all placeholders
     html = html
       .replace(/{{logoUrl}}/g, logoBase64)
-      .replace(/{{schoolName}}/g, schoolName || 'JustVision Kiddies School')
+      .replace(/{{schoolName}}/g, schoolName)
       .replace(/{{termName}}/g, termNames[schoolSettings.currentTermId] || 'N/A')
       .replace(/{{session}}/g, schoolSettings.currentSession || 'N/A')
       .replace(/{{student.name}}/g, student.name || 'N/A')
@@ -105,7 +106,29 @@ export async function POST(req: NextRequest) {
         args: ['--no-sandbox', '--disable-setuid-sandbox'] 
     });
     const page = await browser.newPage();
-    await page.setContent(html, { waitUntil: 'networkidle0' });
+    
+    // Apply dynamic styles based on template settings
+    let dynamicStyles = '';
+    if (settings?.studentInfo.fontSize) {
+      dynamicStyles += `.student-info-table { font-size: ${settings.studentInfo.fontSize}px; }`;
+    }
+
+    html = html.replace('/* DYNAMIC_STYLES */', dynamicStyles);
+
+    // Conditionally remove elements
+    const cheerio = await import('cheerio');
+    const $ = cheerio.load(html);
+
+    if (!settings?.header.visible) $('#header-section').remove();
+    if (!settings?.studentInfo.visible) $('#student-info-section').remove();
+    if (!settings?.subjectsTable.visible) $('#subjects-table-section').remove();
+    if (!settings?.summary.visible) $('#summary-section').remove();
+    if (!settings?.softSkills.visible) $('#soft-skills-section').remove();
+    if (!settings?.gradingKey.visible) $('#grading-key-section').remove();
+    if (!settings?.remarks.visible) $('#remarks-section').remove();
+    if (!settings?.signatures.visible) $('#signatures-section').remove();
+
+    await page.setContent($.html(), { waitUntil: 'networkidle0' });
     
     const pdfBuffer = await page.pdf({
       format: 'A4',

@@ -10,12 +10,15 @@ import { format } from 'date-fns';
 import { generateStudentExcel } from '@/lib/generateExcel';
 
 // Define types to match the expected data structure
-type ScoreData = { subjectName: string; ca1: number | null; ca2: number | null; exam: number | null; total: number; grade: string; remark: string; };
+type ScoreData = { subjectName: string; ca1: number | null; ca2: number | null; exam: number | null; total: number; grade: string; remark: string; subSubjects?: string[] };
 type StudentData = { id: string; name: string; admissionNumber: string; };
 type ClassroomData = { name: string; teacherName?: string; };
 type TermResultData = { daysAttended?: number; };
 type SchoolSettingsData = { currentSession: string; currentTermId: string; daysSchoolOpened: number; nextTermResumptionDate: any; };
 type OverallData = { average: string; grade: string; };
+type TemplateSettings = { studentInfo: { fontSize: number; visible: boolean; }; header: { visible: boolean; }; subjectsTable: { visible: boolean; }; summary: { visible: boolean; }; softSkills: { visible: boolean; }; gradingKey: { visible: boolean; }; remarks: { visible: boolean; }; signatures: { visible: boolean; }; };
+type SavedTemplateData = { name: string; schoolName: string; settings: TemplateSettings; };
+
 
 const termNames: Record<string, string> = { term1: '1st Term', term2: '2nd Term', term3: '3rd Term' };
 
@@ -26,10 +29,13 @@ async function generateStudentPDF(
     schoolSettings: SchoolSettingsData,
     scores: ScoreData[],
     overall: OverallData,
-    schoolName: string
+    templateData?: SavedTemplateData,
 ) {
     const templatePath = path.join(process.cwd(), 'src', 'lib', 'result-template.html');
     let html = await fs.readFile(templatePath, 'utf8');
+
+    const settings = templateData?.settings;
+    const schoolName = templateData?.schoolName || 'JustVision Kiddies School';
 
     const subjectsHtml = scores.map((score: any) => `
         <tr>
@@ -63,15 +69,12 @@ async function generateStudentPDF(
         </div>
     `).join('');
     
-    // Robust date handling
     let resumptionDate;
     if (schoolSettings.nextTermResumptionDate) {
-        // Handle both Timestamp-like objects and date strings
         const dateValue = schoolSettings.nextTermResumptionDate.seconds 
             ? new Date(schoolSettings.nextTermResumptionDate.seconds * 1000)
             : new Date(schoolSettings.nextTermResumptionDate);
         
-        // Check if date is valid
         if (!isNaN(dateValue.getTime())) {
             resumptionDate = format(dateValue, 'PPP');
         } else {
@@ -87,7 +90,7 @@ async function generateStudentPDF(
 
     html = html
       .replace(/{{logoUrl}}/g, logoBase64)
-      .replace(/{{schoolName}}/g, schoolName || 'JustVision Kiddies School')
+      .replace(/{{schoolName}}/g, schoolName)
       .replace(/{{termName}}/g, termNames[schoolSettings.currentTermId] || 'N/A')
       .replace(/{{session}}/g, schoolSettings.currentSession || 'N/A')
       .replace(/{{student.name}}/g, student.name || 'N/A')
@@ -104,7 +107,30 @@ async function generateStudentPDF(
 
     const browser = await puppeteer.launch({ headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox'] });
     const page = await browser.newPage();
-    await page.setContent(html, { waitUntil: 'networkidle0' });
+    
+    // Apply dynamic styles based on template settings
+    let dynamicStyles = '';
+    if (settings?.studentInfo.fontSize) {
+      dynamicStyles += `.student-info-table { font-size: ${settings.studentInfo.fontSize}px; }`;
+    }
+
+    html = html.replace('/* DYNAMIC_STYLES */', dynamicStyles);
+
+    // Conditionally remove elements
+    const cheerio = await import('cheerio');
+    const $ = cheerio.load(html);
+
+    if (!settings?.header.visible) $('#header-section').remove();
+    if (!settings?.studentInfo.visible) $('#student-info-section').remove();
+    if (!settings?.subjectsTable.visible) $('#subjects-table-section').remove();
+    if (!settings?.summary.visible) $('#summary-section').remove();
+    if (!settings?.softSkills.visible) $('#soft-skills-section').remove();
+    if (!settings?.gradingKey.visible) $('#grading-key-section').remove();
+    if (!settings?.remarks.visible) $('#remarks-section').remove();
+    if (!settings?.signatures.visible) $('#signatures-section').remove();
+    
+    await page.setContent($.html(), { waitUntil: 'networkidle0' });
+
     const pdfBuffer = await page.pdf({ format: 'A4', printBackground: true, margin: { top: '0px', right: '0px', bottom: '0px', left: '0px' } });
     await browser.close();
 
@@ -120,7 +146,7 @@ export async function POST(req: NextRequest) {
             return new NextResponse(JSON.stringify({ error: 'No student data provided.' }), { status: 400 });
         }
         
-        const { classroom, schoolSettings, allSubjects, schoolName } = body;
+        const { classroom, schoolSettings, templateData } = body;
         const validStudents = body.students.filter(Boolean); // Filter out any null/undefined entries
 
         const zip = new JSZip();
@@ -139,11 +165,13 @@ export async function POST(req: NextRequest) {
             // Generate PDF
             try {
                 const pdfBuffer = await generateStudentPDF(
-                    student, classroom, termResult, schoolSettings, scores, overall, schoolName
+                    student, classroom, termResult, schoolSettings, scores, overall, templateData
                 );
                 studentFolder.file(`${student.name.replace(/ /g, '_')}_Report.pdf`, pdfBuffer);
             } catch(err: any) {
                 console.error(`PDF generation failed for ${student.name}:`, err.message);
+                 // Optionally add a text file indicating the error
+                studentFolder.file('PDF_GENERATION_FAILED.txt', err.message);
             }
             
             // Generate Excel
@@ -154,6 +182,7 @@ export async function POST(req: NextRequest) {
                 studentFolder.file(`${student.name.replace(/ /g, '_')}_Report.xlsx`, excelBuffer);
             } catch (err: any) {
                  console.error(`Excel generation failed for ${student.name}:`, err.message);
+                 studentFolder.file('EXCEL_GENERATION_FAILED.txt', err.message);
             }
         }
 

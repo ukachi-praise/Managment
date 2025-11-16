@@ -136,7 +136,6 @@ export function ResultViewTable() {
     });
 
     try {
-        const schoolName = savedTemplateData?.schoolName || 'JustVision Kiddies School';
         const classroom = classrooms?.find(c => c.id === selectedClass);
         if(!classroom) throw new Error("Classroom not found");
 
@@ -151,7 +150,7 @@ export function ResultViewTable() {
                 const subject = allSubjects.find(s => s.id === subjectId);
                 const total = (score.ca1 || 0) + (score.ca2 || 0) + (score.exam || 0);
                 const { grade, remark } = calculateGrade(total);
-                return { subjectName: subject?.name || 'Unknown', ca1: score.ca1, ca2: score.ca2, exam: score.exam, total, grade, remark };
+                return { subjectName: subject?.name || 'Unknown', subSubjects: subject?.subSubjects || [], ca1: score.ca1, ca2: score.ca2, exam: score.exam, total, grade, remark };
             });
 
             const totalSum = scores.reduce((sum, entry) => sum + entry.total, 0);
@@ -173,8 +172,7 @@ export function ResultViewTable() {
             students: validStudentData,
             classroom,
             schoolSettings,
-            allSubjects,
-            schoolName,
+            templateData: savedTemplateData, // Pass the template data
         };
 
         const response = await fetch('/api/export-class-zip', {
@@ -184,7 +182,8 @@ export function ResultViewTable() {
         });
 
         if (!response.ok) {
-            throw new Error(`ZIP generation failed with status ${response.status}`);
+            const errorData = await response.json();
+            throw new Error(errorData.details || `ZIP generation failed with status ${response.status}`);
         }
 
         const blob = await response.blob();
@@ -192,9 +191,9 @@ export function ResultViewTable() {
 
         toast({ title: 'Success', description: `Downloaded ZIP file for ${classroom.name}.` });
 
-    } catch (error) {
+    } catch (error: any) {
         console.error("Failed to generate ZIP:", error);
-        toast({ variant: "destructive", title: "ZIP Export Error", description: "Could not generate the ZIP file." });
+        toast({ variant: "destructive", title: "ZIP Export Error", description: error.message || "Could not generate the ZIP file." });
     } finally {
         setIsZipping(false);
     }

@@ -47,6 +47,7 @@
         .page-break {
             page-break-after: always;
         }
+        /* DYNAMIC_STYLES */
     </style>
 </head>
 <body>
@@ -54,7 +55,7 @@
         <img src="{{logoUrl}}" class="watermark" alt="Watermark">
         <div class="content">
             <!-- Header -->
-            <header class="mb-4 p-2 border border-black">
+            <header id="header-section" class="mb-4 p-2 border border-black">
                 <div class="flex items-start justify-between">
                     <div class="flex items-center gap-4">
                         <img src="{{logoUrl}}" alt="School Logo" class="h-20 w-20 object-contain">
@@ -73,7 +74,7 @@
             </header>
 
             <!-- Student Info -->
-            <div class="mb-4 p-2 border border-black text-xs">
+            <div id="student-info-section" class="mb-4 p-2 border border-black text-xs student-info-table">
                 <div class="grid grid-cols-3 gap-y-1 gap-x-4">
                     <div><span class="font-semibold w-[90px] inline-block">Student Name:</span><span class="flex-1 border-b border-dotted border-black">{{student.name}}</span></div>
                     <div><span class="font-semibold w-[90px] inline-block">Admission No:</span><span class="flex-1 border-b border-dotted border-black">{{student.admissionNumber}}</span></div>
@@ -88,7 +89,7 @@
             </div>
 
             <!-- Scores Table -->
-            <div class="border border-black">
+            <div id="subjects-table-section" class="border border-black">
                 <table>
                     <thead>
                         <tr>
@@ -107,7 +108,7 @@
             </div>
 
             <!-- Summary -->
-            <div class="mt-2 flex justify-end">
+            <div id="summary-section" class="mt-2 flex justify-end">
                 <div class="w-1/2 rounded-md border border-black p-2 text-sm space-y-1">
                     <div class="flex justify-between"><span class="font-semibold">Overall Average:</span><span>{{overall.average}}%</span></div>
                     <div class="flex justify-between"><span class="font-semibold">Overall Grade:</span><span>{{overall.grade}}</span></div>
@@ -126,14 +127,14 @@
              <footer class="pt-2 text-xs">
                 <section class='border border-black p-2 flex flex-col gap-2'>
                     <!-- Soft Skills -->
-                    <div class="space-y-1">
+                    <div id="soft-skills-section" class="space-y-1">
                         <h3 class="font-bold text-black text-sm">Soft Skills Assessment</h3>
                         <div class="grid grid-cols-3 gap-x-2 text-[10px]">
                             {{softSkills}}
                         </div>
                     </div>
                     <!-- Grading -->
-                    <div class="grid grid-cols-2 gap-x-4 pt-2 text-[10px]">
+                    <div id="grading-key-section" class="grid grid-cols-2 gap-x-4 pt-2 text-[10px]">
                         <div class="space-y-1">
                             <h3 class="font-bold text-black">Grading Key</h3>
                             <table>
@@ -167,13 +168,13 @@
                     </div>
 
                     <!-- Remarks -->
-                    <div class="pt-2 space-y-2 text-sm">
+                    <div id="remarks-section" class="pt-2 space-y-2 text-sm">
                         <div><h3 class="font-bold">Teacher's Remarks:</h3><p class="min-h-[25px] border-b border-black p-1">A brilliant student...</p></div>
                         <div><h3 class="font-bold">Head Teacher's Remarks:</h3><p class="min-h-[25px] border-b border-black p-1">Excellent performance...</p></div>
                     </div>
 
                     <!-- Signatures -->
-                    <div class="flex justify-between items-end pt-4 text-sm">
+                    <div id="signatures-section" class="flex justify-between items-end pt-4 text-sm">
                         <div class="text-center w-48"><div class="border-t border-black pt-1">Class Teacher's Signature</div></div>
                         <div class="text-center w-48"><div class="border-t border-black pt-1">Head Teacher's Signature</div></div>
                     </div>
@@ -183,5 +184,3 @@
     </div>
 </body>
 </html>
-
-    
