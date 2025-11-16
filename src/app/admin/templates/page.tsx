@@ -54,7 +54,7 @@ const initialSettings: TemplateSettings = {
 
 export default function TemplatesPage() {
   const { toast } = useToast();
-  const [templateName, setTemplateName] = useState('New Result Template');
+  const [templateName, setTemplateName] = useState('Primary School Template');
   const [schoolName, setSchoolName] = useState('JustVision Kiddies School');
   const [settings, setSettings] = useState<TemplateSettings>(initialSettings);
   const [isSaving, setIsSaving] = useState(false);
@@ -70,7 +70,7 @@ export default function TemplatesPage() {
   // --- Load Saved Template on Mount ---
   useEffect(() => {
     if (savedTemplateData) {
-      setTemplateName(savedTemplateData.name || 'New Result Template');
+      setTemplateName(savedTemplateData.name || 'Primary School Template');
       setSchoolName(savedTemplateData.schoolName || 'JustVision Kiddies School');
       setSettings(savedTemplateData.settings || initialSettings);
     }
@@ -79,7 +79,7 @@ export default function TemplatesPage() {
 
   const loadSavedTemplate = () => {
     if (savedTemplateData) {
-      setTemplateName(savedTemplateData.name || 'New Result Template');
+      setTemplateName(savedTemplateData.name || 'Primary School Template');
       setSchoolName(savedTemplateData.schoolName || 'JustVision Kiddies School');
       setSettings(savedTemplateData.settings || initialSettings);
       toast({
