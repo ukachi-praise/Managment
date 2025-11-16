@@ -53,6 +53,11 @@ type Classroom = {
   name: string;
 };
 
+type Enrollment = {
+    classroomId: string;
+    studentId: string;
+}
+
 
 export default function StudentsPage() {
   const [open, setOpen] = useState(false);
@@ -64,10 +69,23 @@ export default function StudentsPage() {
     () => (firestore ? query(collection(firestore, 'classrooms')) : null),
     [firestore]
   );
+  const enrollmentsQuery = useMemoFirebase(
+    () => (firestore ? query(collection(firestore, 'enrollments')) : null),
+    [firestore]
+  );
  
   const { data: classrooms, isLoading: classroomsLoading } = useCollection<Classroom>(classroomsQuery);
+  const { data: enrollments, isLoading: enrollmentsLoading } = useCollection<Enrollment>(enrollmentsQuery);
   
-  const isLoading = classroomsLoading;
+  const isLoading = classroomsLoading || enrollmentsLoading;
+
+  const studentCounts = useMemo(() => {
+    if (!enrollments) return {};
+    return enrollments.reduce((acc, enrollment) => {
+        acc[enrollment.classroomId] = (acc[enrollment.classroomId] || 0) + 1;
+        return acc;
+    }, {} as Record<string, number>);
+  }, [enrollments]);
 
   // --- Event Handlers ---
   const handleAddStudent = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -225,6 +243,7 @@ export default function StudentsPage() {
                         <TableHeader>
                             <TableRow>
                                 <TableHead>Class Name</TableHead>
+                                <TableHead>Number of Students</TableHead>
                                 <TableHead className="text-right">Actions</TableHead>
                             </TableRow>
                         </TableHeader>
@@ -232,6 +251,7 @@ export default function StudentsPage() {
                             {sortedClassrooms.length > 0 ? sortedClassrooms.map((classroom) => (
                                 <TableRow key={classroom.id}>
                                     <TableCell className="font-medium">{classroom.name}</TableCell>
+                                    <TableCell>{studentCounts[classroom.id] || 0}</TableCell>
                                     <TableCell className="text-right">
                                         <Button asChild variant="outline" size="sm">
                                             <Link href={`/teacher/class/${classroom.id}`}>
@@ -243,7 +263,7 @@ export default function StudentsPage() {
                                 </TableRow>
                             )) : (
                                 <TableRow>
-                                    <TableCell colSpan={2} className="h-24 text-center">
+                                    <TableCell colSpan={3} className="h-24 text-center">
                                         No classrooms found.
                                     </TableCell>
                                 </TableRow>
