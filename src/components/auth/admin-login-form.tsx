@@ -58,7 +58,6 @@ export function AdminLoginForm() {
           title: 'Login Successful',
           description: 'Welcome, Admin! Redirecting...',
         });
-        // The AuthGuard will handle the redirect now.
         router.push('/admin/dashboard');
       } else {
         toast({

@@ -19,8 +19,10 @@ import { toast } from '@/hooks/use-toast';
 import { useState } from 'react';
 import { Loader2, Eye, EyeOff } from 'lucide-react';
 import Link from 'next/link';
-import { useAuth } from '@/firebase/provider';
+import { useAuth, useFirestore } from '@/firebase/provider';
 import { signInWithEmailAndPassword } from 'firebase/auth';
+import { doc, getDoc } from 'firebase/firestore';
+
 
 const formSchema = z.object({
   email: z.string().email({ message: 'Please enter a valid email.' }),
@@ -32,6 +34,7 @@ export function LoginForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const auth = useAuth();
+  const firestore = useFirestore();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -44,15 +47,23 @@ export function LoginForm() {
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
     try {
-        await signInWithEmailAndPassword(auth, values.email, values.password);
-        // The FirebaseProvider's onAuthStateChanged will handle fetching the user's role
-        // and the AuthGuard will handle the redirect.
-        // We just need to wait for the user state to update.
+        const userCredential = await signInWithEmailAndPassword(auth, values.email, values.password);
+        const userDoc = await getDoc(doc(firestore, 'users', userCredential.user.uid));
+        const role = userDoc.data()?.role;
+
         toast({ title: 'Login Successful', description: 'Redirecting...' });
         
-        // The redirect will be handled by the guard watching the user state.
-        // A simple push to a generic dashboard can trigger the guard.
-        router.push('/teacher/dashboard');
+        if (role === 'Admin') {
+            router.push('/admin/dashboard');
+        } else if (role === 'Teacher') {
+            router.push('/teacher/dashboard');
+        } else {
+            // Default redirect if role is not found or not specified
+            await auth.signOut();
+            toast({ variant: 'destructive', title: 'Login Failed', description: 'No role assigned to this user.' });
+            setIsLoading(false);
+        }
+
     } catch (error: any) {
         if (error.code === 'auth/invalid-credential' || error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
             toast({
