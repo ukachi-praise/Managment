@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -25,20 +24,33 @@ import {
   useFirestore,
   useCollection,
   useUser,
+  useDoc,
 } from '@/firebase';
 import { useMemoFirebase } from '@/firebase/provider';
 import {
   collection,
   query,
   where,
+  doc,
+  getDocs,
+  Timestamp
 } from 'firebase/firestore';
 import { Button } from '../ui/button';
 import { useToast } from '@/hooks/use-toast';
+import { calculateGrade } from '@/lib/utils';
 
-// Define types based on backend.json
-type Student = { id: string; name: string };
-type Classroom = { id: string; name: string; };
+
+// --- TYPE DEFINITIONS ---
+type Student = { id: string; name: string; admissionNumber: string };
+type Classroom = { id: string; name: string; teacherName?: string; };
 type Enrollment = { id: string; studentId: string; classroomId: string };
+type Subject = { id: string; name: string; subSubjects?: string[] };
+type SchoolSettingsData = { currentSession: string; currentTermId: string; daysSchoolOpened: number; nextTermResumptionDate: Timestamp | Date | string; };
+type TemplateSettings = { studentInfo: { fontSize: number; visible: boolean; }; header: { visible: boolean; }; subjectsTable: { visible: boolean; }; summary: { visible: boolean; }; softSkills: { visible: boolean; }; gradingKey: { visible: boolean; }; remarks: { visible: boolean; }; signatures: { visible: boolean; }; };
+type SavedTemplateData = { name: string; schoolName: string; settings: TemplateSettings; };
+type SubjectScore = { ca1: number | null; ca2: number | null; exam: number | null; };
+type TermResult = { scores: Record<string, SubjectScore>; studentId: string; termId: string; sessionId: string; classroomId: string; daysAttended?: number; };
+const termNames: Record<string, string> = { term1: '1st Term', term2: '2nd Term', term3: '3rd Term' };
 
 
 export function ResultViewTable() {
@@ -47,7 +59,7 @@ export function ResultViewTable() {
   const { user } = useUser();
 
   const [selectedClass, setSelectedClass] = useState<string | null>(null);
-  const [isZipping, setIsZipping] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
   
   // --- Data Fetching ---
   const classroomsQuery = useMemoFirebase(
@@ -69,10 +81,19 @@ export function ResultViewTable() {
   const { data: enrollments, isLoading: enrollmentsLoading } = useCollection<Enrollment>(enrollmentsQuery);
 
   const allStudentsQuery = useMemoFirebase(
-    () => (firestore && user ? collection(firestore, 'students') : null),
+    () => (firestore && user ? query(collection(firestore, 'students'), where('isDeleted', '!=', true)) : null),
     [firestore, user]
   );
   const { data: allStudents, isLoading: allStudentsLoading } = useCollection<Student>(allStudentsQuery);
+
+  const settingsRef = useMemoFirebase(() => (firestore ? doc(firestore, 'schoolSettings', 'current') : null), [firestore]);
+  const { data: schoolSettings } = useDoc<SchoolSettingsData>(settingsRef);
+  
+  const templateRef = useMemoFirebase(() => (firestore ? doc(firestore, 'resultTemplates', 'main-template') : null), [firestore]);
+  const { data: savedTemplateData } = useDoc<SavedTemplateData>(templateRef);
+  
+  const subjectsQuery = useMemoFirebase(() => (firestore ? collection(firestore, 'subjects') : null), [firestore]);
+  const { data: allSubjects } = useCollection<Subject>(subjectsQuery);
   
   const studentsInClass = useMemo(() => {
       if (!enrollments || !allStudents) return [];
@@ -86,42 +107,106 @@ export function ResultViewTable() {
   }
 
   const handleBulkDownload = async () => {
-    if (!studentsInClass || studentsInClass.length === 0) return;
-    setIsZipping(true);
+    if (!studentsInClass || studentsInClass.length === 0 || !firestore || !schoolSettings || !allSubjects) return;
+    setIsExporting(true);
     toast({
       title: 'Initiating Bulk Export...',
-      description: `Preparing to export ${studentsInClass.length} report(s). Please allow pop-ups for this site.`,
+      description: `Preparing to export ${studentsInClass.length} report(s).`,
     });
 
-    const openAndPrint = (student: Student, classroomName: string) => {
-      return new Promise<void>((resolve) => {
-          const reportWindow = window.open(`/admin/results/${student.id}`, '_blank');
-          if (reportWindow) {
-              reportWindow.onload = () => {
-                  setTimeout(() => {
-                    reportWindow.document.title = `${student.name} - ${classroomName} - Report`;
-                    reportWindow.print();
-                    resolve();
-                  }, 2000); // Wait for content to render
-              };
-          } else {
-              toast({ variant: "destructive", title: "Pop-up blocked", description: "Could not open a new window to print."})
-              resolve(); // Resolve to continue the loop
-          }
-      })
-    };
-    
-    const selectedClassroomName = classrooms?.find(c => c.id === selectedClass)?.name || 'report';
+    const schoolName = savedTemplateData?.schoolName || 'JustVision Kiddies School';
+
+    const allSubjectsMap = new Map(allSubjects.map(s => [s.id, s]));
 
     for (const student of studentsInClass) {
-        await openAndPrint(student, selectedClassroomName);
-        await new Promise(resolve => setTimeout(resolve, 500)); // Stagger windows
+        try {
+            // 1. Fetch the specific term result for the student
+            const termResultId = `${schoolSettings.currentSession.replace('/', '-')}-${schoolSettings.currentTermId}`;
+            const resultDocRef = doc(firestore, 'students', student.id, 'results', termResultId);
+            const resultDocSnap = await getDocs(query(collection(firestore, 'students', student.id, 'results'), where('termId', '==', schoolSettings.currentTermId), where('sessionId', '==', schoolSettings.currentSession)));
+
+            if (resultDocSnap.empty) {
+                console.warn(`No result found for ${student.name} for the current term. Skipping.`);
+                continue;
+            }
+
+            const termResult = resultDocSnap.docs[0].data() as TermResult;
+            
+            // 2. Process scores
+            const scores = Object.entries(termResult.scores).map(([subjectId, score]) => {
+                const subject = allSubjectsMap.get(subjectId);
+                const total = (score.ca1 || 0) + (score.ca2 || 0) + (score.exam || 0);
+                const { grade, remark } = calculateGrade(total);
+                return {
+                    subjectName: subject?.name || 'Unknown Subject',
+                    subSubjects: subject?.subSubjects,
+                    ca1: score.ca1,
+                    ca2: score.ca2,
+                    exam: score.exam,
+                    total,
+                    grade,
+                    remark,
+                };
+            }).sort((a, b) => a.subjectName.localeCompare(b.subjectName));
+
+            const totalSum = scores.reduce((sum, entry) => sum + entry.total, 0);
+            const average = scores.length > 0 ? (totalSum / scores.length) : 0;
+            const overall = {
+                average: average.toFixed(2),
+                grade: calculateGrade(average).grade,
+            };
+            
+            const classroom = classrooms?.find(c => c.id === selectedClass);
+            
+            // 3. Prepare payload for API
+            const payload = {
+                student,
+                classroom: { ...classroom },
+                termResult: { ...termResult, daysAttended: termResult.daysAttended || 0 },
+                schoolSettings,
+                scores,
+                overall,
+                schoolName: schoolName,
+            };
+
+            // 4. Call API route
+            const response = await fetch('/api/export-pdf', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload),
+            });
+
+            if (!response.ok) {
+                throw new Error(`PDF generation failed for ${student.name}`);
+            }
+
+            // 5. Trigger download
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${student.name.replace(/ /g, '_')}-Report_Card.pdf`;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            window.URL.revokeObjectURL(url);
+            
+            toast({ title: 'Success', description: `Downloaded report for ${student.name}.` });
+            
+            // Stagger downloads slightly to prevent browser from blocking them
+            await new Promise(resolve => setTimeout(resolve, 500));
+
+        } catch (error) {
+            console.error(`Failed to export for ${student.name}:`, error);
+            toast({ variant: "destructive", title: "Export Error", description: `Could not generate PDF for ${student.name}.` });
+        }
     }
 
-    setIsZipping(false);
+
+    setIsExporting(false);
     toast({
       title: 'Bulk Export Complete',
-      description: 'All student report cards have been opened for printing/saving.',
+      description: 'All student reports have been downloaded.',
     });
   };
   
@@ -151,13 +236,13 @@ export function ResultViewTable() {
             </SelectContent>
           </Select>
            {selectedClass && (
-            <Button onClick={handleBulkDownload} disabled={isZipping || isFetchingStudents || studentsInClass.length === 0} className="w-full md:w-auto">
-              {isZipping ? (
+            <Button onClick={handleBulkDownload} disabled={isExporting || isFetchingStudents || studentsInClass.length === 0} className="w-full md:w-auto">
+              {isExporting ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               ) : (
                 <Download className="mr-2 h-4 w-4" />
               )}
-              {isZipping ? 'Exporting...' : 'Export All as PDF'}
+              {isExporting ? 'Exporting...' : 'Export All as PDF'}
             </Button>
            )}
         </div>
@@ -165,6 +250,9 @@ export function ResultViewTable() {
       <CardContent>
         {isDisplayingData ? (
           <>
+            <p className="text-sm text-muted-foreground mb-4">
+              Click &quot;Export All as PDF&quot; to download all report cards for the selected class. You can also view an individual report by clicking the button in the table.
+            </p>
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
@@ -184,7 +272,7 @@ export function ResultViewTable() {
                           </TableCell>
                            <TableCell className="text-right">
                             <Button asChild variant="outline" size="sm">
-                              <Link href={`/admin/results/${student.id}`}>
+                              <Link href={`/admin/results/${student.id}`} target="_blank">
                                 View Report
                               </Link>
                             </Button>
@@ -211,3 +299,5 @@ export function ResultViewTable() {
     </Card>
   );
 }
+
+    
