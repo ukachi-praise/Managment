@@ -215,7 +215,8 @@
         "currentSession": { "type": "string" },
         "currentTermId": { "type": "string" },
         "daysSchoolOpened": { "type": "number" },
-        "nextTermResumptionDate": { "type": "string", "format": "date" }
+        "nextTermResumptionDate": { "type": "string", "format": "date" },
+        "termEndingDate": { "type": "string", "format": "date" }
       },
       "required": ["currentSession", "currentTermId"]
     }
@@ -245,5 +246,3 @@
     ]
   }
 }
-
-    

@@ -35,7 +35,7 @@ import { Separator } from '@/components/ui/separator';
 // --- TYPE DEFINITIONS ---
 export type StudentData = { id: string; name: string; admissionNumber: string; isDeleted?: boolean; };
 export type Classroom = { id: string; name: string; teacherName?: string; };
-export type SchoolSettingsData = { currentSession: string; currentTermId: string; daysSchoolOpened: number; nextTermResumptionDate: Timestamp | Date | string; };
+export type SchoolSettingsData = { currentSession: string; currentTermId: string; daysSchoolOpened: number; nextTermResumptionDate: Timestamp | Date | string; termEndingDate?: Timestamp | Date | string; };
 export type TemplateSettings = { studentInfo: { fontSize: number; visible: boolean; }; header: { visible: boolean; }; subjectsTable: { visible: boolean; }; summary: { visible: boolean; }; softSkills: { visible: boolean; }; gradingKey: { visible: boolean; }; remarks: { visible: boolean; }; signatures: { visible: boolean; }; };
 export type SavedTemplateData = { name: string; schoolName: string; settings: TemplateSettings; };
 export type ResultEntry = { subjectName: string; ca1: number | null; ca2: number | null; exam: number | null; total: number; grade: string; remark: string; subSubjects?: string[] };
@@ -137,20 +137,21 @@ export function ResultSheet({
       
       const enrollmentsQuery = query(collection(firestore, 'enrollments'), where('classroomId', '==', classroom.id));
       const enrollmentsSnapshot = await getDocs(enrollmentsQuery);
-      const studentIds = enrollmentsSnapshot.docs.map(d => d.data().studentId);
       
-      if (studentIds.length === 0) {
+      if (enrollmentsSnapshot.empty) {
         setClassPopulation(0);
         return;
       }
 
-      // Fetch all students in the class
-      const studentsQuery = query(collection(firestore, 'students'), where('id', 'in', studentIds));
-      const studentsSnapshot = await getDocs(studentsQuery);
+      const studentIds = enrollmentsSnapshot.docs.map(d => d.data().studentId);
       
-      // Filter out soft-deleted students
-      const activeStudents = studentsSnapshot.docs.filter(d => !d.data().isDeleted);
-      setClassPopulation(activeStudents.length);
+      // Since student documents might not exist for all enrollments, query the students collection
+      const studentsQuerySnapshot = await getDocs(collection(firestore, 'students'));
+      const allStudentDocs = studentsSnapshot.docs.map(d => ({id: d.id, ...d.data()}));
+
+      // Filter for active students in the class
+      const activeStudentsInClass = allStudentDocs.filter(s => studentIds.includes(s.id) && !s.isDeleted);
+      setClassPopulation(activeStudentsInClass.length);
     };
 
     fetchClassPopulation();
@@ -217,18 +218,25 @@ export function ResultSheet({
   const resultEntries = isForTemplateBuilder ? templateResultEntries : liveResultEntries;
   const overall = isForTemplateBuilder ? templateOverall : liveOverall;
 
+  const parseAndFormatDate = (dateValue: any) => {
+    if (!dateValue) return 'N/A';
+    const date = dateValue instanceof Timestamp ? dateValue.toDate() : new Date(dateValue);
+    if (isNaN(date.getTime())) return 'N/A';
+    return format(date, 'PPP');
+  };
+
   const formattedResumptionDate = useMemo(() => {
     if (isForTemplateBuilder) return format(new Date(), 'PPP');
-    if (!schoolSettings?.nextTermResumptionDate) return 'N/A';
-    const date = schoolSettings.nextTermResumptionDate instanceof Timestamp
-      ? schoolSettings.nextTermResumptionDate.toDate()
-      : new Date(schoolSettings.nextTermResumptionDate);
-    return format(date, 'PPP');
+    return parseAndFormatDate(schoolSettings?.nextTermResumptionDate);
+  }, [schoolSettings, isForTemplateBuilder]);
+
+  const formattedTermEndingDate = useMemo(() => {
+    if (isForTemplateBuilder) return format(new Date(), 'PPP');
+    return parseAndFormatDate(schoolSettings?.termEndingDate);
   }, [schoolSettings, isForTemplateBuilder]);
 
   const reportSession = isForTemplateBuilder ? '2023/2024' : (termResult?.sessionId || schoolSettings?.currentSession);
-  const reportTermId = isForTemplateBuilder ? 'term1' : (termResult?.termId || schoolSettings?.currentTermId);
-  const reportTermName = reportTermId ? termNames[reportTermId] : 'N/A';
+  const reportTermName = isForTemplateBuilder ? '1st Term' : (schoolSettings?.currentTermId ? termNames[schoolSettings.currentTermId] : 'N/A');
 
   const isLoading = !isForTemplateBuilder && (settingsLoading || templateLoading || subjectsLoading || !termResultRef || classPopulation === null);
   
@@ -306,7 +314,7 @@ export function ResultSheet({
                             </div>
                             <div className="flex gap-4">
                                 <div className="w-1/3"><StudentInfoDetail label="School Open" value={isForTemplateBuilder ? '65' : schoolSettings?.daysSchoolOpened?.toString()} /></div>
-                                <div className="w-1/3"><StudentInfoDetail label="Term Ending" value={reportTermName} /></div>
+                                <div className="w-1/3"><StudentInfoDetail label="Term Ending" value={formattedTermEndingDate} /></div>
                                 <div className="w-1/3"><StudentInfoDetail label="Resumption" value={formattedResumptionDate} /></div>
                             </div>
                         </div>
@@ -393,7 +401,7 @@ export function ResultSheet({
                                         <TableRow><TableCell className="p-0.5 h-auto text-[8px] border border-black">80 – 100</TableCell><TableCell className="p-0.5 h-auto text-[8px] border border-black">A</TableCell><TableCell className="p-0.5 h-auto text-[8px] border border-black">Excellent</TableCell></TableRow>
                                         <TableRow><TableCell className="p-0.5 h-auto text-[8px] border border-black">70 – 79</TableCell><TableCell className="p-0.5 h-auto text-[8px] border border-black">B</TableCell><TableCell className="p-0.5 h-auto text-[8px] border border-black">Very Good</TableCell></TableRow>
                                         <TableRow><TableCell className="p-0.5 h-auto text-[8px] border border-black">60 – 69</TableCell><TableCell className="p-0.5 h-auto text-[8px] border border-black">C</TableCell><TableCell className="p-0.5 h-auto text-[8px] border border-black">Good</TableCell></TableRow>
-                                        <TableRow><TableCell className="p-0.5 h-auto text-[8px] border border-black">50 – 59</TableCell><TableCell className="p-0.5 h-auto text-[8px] border border-black">D</TableCell><TableCell className="p-0.5 h-auto text-[8px] border border-black">Fair</TableCell></TableRow>
+                                        <TableRow><TableCell className="p-0.5 h-auto text-[8px] border border-black">50 – 59</TableCell><TableCell className="p-0.5 h-auto text-[8px] border border-black">D</TableCell><TableCell className="p-0.5 h-auto text-[8px] border-black">Fair</TableCell></TableRow>
                                         <TableRow><TableCell className="p-0.5 h-auto text-[8px] border border-black">0 – 49</TableCell><TableCell className="p-0.5 h-auto text-[8px] border border-black">F</TableCell><TableCell className="p-0.5 h-auto text-[8px] border border-black">Fail</TableCell></TableRow>
                                     </TableBody>
                                 </Table>
@@ -467,7 +475,3 @@ export function ResultSheet({
     </div>
   );
 }
-
-
-
-    

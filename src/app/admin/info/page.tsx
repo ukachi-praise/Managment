@@ -55,6 +55,9 @@ const formSchema = z.object({
   nextTermResumptionDate: z.date({
     required_error: 'Resumption date is required.',
   }),
+  termEndingDate: z.date({
+    required_error: 'Term ending date is required.',
+  }),
 });
 
 type SchoolSettings = z.infer<typeof formSchema>;
@@ -82,27 +85,25 @@ export default function InfoPage() {
     },
   });
   
+  const parseTimestampToDate = (dateValue: any): Date | undefined => {
+    if (!dateValue) return undefined;
+    if (dateValue instanceof Timestamp) return dateValue.toDate();
+    if (dateValue instanceof Date) return dateValue;
+    try {
+      const parsedDate = new Date(dateValue);
+      if (!isNaN(parsedDate.getTime())) return parsedDate;
+    } catch (e) {
+      console.error("Could not parse date:", dateValue, e);
+    }
+    return undefined;
+  };
+  
   useEffect(() => {
     if (settingsData) {
-        let resumptionDate: Date | undefined = undefined;
-        if (settingsData.nextTermResumptionDate) {
-            // Firestore returns a Timestamp object, convert it to a JS Date
-            if (settingsData.nextTermResumptionDate instanceof Timestamp) {
-                resumptionDate = settingsData.nextTermResumptionDate.toDate();
-            } else if (settingsData.nextTermResumptionDate instanceof Date) {
-                 resumptionDate = settingsData.nextTermResumptionDate;
-            } else {
-                try {
-                    // Fallback for string representations
-                    resumptionDate = new Date(settingsData.nextTermResumptionDate);
-                } catch (e) {
-                    console.error("Could not parse date:", settingsData.nextTermResumptionDate);
-                }
-            }
-        }
       form.reset({
         ...settingsData,
-        nextTermResumptionDate: resumptionDate,
+        nextTermResumptionDate: parseTimestampToDate(settingsData.nextTermResumptionDate),
+        termEndingDate: parseTimestampToDate(settingsData.termEndingDate),
       });
     }
   }, [settingsData, form]);
@@ -158,7 +159,7 @@ export default function InfoPage() {
                   name="currentTermId"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Term Ending</FormLabel>
+                      <FormLabel>Current Term</FormLabel>
                        <Select
                         onValueChange={field.onChange}
                         value={field.value}
@@ -189,6 +190,45 @@ export default function InfoPage() {
                       <FormControl>
                         <Input type="number" placeholder="e.g. 65" {...field} />
                       </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="termEndingDate"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-col">
+                      <FormLabel>Term Ending Date</FormLabel>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <FormControl>
+                            <Button
+                              variant={'outline'}
+                              className={cn(
+                                'w-full pl-3 text-left font-normal',
+                                !field.value && 'text-muted-foreground'
+                              )}
+                            >
+                              {field.value ? (
+                                format(field.value, 'PPP')
+                              ) : (
+                                <span>Pick a date</span>
+                              )}
+                              <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                            </Button>
+                          </FormControl>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={field.value}
+                            onSelect={field.onChange}
+                            initialFocus
+                          />
+                        </PopoverContent>
+                      </Popover>
                       <FormMessage />
                     </FormItem>
                   )}
