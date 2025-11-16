@@ -41,19 +41,19 @@ const prompt = ai.definePrompt({
 
   Based on the student's average score, generate two remarks. CRITICAL: Do NOT mention the student's name in either remark.
 
-  1.  A Teacher's Remark: This should be a warm, encouraging, and direct single sentence.
+  1.  A Teacher's Remark: This should be a short, warm, and encouraging single sentence.
   2.  A Head Teacher's Remark: This should be a formal, concise single sentence summarizing academic standing.
 
   Example for a high score:
-  - Teacher: "An excellent performance this term, your hard work is clearly paying off!"
+  - Teacher: "Wonderful performance, keep it up!"
   - Head Teacher: "An outstanding and impressive academic achievement."
   
   Example for an average score:
-  - Teacher: "A satisfactory performance that shows clear potential for even better results."
+  - Teacher: "A good effort, continue to work hard."
   - Head Teacher: "A fair performance that shows potential for improvement."
 
   Example for a low score:
-  - Teacher: "This result doesn't reflect true capabilities, and we will work together to improve next term."
+  - Teacher: "More focus is required to improve your results."
   - Head Teacher: "Significant improvement is required in academic performance."
   
   Generate new, single-sentence remarks in the same style. Do not use the student's name.`,
