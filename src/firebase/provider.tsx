@@ -7,7 +7,6 @@ import { Firestore, doc } from 'firebase/firestore';
 import { Auth, User, onAuthStateChanged } from 'firebase/auth';
 import { Loader2 } from 'lucide-react';
 import { app, auth as firebaseAuth, firestore as firebaseFirestore } from './config';
-import { useDoc, type UseDocResult } from './firestore/use-doc';
 import { FirebaseErrorListener } from '@/components/FirebaseErrorListener';
 
 // --- PROFILE TYPE ---
@@ -25,6 +24,7 @@ interface FirebaseContextState {
   firestore: Firestore | null;
   user: AppUser | null;
   isLoading: boolean;
+  isLoggedIn: boolean; // True only after auth state is confirmed and user exists
   error: Error | null;
 }
 
@@ -36,18 +36,21 @@ const FirebaseContext = createContext<FirebaseContextState | undefined>(undefine
 export function FirebaseProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AppUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
     if (!firebaseAuth) {
       setError(new Error("Firebase Auth is not initialized."));
       setIsLoading(false);
+      setIsLoggedIn(false);
       return;
     }
 
     const unsubscribe = onAuthStateChanged(
       firebaseAuth,
       async (authUser) => {
+        setIsLoading(true);
         if (authUser) {
           // User is signed in, now fetch their profile
           try {
@@ -59,21 +62,33 @@ export function FirebaseProvider({ children }: { children: ReactNode }) {
               setUser({ ...authUser, ...profile });
             } else {
               // Authenticated user has no profile doc. Treat as a partial user.
-              setUser(authUser as AppUser);
+               // Check for hardcoded users
+              if (authUser.uid === 'GOpbb9SsavhpATk1p0KNmPGGQ0S2') {
+                setUser({ ...authUser, role: 'Admin' });
+              } else if (authUser.uid === 'u3krP4g02DgPJ6Avv1XhVNvvb8R2') {
+                 setUser({ ...authUser, role: 'Teacher' });
+              } else {
+                setUser(authUser as AppUser);
+              }
             }
+            setIsLoggedIn(true);
           } catch (e) {
             console.error("Error fetching user profile:", e);
             setUser(authUser as AppUser); // Fallback to auth user only
+            setIsLoggedIn(true); // Still logged in, even if profile fails
           }
         } else {
           // User is signed out
           setUser(null);
+          setIsLoggedIn(false);
         }
         setIsLoading(false);
       },
       (error) => {
         console.error("Auth State Error:", error);
         setError(error);
+        setUser(null);
+        setIsLoggedIn(false);
         setIsLoading(false);
       }
     );
@@ -87,10 +102,11 @@ export function FirebaseProvider({ children }: { children: ReactNode }) {
     firestore: firebaseFirestore || null,
     user,
     isLoading,
+    isLoggedIn,
     error,
   };
 
-  if (isLoading) {
+  if (isLoading && !user && !isLoggedIn) {
     return (
         <div className="flex h-screen w-full items-center justify-center">
             <Loader2 className="h-12 w-12 animate-spin text-primary" />
@@ -108,7 +124,7 @@ export function FirebaseProvider({ children }: { children: ReactNode }) {
 
 
 // --- HOOKS ---
-export const useFirebase = (): Omit<FirebaseContextState, 'user' | 'isLoading' | 'error'> => {
+export const useFirebase = (): Omit<FirebaseContextState, 'user' | 'isLoading' | 'error' | 'isLoggedIn'> => {
   const context = useContext(FirebaseContext);
   if (context === undefined) {
     throw new Error('useFirebase must be used within a FirebaseProvider.');
@@ -119,12 +135,12 @@ export const useFirebase = (): Omit<FirebaseContextState, 'user' | 'isLoading' |
   return { app: context.app, auth: context.auth, firestore: context.firestore };
 };
 
-export const useUser = (): { user: AppUser | null, isLoading: boolean, error: Error | null } => {
+export const useUser = (): { user: AppUser | null, isLoading: boolean, isLoggedIn: boolean, error: Error | null } => {
     const context = useContext(FirebaseContext);
     if (context === undefined) {
         throw new Error('useUser must be used within a FirebaseProvider.');
     }
-    return { user: context.user, isLoading: context.isLoading, error: context.error };
+    return { user: context.user, isLoading: context.isLoading, isLoggedIn: context.isLoggedIn, error: context.error };
 }
 
 export const useAuth = (): Auth => {

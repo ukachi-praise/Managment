@@ -11,7 +11,7 @@ import {
 } from 'firebase/firestore';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
-import { useFirestore } from '@/firebase/provider';
+import { useUser } from '@/firebase/provider';
 
 /** Utility type to add an 'id' field to a given type T. */
 type WithId<T> = T & { id: string };
@@ -48,11 +48,14 @@ export function useDoc<T = any>(
   const [data, setData] = useState<StateDataType>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<FirestoreError | Error | null>(null);
+  const { isLoggedIn, isLoading: isAuthLoading } = useUser();
+
 
   useEffect(() => {
-    if (!memoizedDocRef) {
+     // If auth is loading or the user is not logged in, or if the doc ref is not ready, do nothing.
+    if (isAuthLoading || !isLoggedIn || !memoizedDocRef) {
       setData(null);
-      setIsLoading(false);
+      setIsLoading(!(!isAuthLoading && memoizedDocRef));
       setError(null);
       return;
     }
@@ -89,7 +92,7 @@ export function useDoc<T = any>(
     );
 
     return () => unsubscribe();
-  }, [memoizedDocRef]); // Re-run if the memoizedDocRef changes.
+  }, [memoizedDocRef, isLoggedIn, isAuthLoading]); // Re-run if the memoizedDocRef or auth state changes.
 
   if(memoizedDocRef && !memoizedDocRef.__memo) {
     throw new Error('useDoc ref was not properly memoized using useMemoFirebase');

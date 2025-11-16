@@ -12,7 +12,7 @@ import {
 } from 'firebase/firestore';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
-import { useFirestore } from '@/firebase/provider';
+import { useUser } from '@/firebase/provider';
 
 
 /** Utility type to add an 'id' field to a given type T. */
@@ -63,11 +63,14 @@ export function useCollection<T = any>(
   const [data, setData] = useState<StateDataType>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<FirestoreError | Error | null>(null);
+  const { isLoggedIn, isLoading: isAuthLoading } = useUser();
 
   useEffect(() => {
-    if (!memoizedTargetRefOrQuery) {
+    // If auth is loading or the user is not logged in, or if the query is not ready, do nothing.
+    if (isAuthLoading || !isLoggedIn || !memoizedTargetRefOrQuery) {
       setData(null);
-      setIsLoading(false);
+      // We are only truly "loading" if auth is finished and we have a query.
+      setIsLoading(!(!isAuthLoading && memoizedTargetRefOrQuery));
       setError(null);
       return;
     }
@@ -109,7 +112,8 @@ export function useCollection<T = any>(
     );
 
     return () => unsubscribe();
-  }, [memoizedTargetRefOrQuery]); // Re-run if the target query/reference changes.
+  }, [memoizedTargetRefOrQuery, isLoggedIn, isAuthLoading]); // Re-run if the target query/reference or auth state changes.
+
   if(memoizedTargetRefOrQuery && !memoizedTargetRefOrQuery.__memo) {
     throw new Error('useCollection query was not properly memoized using useMemoFirebase');
   }
