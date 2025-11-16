@@ -158,7 +158,7 @@ export default function InfoPage() {
                   name="currentTermId"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Current Term</FormLabel>
+                      <FormLabel>Term Ending</FormLabel>
                        <Select
                         onValueChange={field.onChange}
                         value={field.value}
