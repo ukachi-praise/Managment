@@ -26,7 +26,7 @@ import {
 } from '@/components/ui/sidebar';
 import { Logo } from './logo';
 import { Button } from '../ui/button';
-import { useUser, useFirestore } from '@/firebase';
+import { useUser, useFirestore } from '@/firebase/provider';
 import { useMemo, useState, useEffect } from 'react';
 import { doc, getDoc } from 'firebase/firestore';
 

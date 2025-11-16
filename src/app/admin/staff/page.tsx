@@ -42,14 +42,10 @@ import { Label } from '@/components/ui/label';
 import { PlusCircle, Edit, Trash2, Loader2, KeyRound, ArrowLeft } from 'lucide-react';
 import {
   useCollection,
-  useFirestore,
-  setDocumentNonBlocking,
-  deleteDocumentNonBlocking,
-  useAuth,
-  useUser,
-} from '@/firebase';
+} from '@/firebase/firestore/use-collection';
+import { setDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+import { useAuth, useUser, useFirestore, useMemoFirebase } from '@/firebase/provider';
 import { sendPasswordResetEmail } from 'firebase/auth';
-import { useMemoFirebase } from '@/firebase/provider';
 import { collection, query, doc, where, getDocs, writeBatch } from 'firebase/firestore';
 import { Badge } from '@/components/ui/badge';
 import {

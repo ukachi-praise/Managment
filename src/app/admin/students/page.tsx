@@ -22,11 +22,12 @@ import { PlusCircle, ArrowRight, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import {
   useCollection,
+} from '@/firebase/firestore/use-collection';
+import { useDoc } from '@/firebase/firestore/use-doc';
+import {
   useFirestore,
-  addDocumentNonBlocking,
-  useDoc,
-} from '@/firebase';
-import { useMemoFirebase } from '@/firebase/provider';
+  useMemoFirebase,
+} from '@/firebase/provider';
 import { collection, query, addDoc, doc } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
@@ -48,6 +49,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useRouter } from 'next/navigation';
+import { addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 
 type Classroom = {
   id: string;

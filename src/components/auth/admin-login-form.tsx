@@ -19,8 +19,8 @@ import { toast } from '@/hooks/use-toast';
 import { useState } from 'react';
 import { Loader2, Eye, EyeOff } from 'lucide-react';
 import Link from 'next/link';
-import { useAuth, useFirestore } from '@/firebase';
-import { signInWithEmailAndPassword, User } from 'firebase/auth';
+import { useAuth, useFirestore } from '@/firebase/provider';
+import { signInWithEmailAndPassword } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
 
 const formSchema = z.object({
@@ -45,11 +45,6 @@ export function AdminLoginForm() {
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
-    if (!auth || !firestore) {
-        toast({ variant: 'destructive', title: 'Error', description: 'Authentication service not ready.' });
-        setIsLoading(false);
-        return;
-    };
 
     try {
       const userCredential = await signInWithEmailAndPassword(auth, values.email, values.password);
@@ -64,7 +59,6 @@ export function AdminLoginForm() {
           description: 'Welcome, Admin! Redirecting...',
         });
         // The AuthGuard will handle the redirect now.
-        // We just need to push to the intended destination.
         router.push('/admin/dashboard');
       } else {
         toast({
@@ -72,9 +66,7 @@ export function AdminLoginForm() {
           title: 'Permission Denied',
           description: 'You do not have admin privileges.',
         });
-        if (auth) {
-          await auth.signOut();
-        }
+        await auth.signOut();
         setIsLoading(false);
       }
     } catch (error: any) {

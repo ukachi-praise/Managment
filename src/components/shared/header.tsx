@@ -15,7 +15,7 @@ import { LogOut, Settings, User as UserIcon } from 'lucide-react';
 import { SidebarTrigger } from '../ui/sidebar';
 import { useSidebar } from '../ui/sidebar';
 import { useRouter } from 'next/navigation';
-import { useAuth, useUser } from '@/firebase';
+import { useAuth, useUser } from '@/firebase/provider';
 import { signOut } from 'firebase/auth';
 import { Skeleton } from '../ui/skeleton';
 import Link from 'next/link';
@@ -25,7 +25,7 @@ export function Header() {
   const { isMobile } = useSidebar();
   const router = useRouter();
   const auth = useAuth();
-  const { user, isUserLoading } = useUser();
+  const { user, isLoading } = useUser();
 
   const handleLogout = async () => {
     if (auth) {
@@ -50,7 +50,7 @@ export function Header() {
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant="ghost" className="relative h-9 w-9 rounded-full">
-            {isUserLoading ? (
+            {isLoading ? (
               <Skeleton className="h-9 w-9 rounded-full" />
             ) : (
               <Avatar className="h-9 w-9">

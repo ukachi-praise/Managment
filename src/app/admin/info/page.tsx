@@ -42,11 +42,12 @@ import {
   useFirestore,
   useDoc,
   setDocumentNonBlocking,
-} from '@/firebase';
+} from '@/firebase/firestore/use-doc';
 import { useMemoFirebase } from '@/firebase/provider';
 import { doc, Timestamp } from 'firebase/firestore';
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { setDocumentNonBlocking as setDocNB } from '@/firebase/non-blocking-updates';
 
 const formSchema = z.object({
   currentSession: z.string().min(1, 'Please enter a session name.'),
@@ -115,7 +116,7 @@ export default function InfoPage() {
 
   const onSubmit = async (values: SchoolSettings) => {
     if (!settingsRef) return;
-    setDocumentNonBlocking(settingsRef, values, { merge: true });
+    setDocNB(settingsRef, values, { merge: true });
     toast({
       title: 'Settings Saved',
       description: 'The school settings have been updated successfully.',

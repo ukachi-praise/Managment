@@ -19,9 +19,8 @@ import { toast } from '@/hooks/use-toast';
 import { useState } from 'react';
 import { Loader2, Eye, EyeOff } from 'lucide-react';
 import Link from 'next/link';
-import { useAuth, useFirestore } from '@/firebase';
-import { signInWithEmailAndPassword, User } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
+import { useAuth } from '@/firebase/provider';
+import { signInWithEmailAndPassword } from 'firebase/auth';
 
 const formSchema = z.object({
   email: z.string().email({ message: 'Please enter a valid email.' }),
@@ -33,7 +32,6 @@ export function LoginForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const auth = useAuth();
-  const firestore = useFirestore();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -43,57 +41,18 @@ export function LoginForm() {
     },
   });
 
-  const handleSuccessfulLogin = async (user: User) => {
-    if (!firestore) {
-        toast({ variant: 'destructive', title: 'Error', description: 'Database connection failed.' });
-        setIsLoading(false);
-        return;
-    }
-
-    const userDocRef = doc(firestore, 'users', user.uid);
-    const userDoc = await getDoc(userDocRef);
-
-    if (userDoc.exists()) {
-        const userData = userDoc.data();
-        if (userData.role === 'Admin') {
-            toast({ title: 'Admin Login Detected', description: 'Redirecting to admin login...' });
-            router.push('/admin/login');
-        } else if (userData.role === 'Teacher') {
-            if (userData.assignedClassroomId) {
-                 toast({ title: 'Login Successful', description: `Welcome, Teacher! Redirecting to your class...` });
-                router.push(`/teacher/class/${userData.assignedClassroomId}`);
-            } else {
-                // This case is for a teacher who exists but has no class assigned.
-                // The AuthGuard for the teacher layout will handle this by showing the dashboard page
-                // which then explains that no class is assigned.
-                toast({ title: 'Login Successful', description: `Welcome, Teacher! Redirecting...` });
-                router.push('/teacher/dashboard');
-            }
-        } else {
-            // User has a document but no valid role.
-            toast({ variant: 'destructive', title: 'Login Failed', description: 'Your user role is not recognized.' });
-            if(auth) await auth.signOut();
-            setIsLoading(false);
-        }
-    } else {
-       // User is authenticated in Firebase Auth, but has no corresponding user document in Firestore.
-       toast({ variant: 'destructive', title: 'Login Failed', description: 'Your user profile is not configured. Please contact an administrator.' });
-       if(auth) await auth.signOut();
-       setIsLoading(false);
-    }
-  }
-
-
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
-    if (!auth) {
-        toast({ variant: 'destructive', title: 'Error', description: 'Authentication service not ready.' });
-        setIsLoading(false);
-        return;
-    };
     try {
-        const userCredential = await signInWithEmailAndPassword(auth, values.email, values.password);
-        await handleSuccessfulLogin(userCredential.user);
+        await signInWithEmailAndPassword(auth, values.email, values.password);
+        // The FirebaseProvider's onAuthStateChanged will handle fetching the user's role
+        // and the AuthGuard will handle the redirect.
+        // We just need to wait for the user state to update.
+        toast({ title: 'Login Successful', description: 'Redirecting...' });
+        
+        // The redirect will be handled by the guard watching the user state.
+        // A simple push to a generic dashboard can trigger the guard.
+        router.push('/teacher/dashboard');
     } catch (error: any) {
         if (error.code === 'auth/invalid-credential' || error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
             toast({

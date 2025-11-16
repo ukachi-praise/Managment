@@ -8,8 +8,8 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Users, Presentation, BookCopy, Loader2 } from 'lucide-react';
-import { useCollection, useUser } from '@/firebase';
-import { useMemoFirebase, useFirestore } from '@/firebase/provider';
+import { useCollection, useUser } from '@/firebase/firestore/use-collection';
+import { useMemoFirebase, useFirestore, useUser as useAppUser } from '@/firebase/provider';
 import { collection, query } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -39,7 +39,7 @@ function StatCard({ title, value, icon: Icon, note, isLoading }: { title: string
 
 export default function AdminDashboard() {
   const firestore = useFirestore();
-  const { user } = useUser();
+  const { user } = useAppUser();
 
   const studentsQuery = useMemoFirebase(
     () => (firestore ? query(collection(firestore, 'students')) : null),
