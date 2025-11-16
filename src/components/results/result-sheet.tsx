@@ -188,6 +188,13 @@ export function ResultSheet({
   if (!isForTemplateBuilder && !student) {
       return <div className="rounded-lg border bg-card p-8">Student data could not be loaded.</div>
   }
+  
+  const allSoftSkills = [
+    "Punctuality", "Neatness", "Creativity",
+    "Honesty", "Communication", "Teamwork",
+    "Attentiveness", "Self Control", "Leadership"
+  ];
+
 
   // --- RENDER ---
   return (
@@ -302,30 +309,20 @@ export function ResultSheet({
                           {settings.softSkills.visible && (
                           <div className="space-y-1">
                               <h3 className="font-bold text-black text-[9px]">Soft Skills Assessment</h3>
-                              <div className="grid grid-cols-3 gap-x-2">
-                                  {[
-                                      ["Punctuality", "Neatness", "Creativity"],
-                                      ["Honesty", "Communication", "Teamwork"],
-                                      ["Attentiveness", "Self Control", "Leadership"]
-                                  ].map((column, colIndex) => (
-                                      <div key={colIndex}>
-                                          <Table>
-                                              <TableBody>
-                                                  {column.map((skill, skillIndex) => (
-                                                      <TableRow key={skillIndex}>
-                                                          <TableCell className="font-medium p-0.5 h-auto text-[8px] border border-black text-black">{skill}</TableCell>
-                                                          <TableCell className="text-right p-0.5 h-auto text-[8px] border border-black w-[20px]">5</TableCell>
-                                                      </TableRow>
-                                                  ))}
-                                              </TableBody>
-                                          </Table>
-                                      </div>
-                                  ))}
-                              </div>
+                               <Table>
+                                  <TableBody>
+                                      {allSoftSkills.map((skill, skillIndex) => (
+                                          <TableRow key={skillIndex}>
+                                              <TableCell className="font-medium p-0.5 h-auto text-[8px] border border-black text-black">{skill}</TableCell>
+                                              <TableCell className="text-right p-0.5 h-auto text-[8px] border border-black w-[20px]">5</TableCell>
+                                          </TableRow>
+                                      ))}
+                                  </TableBody>
+                              </Table>
                           </div>
                           )}
                           {settings.gradingKey.visible && (
-                              <div className="grid grid-cols-2 gap-x-4 pt-1 text-[9px]">
+                              <div className="pt-1 text-[9px] flex gap-x-4">
                                   <div className="space-y-1">
                                       <h3 className="font-bold text-black">Grading Key</h3>
                                       <Table>
