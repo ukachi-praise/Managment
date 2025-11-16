@@ -181,11 +181,9 @@ export default function TeacherClassPage() {
                               Enter/View Scores
                             </Link>
                           </Button>
-                          {user?.role === 'Admin' && (
-                            <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => setStudentToDelete(student)}>
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          )}
+                          <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => setStudentToDelete(student)}>
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
                         </TableCell>
                       </TableRow>
                     ))
@@ -204,5 +202,3 @@ export default function TeacherClassPage() {
     </div>
   );
 }
-
-    
