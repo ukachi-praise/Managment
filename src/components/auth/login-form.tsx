@@ -21,24 +21,12 @@ import { Loader2, Eye, EyeOff } from 'lucide-react';
 import Link from 'next/link';
 import { useAuth, useFirestore } from '@/firebase';
 import { signInWithEmailAndPassword, User } from 'firebase/auth';
-import { doc, getDoc, getDocs, collection, query, where } from 'firebase/firestore';
+import { doc, getDoc } from 'firebase/firestore';
 
 const formSchema = z.object({
   email: z.string().email({ message: 'Please enter a valid email.' }),
   password: z.string().min(1, { message: 'Password is required.' }),
 });
-
-const ADMIN_UID = 'GOpbb9SsavhpATk1p0KNmPGGQ0S2';
-const TEACHER_UID = 'u3krP4g02DgPJ6Avv1XhVNvvb8R2';
-const PRIMARY_2_TEACHER_UID = '41N67kFTBqYVataTwg5UuIxAwHq2';
-const CRECHE_TEACHER_UID = 'vzT4PhW7g5SipKPScj89DGodBZF2';
-const PRIMARY_3_TEACHER_UID = '0wYNrCqR0ZTJgEykZ9R1mqvDO5o2';
-const PRIMARY_1A_TEACHER_UID = 'UJ71VwEZhhVclFS8FdeVEL1jH1C3';
-const NURSERY_2_TEACHER_UID = 'Z1yDssDNRshnMOcnKlxK7wSmhpE3';
-const PRIMARY_1B_TEACHER_UID = 'lqMDWRYrbugIlhVBA083OVpJO3p1';
-const NURSERY_1A_TEACHER_UID = 'vhyAkcnmE2OD9cheoDeXdsdUL1a2';
-const NURSERY_1B_TEACHER_UID = 'VEjzC6td3HNfWBg4CjNnCtSlC7g1';
-const PRE_NURSERY_TEACHER_UID = 'YAemjwMFEAOnvp6RL6STw3GJK0I2';
 
 export function LoginForm() {
   const router = useRouter();
@@ -62,184 +50,35 @@ export function LoginForm() {
         return;
     }
 
-    // Hardcoded redirect for specific Admin UID
-    if (user.uid === ADMIN_UID) {
-      toast({ title: 'Admin Login', description: 'Redirecting to admin login...' });
-      router.push('/admin/login');
-      return;
-    }
-
-    // Hardcoded redirect for specific Teacher UID (Primary 4)
-    if (user.uid === TEACHER_UID) {
-        toast({ title: 'Login Successful', description: `Welcome, Teacher! Redirecting...` });
-        const q = query(collection(firestore, 'classrooms'), where('name', '==', 'Primary 4'));
-        const querySnapshot = await getDocs(q);
-        if (!querySnapshot.empty) {
-            const classroomDoc = querySnapshot.docs[0];
-            router.push(`/teacher/class/${classroomDoc.id}`);
-        } else {
-             toast({ variant: 'destructive', title: 'Login Failed', description: 'Could not find "Primary 4" classroom.' });
-             setIsLoading(false);
-        }
-        return;
-    }
-    
-    // Hardcoded redirect for specific Teacher UID (Primary 2)
-    if (user.uid === PRIMARY_2_TEACHER_UID) {
-        toast({ title: 'Login Successful', description: `Welcome, Teacher! Redirecting...` });
-        const q = query(collection(firestore, 'classrooms'), where('name', '==', 'Primary 2'));
-        const querySnapshot = await getDocs(q);
-        if (!querySnapshot.empty) {
-            const classroomDoc = querySnapshot.docs[0];
-            router.push(`/teacher/class/${classroomDoc.id}`);
-        } else {
-             toast({ variant: 'destructive', title: 'Login Failed', description: 'Could not find "Primary 2" classroom.' });
-             setIsLoading(false);
-        }
-        return;
-    }
-
-    // Hardcoded redirect for specific Teacher UID (Creche)
-    if (user.uid === CRECHE_TEACHER_UID) {
-        toast({ title: 'Login Successful', description: `Welcome, Teacher! Redirecting...` });
-        const q = query(collection(firestore, 'classrooms'), where('name', '==', 'Creche'));
-        const querySnapshot = await getDocs(q);
-        if (!querySnapshot.empty) {
-            const classroomDoc = querySnapshot.docs[0];
-            router.push(`/teacher/class/${classroomDoc.id}`);
-        } else {
-             toast({ variant: 'destructive', title: 'Login Failed', description: 'Could not find "Creche" classroom.' });
-             setIsLoading(false);
-        }
-        return;
-    }
-    
-    // Hardcoded redirect for specific Teacher UID (Primary 3)
-    if (user.uid === PRIMARY_3_TEACHER_UID) {
-        toast({ title: 'Login Successful', description: `Welcome, Teacher! Redirecting...` });
-        const q = query(collection(firestore, 'classrooms'), where('name', '==', 'Primary 3'));
-        const querySnapshot = await getDocs(q);
-        if (!querySnapshot.empty) {
-            const classroomDoc = querySnapshot.docs[0];
-            router.push(`/teacher/class/${classroomDoc.id}`);
-        } else {
-             toast({ variant: 'destructive', title: 'Login Failed', description: 'Could not find "Primary 3" classroom.' });
-             setIsLoading(false);
-        }
-        return;
-    }
-
-    // Hardcoded redirect for specific Teacher UID (Primary 1A)
-    if (user.uid === PRIMARY_1A_TEACHER_UID) {
-        toast({ title: 'Login Successful', description: `Welcome, Teacher! Redirecting...` });
-        const q = query(collection(firestore, 'classrooms'), where('name', '==', 'Primary 1A'));
-        const querySnapshot = await getDocs(q);
-        if (!querySnapshot.empty) {
-            const classroomDoc = querySnapshot.docs[0];
-            router.push(`/teacher/class/${classroomDoc.id}`);
-        } else {
-             toast({ variant: 'destructive', title: 'Login Failed', description: 'Could not find "Primary 1A" classroom.' });
-             setIsLoading(false);
-        }
-        return;
-    }
-    
-    // Hardcoded redirect for specific Teacher UID (Nursery 2)
-    if (user.uid === NURSERY_2_TEACHER_UID) {
-        toast({ title: 'Login Successful', description: `Welcome, Teacher! Redirecting...` });
-        const q = query(collection(firestore, 'classrooms'), where('name', '==', 'Nursery 2'));
-        const querySnapshot = await getDocs(q);
-        if (!querySnapshot.empty) {
-            const classroomDoc = querySnapshot.docs[0];
-            router.push(`/teacher/class/${classroomDoc.id}`);
-        } else {
-             toast({ variant: 'destructive', title: 'Login Failed', description: 'Could not find "Nursery 2" classroom.' });
-             setIsLoading(false);
-        }
-        return;
-    }
-
-    // Hardcoded redirect for specific Teacher UID (Primary 1B)
-    if (user.uid === PRIMARY_1B_TEACHER_UID) {
-        toast({ title: 'Login Successful', description: `Welcome, Teacher! Redirecting...` });
-        const q = query(collection(firestore, 'classrooms'), where('name', '==', 'Primary 1B'));
-        const querySnapshot = await getDocs(q);
-        if (!querySnapshot.empty) {
-            const classroomDoc = querySnapshot.docs[0];
-            router.push(`/teacher/class/${classroomDoc.id}`);
-        } else {
-             toast({ variant: 'destructive', title: 'Login Failed', description: 'Could not find "Primary 1B" classroom.' });
-             setIsLoading(false);
-        }
-        return;
-    }
-
-    // Hardcoded redirect for specific Teacher UID (Nursery 1A)
-    if (user.uid === NURSERY_1A_TEACHER_UID) {
-        toast({ title: 'Login Successful', description: `Welcome, Teacher! Redirecting...` });
-        const q = query(collection(firestore, 'classrooms'), where('name', '==', 'Nursery 1A'));
-        const querySnapshot = await getDocs(q);
-        if (!querySnapshot.empty) {
-            const classroomDoc = querySnapshot.docs[0];
-            router.push(`/teacher/class/${classroomDoc.id}`);
-        } else {
-             toast({ variant: 'destructive', title: 'Login Failed', description: 'Could not find "Nursery 1A" classroom.' });
-             setIsLoading(false);
-        }
-        return;
-    }
-    
-    // Hardcoded redirect for specific Teacher UID (Nursery 1B)
-    if (user.uid === NURSERY_1B_TEACHER_UID) {
-        toast({ title: 'Login Successful', description: `Welcome, Teacher! Redirecting...` });
-        const q = query(collection(firestore, 'classrooms'), where('name', '==', 'Nursery 1B'));
-        const querySnapshot = await getDocs(q);
-        if (!querySnapshot.empty) {
-            const classroomDoc = querySnapshot.docs[0];
-            router.push(`/teacher/class/${classroomDoc.id}`);
-        } else {
-             toast({ variant: 'destructive', title: 'Login Failed', description: 'Could not find "Nursery 1B" classroom.' });
-             setIsLoading(false);
-        }
-        return;
-    }
-    
-    // Hardcoded redirect for specific Teacher UID (Pre nursery)
-    if (user.uid === PRE_NURSERY_TEACHER_UID) {
-        toast({ title: 'Login Successful', description: `Welcome, Teacher! Redirecting...` });
-        const q = query(collection(firestore, 'classrooms'), where('name', '==', 'Pre nursery'));
-        const querySnapshot = await getDocs(q);
-        if (!querySnapshot.empty) {
-            const classroomDoc = querySnapshot.docs[0];
-            router.push(`/teacher/class/${classroomDoc.id}`);
-        } else {
-             toast({ variant: 'destructive', title: 'Login Failed', description: 'Could not find "Pre nursery" classroom.' });
-             setIsLoading(false);
-        }
-        return;
-    }
-
-
-    // Default logic for other users
     const userDocRef = doc(firestore, 'users', user.uid);
     const userDoc = await getDoc(userDocRef);
 
     if (userDoc.exists()) {
         const userData = userDoc.data();
         if (userData.role === 'Admin') {
-            toast({ title: 'Admin Login', description: 'Redirecting to admin dashboard...' });
-            router.push('/admin/dashboard');
+            toast({ title: 'Admin Login Detected', description: 'Redirecting to admin login...' });
+            router.push('/admin/login');
         } else if (userData.role === 'Teacher') {
             if (userData.assignedClassroomId) {
                  toast({ title: 'Login Successful', description: `Welcome, Teacher! Redirecting to your class...` });
                 router.push(`/teacher/class/${userData.assignedClassroomId}`);
             } else {
-                toast({ variant: 'destructive', title: 'Login Failed', description: 'You have not been assigned to a classroom. Please contact an administrator.' });
-                setIsLoading(false);
+                // This case is for a teacher who exists but has no class assigned.
+                // The AuthGuard for the teacher layout will handle this by showing the dashboard page
+                // which then explains that no class is assigned.
+                toast({ title: 'Login Successful', description: `Welcome, Teacher! Redirecting...` });
+                router.push('/teacher/dashboard');
             }
+        } else {
+            // User has a document but no valid role.
+            toast({ variant: 'destructive', title: 'Login Failed', description: 'Your user role is not recognized.' });
+            if(auth) await auth.signOut();
+            setIsLoading(false);
         }
     } else {
-       toast({ variant: 'destructive', title: 'Login Failed', description: 'Your user role is not configured. Please contact an administrator.' });
+       // User is authenticated in Firebase Auth, but has no corresponding user document in Firestore.
+       toast({ variant: 'destructive', title: 'Login Failed', description: 'Your user profile is not configured. Please contact an administrator.' });
+       if(auth) await auth.signOut();
        setIsLoading(false);
     }
   }
@@ -248,6 +87,7 @@ export function LoginForm() {
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
     if (!auth) {
+        toast({ variant: 'destructive', title: 'Error', description: 'Authentication service not ready.' });
         setIsLoading(false);
         return;
     };
@@ -255,7 +95,7 @@ export function LoginForm() {
         const userCredential = await signInWithEmailAndPassword(auth, values.email, values.password);
         await handleSuccessfulLogin(userCredential.user);
     } catch (error: any) {
-        if (error.code === 'auth/invalid-credential') {
+        if (error.code === 'auth/invalid-credential' || error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
             toast({
                 variant: 'destructive',
                 title: 'Login Failed',
@@ -264,7 +104,7 @@ export function LoginForm() {
         } else {
             toast({
                 variant: 'destructive',
-                title: 'Login Failed',
+                title: 'Login Error',
                 description: error.message,
             });
         }

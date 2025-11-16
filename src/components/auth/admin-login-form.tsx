@@ -43,51 +43,40 @@ export function AdminLoginForm() {
     },
   });
 
-  const handleSuccessfulLogin = async (user: User) => {
-    if (!firestore) {
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: 'Could not connect to the database.',
-      });
-      setIsLoading(false);
-      return;
-    }
-  
-    const userDocRef = doc(firestore, 'users', user.uid);
-    const userDoc = await getDoc(userDocRef);
-  
-    if (userDoc.exists() && userDoc.data().role === 'Admin') {
-      toast({
-        title: 'Login Successful',
-        description: 'Welcome, Admin! Redirecting...',
-      });
-      // The AuthGuard will handle the redirect now.
-      // We just need to push to the intended destination.
-      router.push('/admin/dashboard');
-    } else {
-      toast({
-        variant: 'destructive',
-        title: 'Permission Denied',
-        description: 'You do not have admin privileges.',
-      });
-      if (auth) {
-        await auth.signOut();
-      }
-      setIsLoading(false);
-    }
-  };
-  
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
-    if (!auth) {
+    if (!auth || !firestore) {
         toast({ variant: 'destructive', title: 'Error', description: 'Authentication service not ready.' });
         setIsLoading(false);
         return;
     };
+
     try {
       const userCredential = await signInWithEmailAndPassword(auth, values.email, values.password);
-      await handleSuccessfulLogin(userCredential.user);
+      const user = userCredential.user;
+      
+      const userDocRef = doc(firestore, 'users', user.uid);
+      const userDoc = await getDoc(userDocRef);
+
+      if (userDoc.exists() && userDoc.data().role === 'Admin') {
+        toast({
+          title: 'Login Successful',
+          description: 'Welcome, Admin! Redirecting...',
+        });
+        // The AuthGuard will handle the redirect now.
+        // We just need to push to the intended destination.
+        router.push('/admin/dashboard');
+      } else {
+        toast({
+          variant: 'destructive',
+          title: 'Permission Denied',
+          description: 'You do not have admin privileges.',
+        });
+        if (auth) {
+          await auth.signOut();
+        }
+        setIsLoading(false);
+      }
     } catch (error: any) {
       setIsLoading(false);
       if (error.code === 'auth/invalid-credential' || error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {

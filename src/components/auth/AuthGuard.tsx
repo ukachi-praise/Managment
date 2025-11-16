@@ -18,6 +18,7 @@ export default function AuthGuard({
   const auth = useAuth();
   const firestore = useFirestore();
   const [status, setStatus] = useState<'loading' | 'allowed' | 'denied'>('loading');
+  const pathname = usePathname();
 
   useEffect(() => {
     if (!auth || !firestore) {
@@ -25,21 +26,23 @@ export default function AuthGuard({
       return;
     }
 
-    const unsub = onAuthStateChanged(auth, async (user: User | null) => {
+    const unsubscribe = onAuthStateChanged(auth, async (user: User | null) => {
       if (!user) {
         // Not logged in, redirect to appropriate login page
-        const loginPath = window.location.pathname.startsWith('/admin') ? '/admin/login' : '/login';
+        const loginPath = pathname.startsWith('/admin') ? '/admin/login' : '/login';
         router.replace(loginPath);
         // No need to set status, redirect will unmount this component
         return;
       }
 
+      // User is logged in, now check their role from Firestore.
       try {
         const userDocRef = doc(firestore, "users", user.uid);
         const userDoc = await getDoc(userDocRef);
 
         if (userDoc.exists()) {
           const userRole = (userDoc.data().role as string)?.toLowerCase();
+          // Check if the user's role is in the allowed list for this route.
           if (allow.includes(userRole as "admin" | "teacher")) {
             setStatus('allowed');
           } else {
@@ -55,12 +58,13 @@ export default function AuthGuard({
       } catch (error) {
         console.error("Error checking user role:", error);
         setStatus('denied');
-        router.replace("/login"); // Redirect to login on error
+        router.replace("/login"); // Fallback to login on error
       }
     });
 
-    return () => unsub();
-  }, [router, allow, auth, firestore]);
+    return () => unsubscribe();
+    // Re-run this effect if the dependencies change.
+  }, [router, allow, auth, firestore, pathname]);
 
   if (status === 'loading') {
     return (
@@ -75,7 +79,7 @@ export default function AuthGuard({
       return <>{children}</>;
   }
 
-  // If status is 'denied', we show a loader while redirecting.
+  // If status is 'denied', we show a loader while the redirect is in progress.
   // This prevents flashing the 'denied' page content before the redirect happens.
   return (
       <div className="flex h-screen w-full items-center justify-center">
