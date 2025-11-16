@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { createContext, useContext, ReactNode, useState, useEffect, useMemo, DependencyList } from 'react';
@@ -48,6 +47,7 @@ export function FirebaseProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [error, setError] = useState<Error | null>(null);
+  const [authInitialized, setAuthInitialized] = useState(false); // NEW: Track if auth has initialized
   
   const services = useMemo(() => {
     const app = initializeApp(firebaseConfig);
@@ -95,6 +95,7 @@ export function FirebaseProvider({ children }: { children: ReactNode }) {
           setIsLoggedIn(false);
         }
         setIsLoading(false);
+        setAuthInitialized(true); // NEW: Mark auth as initialized
       },
       (error) => {
         console.error("Auth State Error:", error);
@@ -102,6 +103,7 @@ export function FirebaseProvider({ children }: { children: ReactNode }) {
         setUser(null);
         setIsLoggedIn(false);
         setIsLoading(false);
+        setAuthInitialized(true); // NEW: Mark auth as initialized even on error
       }
     );
 
@@ -118,7 +120,8 @@ export function FirebaseProvider({ children }: { children: ReactNode }) {
     error,
   };
 
-  if (isLoading && !user && !isLoggedIn) {
+  // FIXED: Only show loader if auth hasn't initialized yet
+  if (!authInitialized) {
     return (
         <div className="flex h-screen w-full items-center justify-center">
             <Loader2 className="h-12 w-12 animate-spin text-primary" />
