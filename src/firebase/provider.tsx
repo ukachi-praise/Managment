@@ -13,6 +13,7 @@ import { FirebaseErrorListener } from '@/components/FirebaseErrorListener';
 export type UserProfile = {
   role?: 'Admin' | 'Teacher';
   name?: string;
+  email?: string;
   assignedClassroomId?: string;
 };
 export type AppUser = User & UserProfile;
@@ -64,9 +65,9 @@ export function FirebaseProvider({ children }: { children: ReactNode }) {
               // Authenticated user has no profile doc. Treat as a partial user.
                // Check for hardcoded users
               if (authUser.uid === 'GOpbb9SsavhpATk1p0KNmPGGQ0S2') {
-                setUser({ ...authUser, role: 'Admin' });
+                setUser({ ...authUser, role: 'Admin', name: 'Admin User', email: authUser.email || 'admin@example.com' });
               } else if (authUser.uid === 'u3krP4g02DgPJ6Avv1XhVNvvb8R2') {
-                 setUser({ ...authUser, role: 'Teacher' });
+                 setUser({ ...authUser, role: 'Teacher', name: 'Primary 4 Teacher', email: authUser.email || 'teacher@example.com', assignedClassroomId: 'mG24k9p8T7y0r5B3s1A9' });
               } else {
                 setUser(authUser as AppUser);
               }
