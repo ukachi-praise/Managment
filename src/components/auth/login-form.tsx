@@ -1,4 +1,3 @@
-
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -54,14 +53,14 @@ export function LoginForm() {
         if (user.uid === 'GOpbb9SsavhpATk1p0KNmPGGQ0S2') {
             toast({ title: 'Login Successful', description: 'Redirecting...' });
             router.push('/admin/dashboard');
-            return;
+            return; // Add return to stop execution
         }
 
         // Hardcoded Primary 4 teacher check
         if (user.uid === 'u3krP4g02DgPJ6Avv1XhVNvvb8R2') {
             toast({ title: 'Login Successful', description: 'Redirecting...' });
             router.push('/teacher/class/mG24k9p8T7y0r5B3s1A9');
-            return;
+            return; // Add return to stop execution
         }
 
         const userDoc = await getDoc(doc(firestore, 'users', user.uid));
@@ -77,8 +76,11 @@ export function LoginForm() {
             // Default redirect if role is not found or not specified
             await auth.signOut();
             toast({ variant: 'destructive', title: 'Login Failed', description: 'No role assigned to this user.' });
-            setIsLoading(false);
+            setIsLoading(false); // This is fine since we're not redirecting
         }
+
+        // DON'T set isLoading to false here for successful logins
+        // The component will unmount during navigation anyway
 
     } catch (error: any) {
         if (error.code === 'auth/invalid-credential' || error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
