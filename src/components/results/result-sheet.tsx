@@ -191,9 +191,7 @@ export function ResultSheet({
 
   // --- RENDER ---
   return (
-    <div className="relative w-[794px] h-[1123px] bg-white text-black print:shadow-none print:m-0 print:p-0 print:w-full print:h-auto print:block">
-      {/* Page 1 */}
-      <div className="relative z-10 flex h-full flex-col p-6">
+    <div className="relative w-[794px] h-[1123px] bg-white text-black print:shadow-none print:m-0 print:p-0 print:w-full print:h-auto print:block flex flex-col p-6">
         <div className="absolute inset-0 z-0 flex items-center justify-center pointer-events-none">
             <Image src="/Logo.jpg" alt="School Watermark" width={400} height={400} className="opacity-10" />
         </div>
@@ -296,12 +294,11 @@ export function ResultSheet({
                         </div>
                     </div>
                 )}
-
                  <div className="flex-grow min-h-0"></div>
-                {/* Page 2 Content */}
-                <div className="print:break-before-page" style={{ pageBreakBefore: 'always' }}>
-                  <footer className="pt-2 text-xs">
-                      <section className='border border-black p-2 flex flex-col gap-2'>
+                
+                 {/* This footer now acts as the second page content */}
+                <footer className="text-xs print:break-before-page" style={{ pageBreakBefore: 'always' }}>
+                      <section className='border border-black p-2 flex flex-col gap-1'>
                           {settings.softSkills.visible && (
                           <div className="space-y-1">
                               <h3 className="font-bold text-black text-[10px]">Soft Skills Assessment</h3>
@@ -328,7 +325,7 @@ export function ResultSheet({
                           </div>
                           )}
                           {settings.gradingKey.visible && (
-                              <div className="grid grid-cols-2 gap-x-4 pt-2 text-[10px]">
+                              <div className="grid grid-cols-2 gap-x-4 pt-1 text-[10px]">
                                   <div className="space-y-1">
                                       <h3 className="font-bold text-black">Grading Key</h3>
                                       <Table>
@@ -362,25 +359,21 @@ export function ResultSheet({
                               </div>
                           )}
                           {settings.remarks.visible && (
-                              <div className="pt-2 space-y-2">
-                                  <div><h3 className="font-bold text-black">Teacher's Remarks:</h3><p className="min-h-[25px] rounded-md border-b border-black p-1">A brilliant student...</p></div>
-                                  <div><h3 className="font-bold text-black">Head Teacher's Remarks:</h3><p className="min-h-2-5px] rounded-md border-b border-black p-1">Excellent performance...</p></div>
+                              <div className="pt-1 space-y-1">
+                                  <div><h3 className="font-bold text-black text-xs">Teacher's Remarks:</h3><p className="min-h-[20px] rounded-md border-b border-black p-1">A brilliant student...</p></div>
+                                  <div><h3 className="font-bold text-black text-xs">Head Teacher's Remarks:</h3><p className="min-h-[20px] rounded-md border-b border-black p-1">Excellent performance...</p></div>
                               </div>
                           )}
                           {settings.signatures.visible && (
-                              <div className="flex justify-between items-end pt-4">
+                              <div className="flex justify-between items-end pt-2">
                                   <div className="text-center w-36"><div className="border-t border-black pt-1">Class Teacher's Signature</div></div>
                                   <div className="text-center w-36"><div className="border-t border-black pt-1">Head Teacher's Signature</div></div>
                               </div>
                           )}
                       </section>
                   </footer>
-                </div>
             </div>
         </div>
-      </div>
     </div>
   );
 }
-
-    
