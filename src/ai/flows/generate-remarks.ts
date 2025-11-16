@@ -11,6 +11,7 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
+import { headTeacherRemarks } from '@/lib/data';
 
 const GenerateRemarksInputSchema = z.object({
   studentName: z.string().describe("The student's name."),
@@ -21,10 +22,22 @@ export type GenerateRemarksInput = z.infer<typeof GenerateRemarksInputSchema>;
 
 const GenerateRemarksOutputSchema = z.object({
   teacherRemark: z.string().describe("A personalized remark from the class teacher. It should be encouraging and based on their average. Must be a single sentence and must NOT mention the student's name."),
-  headTeacherRemark: z.string().describe("A formal and concise remark from the head teacher, reflecting the student's overall performance. Must be one sentence and must NOT mention the student's name."),
+  headTeacherRemark: z.string().describe("A formal and concise remark from the head teacher, reflecting the student's overall performance. This MUST be one of the options provided by the getHeadTeacherRemarks tool."),
 });
 
 export type GenerateRemarksOutput = z.infer<typeof GenerateRemarksOutputSchema>;
+
+const getHeadTeacherRemarks = ai.defineTool(
+    {
+      name: 'getHeadTeacherRemarks',
+      description: 'Get the list of approved remarks for the head teacher.',
+      inputSchema: z.object({}),
+      outputSchema: z.array(z.string()),
+    },
+    async () => {
+      return headTeacherRemarks;
+    }
+);
 
 export async function generateRemarks(input: GenerateRemarksInput): Promise<GenerateRemarksOutput> {
   return generateRemarksFlow(input);
@@ -34,15 +47,16 @@ const prompt = ai.definePrompt({
   name: 'generateRemarksPrompt',
   input: {schema: GenerateRemarksInputSchema},
   output: {schema: GenerateRemarksOutputSchema},
+  tools: [getHeadTeacherRemarks],
   prompt: `You are an experienced educator tasked with writing report card remarks.
   
   Student Name: {{{studentName}}}
   Overall Average Score: {{{overallAverage}}}
 
-  Based on the student's average score, generate two remarks. CRITICAL: Do NOT mention the student's name in either remark.
+  Based on the student's average score, you will perform two tasks. CRITICAL: Do NOT mention the student's name in either remark.
 
-  1.  A Teacher's Remark: This should be a short, warm, and encouraging single sentence.
-  2.  A Head Teacher's Remark: This should be a formal, concise single sentence summarizing academic standing.
+  1.  A Teacher's Remark: Generate a new, short, warm, and encouraging single sentence.
+  2.  A Head Teacher's Remark: Use the 'getHeadTeacherRemarks' tool to see the list of approved remarks. From that list, SELECT the one that best summarizes the student's academic standing.
 
   Example for a high score:
   - Teacher: "Wonderful performance, keep it up!"
@@ -56,7 +70,7 @@ const prompt = ai.definePrompt({
   - Teacher: "More focus is required to improve your results."
   - Head Teacher: "Significant improvement is required in academic performance."
   
-  Generate new, single-sentence remarks in the same style. Do not use the student's name.`,
+  Generate a new, single-sentence remark for the teacher and SELECT one for the head teacher. Do not use the student's name.`,
 });
 
 const generateRemarksFlow = ai.defineFlow(
