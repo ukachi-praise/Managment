@@ -48,15 +48,23 @@ export function LoginForm() {
     setIsLoading(true);
     try {
         const userCredential = await signInWithEmailAndPassword(auth, values.email, values.password);
+        const user = userCredential.user;
 
         // Hardcoded admin check
-        if (userCredential.user.uid === 'GOpbb9SsavhpATk1p0KNmPGGQ0S2') {
+        if (user.uid === 'GOpbb9SsavhpATk1p0KNmPGGQ0S2') {
             toast({ title: 'Login Successful', description: 'Redirecting...' });
             router.push('/admin/dashboard');
             return;
         }
 
-        const userDoc = await getDoc(doc(firestore, 'users', userCredential.user.uid));
+        // Hardcoded Primary 4 teacher check
+        if (user.uid === 'u3krP4g02DgPJ6Avv1XhVNvvb8R2') {
+            toast({ title: 'Login Successful', description: 'Redirecting...' });
+            router.push('/teacher/class/mG24k9p8T7y0r5B3s1A9');
+            return;
+        }
+
+        const userDoc = await getDoc(doc(firestore, 'users', user.uid));
         const role = userDoc.data()?.role;
 
         toast({ title: 'Login Successful', description: 'Redirecting...' });
