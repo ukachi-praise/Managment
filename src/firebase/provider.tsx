@@ -7,12 +7,15 @@ import { Auth, User, onAuthStateChanged } from 'firebase/auth';
 import { FirebaseErrorListener } from '@/components/FirebaseErrorListener'
 import { useUser, UserHookResult } from './auth/use-user';
 
+type ProviderContent = ({ isCoreLoading }: { isCoreLoading: boolean }) => ReactNode;
+
 interface FirebaseProviderProps {
-  children: ReactNode;
+  children: ReactNode | ProviderContent;
   firebaseApp: FirebaseApp | null;
   firestore: Firestore | null;
   auth: Auth | null;
 }
+
 
 // Internal state for user authentication
 interface UserAuthState {
@@ -30,6 +33,7 @@ export interface FirebaseContextState {
   user: User | null;
   isUserLoading: boolean; // True during initial auth check
   userError: Error | null; // Error from auth listener
+  isCoreLoading: boolean; // True until core services are available
 }
 
 // Return type for useFirebase()
@@ -60,6 +64,8 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
     isUserLoading: true, // Start loading until first auth event
     userError: null,
   });
+
+  const isCoreLoading = !auth || !firestore || !firebaseApp;
 
   // Effect to subscribe to Firebase auth state changes
   useEffect(() => {
@@ -92,13 +98,14 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
       user: userAuthState.user,
       isUserLoading: userAuthState.isUserLoading,
       userError: userAuthState.userError,
+      isCoreLoading,
     };
-  }, [firebaseApp, firestore, auth, userAuthState]);
+  }, [firebaseApp, firestore, auth, userAuthState, isCoreLoading]);
 
   return (
     <FirebaseContext.Provider value={contextValue}>
       <FirebaseErrorListener />
-      {children}
+      {typeof children === 'function' ? children({ isCoreLoading }) : children}
     </FirebaseContext.Provider>
   );
 };
@@ -113,6 +120,11 @@ export const useFirebase = (): FirebaseServicesAndUser => {
   if (context === undefined) {
     throw new Error('useFirebase must be used within a FirebaseProvider.');
   }
+   if (context.isCoreLoading) {
+    // This should theoretically not be hit if the loading gate in client-provider works,
+    // but it's a good safeguard.
+    throw new Error('useFirebase was called before core services were initialized.');
+  }
 
   return {
     firebaseApp: context.firebaseApp,
@@ -126,25 +138,35 @@ export const useFirebase = (): FirebaseServicesAndUser => {
 
 /** Hook to access Firebase Auth instance. */
 export const useAuth = (): Auth | null => {
-  const { auth } = useFirebase();
-  return auth;
+  const context = useContext(FirebaseContext);
+  if (context === undefined) {
+    throw new Error('useAuth must be used within a FirebaseProvider.');
+  }
+  return context.auth;
 };
 
 /** Hook to access Firestore instance. */
 export const useFirestore = (): Firestore | null => {
-  const { firestore } = useFirebase();
-  return firestore;
+  const context = useContext(FirebaseContext);
+  if (context === undefined) {
+    throw new Error('useFirestore must be used within a FirebaseProvider.');
+  }
+  return context.firestore;
 };
 
 /** Hook to access Firebase App instance. */
 export const useFirebaseApp = (): FirebaseApp | null => {
-  const { firebaseApp } = useFirebase();
-  return firebaseApp;
+  const context = useContext(FirebaseContext);
+   if (context === undefined) {
+    throw new Error('useFirebaseApp must be used within a FirebaseProvider.');
+  }
+  return context.firebaseApp;
 };
 
 type MemoFirebase <T> = T & {__memo?: boolean};
 
 export function useMemoFirebase<T>(factory: () => T, deps: DependencyList): T | (MemoFirebase<T>) {
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const memoized = useMemo(factory, deps);
   
   if(memoized && typeof memoized === 'object' && !('__memo' in memoized)) {
