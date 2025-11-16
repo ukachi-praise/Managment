@@ -263,7 +263,7 @@ export function ResultViewTable() {
                           </TableCell>
                            <TableCell className="text-right">
                             <Button asChild variant="outline" size="sm">
-                              <Link href={`/admin/results/${student.id}`} target="_blank">
+                              <Link href={`/admin/results/${student.id}`}>
                                 View Report
                               </Link>
                             </Button>
