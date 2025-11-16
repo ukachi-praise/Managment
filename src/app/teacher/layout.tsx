@@ -1,11 +1,12 @@
+
 'use client';
 
 import { Header } from '@/components/shared/header';
 import { SidebarNav } from '@/components/shared/sidebar-nav';
 import { SidebarProvider } from '@/components/ui/sidebar';
 import { useUser } from '@/firebase';
-import { redirect } from 'next/navigation';
-import { useEffect } from 'react';
+import { redirect, usePathname } from 'next/navigation';
+import { useEffect, useState } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 
 export default function TeacherLayout({
@@ -14,15 +15,21 @@ export default function TeacherLayout({
   children: React.ReactNode;
 }) {
   const { user, isUserLoading } = useUser();
-  
+  const pathname = usePathname();
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
   // A simple check to redirect unauthenticated users
   useEffect(() => {
-    if (!isUserLoading && !user) {
+    if (isClient && !isUserLoading && !user && pathname !== '/login') {
       redirect('/login');
     }
-  }, [user, isUserLoading]);
+  }, [user, isUserLoading, isClient, pathname]);
 
-  if (isUserLoading || !user) {
+  if (!isClient || isUserLoading) {
     return (
         <div className="flex min-h-screen">
           <div className="w-56 hidden md:block border-r p-4 space-y-4">
@@ -43,6 +50,12 @@ export default function TeacherLayout({
         </div>
     );
   }
+
+  // If we're done loading and there's no user, render nothing to allow redirect to complete
+  if (!user) {
+    return null;
+  }
+
 
   return (
     <SidebarProvider>
