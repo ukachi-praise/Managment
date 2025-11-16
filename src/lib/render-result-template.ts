@@ -103,138 +103,149 @@ export async function generateReportCardHtml(payload: ReportCardPayload): Promis
         <script src="https://cdn.tailwindcss.com"></script>
         <style>
             @import url('https://fonts.googleapis.com/css2?family=PT+Sans:ital,wght@0,400;0,700;1,400;1,700&display=swap');
-            body { font-family: 'PT Sans', sans-serif; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-            .report-card { width: 210mm; height: 297mm; margin: auto; background: white; position: relative; }
-            .watermark { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); opacity: 0.1; width: 50%; z-index: 1; }
-            .content { position: relative; z-index: 2; }
+            body { font-family: 'PT Sans', sans-serif; -webkit-print-color-adjust: exact; print-color-adjust: exact; background-color: #f3f4f6; }
+            .report-card-container { width: 210mm; margin: auto; background: white; }
+            .report-page { min-height: 297mm; padding: 1.5rem; position: relative; display: flex; flex-direction: column; }
+            .watermark { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); opacity: 0.05; width: 60%; pointer-events: none; }
+            .content-wrapper { position: relative; z-index: 2; height: 100%; display: flex; flex-direction: column; }
             table { border-collapse: collapse; width: 100%; }
-            .page-break { page-break-after: always; }
+            .page-break { page-break-before: always; }
             ${settings?.studentInfo.fontSize ? `.student-info-table { font-size: ${settings.studentInfo.fontSize}px; }` : ''}
+            @media print {
+              body { background-color: white; }
+              .report-card-container { box-shadow: none; margin: 0; }
+            }
         </style>
     </head>
     <body>
-        <div class="report-card p-6">
-            <img src="${logoBase64}" class="watermark" alt="Watermark">
-            <div class="content">
-                ${settings?.header.visible ? `
-                <header id="header-section" class="mb-4 p-2 border border-black">
-                    <div class="flex items-start justify-between">
-                        <div class="flex items-center gap-4">
-                            <img src="${logoBase64}" alt="School Logo" class="h-20 w-20 object-contain">
-                            <div class="text-black">
-                                <h1 class="text-xl font-bold">${schoolName}</h1>
-                                <p class="text-base">Katampe 2 Mpape Abuja</p>
-                                <p class="text-base font-semibold">Motto: Exceeding Great</p>
+        <div class="report-card-container shadow-lg">
+            <!-- PAGE 1 -->
+            <div class="report-page">
+                <img src="${logoBase64}" class="watermark" alt="Watermark">
+                <div class="content-wrapper">
+                    ${settings?.header.visible ? `
+                    <header id="header-section" class="mb-4 p-2 border border-black">
+                        <div class="flex items-start justify-between">
+                            <div class="flex items-center gap-4">
+                                <img src="${logoBase64}" alt="School Logo" class="h-20 w-20 object-contain">
+                                <div class="text-black">
+                                    <h1 class="text-xl font-bold">${schoolName}</h1>
+                                    <p class="text-base">Katampe 2 Mpape Abuja</p>
+                                    <p class="text-base font-semibold">Motto: Exceeding Great</p>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <h2 class="font-bold text-lg">Student Report Card</h2>
+                                <p class="text-base text-zinc-600">${termNames[schoolSettings.currentTermId] || 'N/A'}, ${schoolSettings.currentSession || 'N/A'}</p>
                             </div>
                         </div>
-                        <div class="text-right">
-                            <h2 class="font-bold text-lg">Student Report Card</h2>
-                            <p class="text-base text-zinc-600">${termNames[schoolSettings.currentTermId] || 'N/A'}, ${schoolSettings.currentSession || 'N/A'}</p>
+                        <hr class="my-2 border-black">
+                    </header>` : ''}
+                    
+                    ${settings?.studentInfo.visible ? `
+                    <div id="student-info-section" class="mb-4 p-2 border border-black text-xs student-info-table">
+                        <div class="grid grid-cols-3 gap-y-1 gap-x-4">
+                            <div><span class="font-semibold w-[90px] inline-block">Student Name:</span><span class="flex-1 border-b border-dotted border-black">${student.name || 'N/A'}</span></div>
+                            <div><span class="font-semibold w-[90px] inline-block">Admission No:</span><span class="flex-1 border-b border-dotted border-black">${student.admissionNumber || 'N/A'}</span></div>
+                            <div><span class="font-semibold w-[90px] inline-block">Class:</span><span class="flex-1 border-b border-dotted border-black">${classroom.name || 'N/A'}</span></div>
+                            <div><span class="font-semibold w-[90px] inline-block">Term:</span><span class="flex-1 border-b border-dotted border-black">${termNames[schoolSettings.currentTermId] || 'N/A'}</span></div>
+                            <div><span class="font-semibold w-[90px] inline-block">Session:</span><span class="flex-1 border-b border-dotted border-black">${schoolSettings.currentSession || 'N/A'}</span></div>
+                            <div><span class="font-semibold w-[90px] inline-block">Days Attended:</span><span class="flex-1 border-b border-dotted border-black">${termResult.daysAttended?.toString() || '--'}</span></div>
+                            <div><span class="font-semibold w-[90px] inline-block">School Open:</span><span class="flex-1 border-b border-dotted border-black">${schoolSettings.daysSchoolOpened?.toString() || 'N/A'}</span></div>
+                            <div><span class="font-semibold w-[90px] inline-block">Resumption:</span><span class="flex-1 border-b border-dotted border-black">${resumptionDate}</span></div>
+                            <div><span class="font-semibold w-[90px] inline-block">Class Teacher:</span><span class="flex-1 border-b border-dotted border-black">${classroom.teacherName || 'N/A'}</span></div>
                         </div>
-                    </div>
-                    <hr class="my-2 border-black">
-                </header>` : ''}
-                
-                ${settings?.studentInfo.visible ? `
-                <div id="student-info-section" class="mb-4 p-2 border border-black text-xs student-info-table">
-                    <div class="grid grid-cols-3 gap-y-1 gap-x-4">
-                        <div><span class="font-semibold w-[90px] inline-block">Student Name:</span><span class="flex-1 border-b border-dotted border-black">${student.name || 'N/A'}</span></div>
-                        <div><span class="font-semibold w-[90px] inline-block">Admission No:</span><span class="flex-1 border-b border-dotted border-black">${student.admissionNumber || 'N/A'}</span></div>
-                        <div><span class="font-semibold w-[90px] inline-block">Class:</span><span class="flex-1 border-b border-dotted border-black">${classroom.name || 'N/A'}</span></div>
-                        <div><span class="font-semibold w-[90px] inline-block">Term:</span><span class="flex-1 border-b border-dotted border-black">${termNames[schoolSettings.currentTermId] || 'N/A'}</span></div>
-                        <div><span class="font-semibold w-[90px] inline-block">Session:</span><span class="flex-1 border-b border-dotted border-black">${schoolSettings.currentSession || 'N/A'}</span></div>
-                        <div><span class="font-semibold w-[90px] inline-block">Days Attended:</span><span class="flex-1 border-b border-dotted border-black">${termResult.daysAttended?.toString() || '--'}</span></div>
-                        <div><span class="font-semibold w-[90px] inline-block">School Open:</span><span class="flex-1 border-b border-dotted border-black">${schoolSettings.daysSchoolOpened?.toString() || 'N/A'}</span></div>
-                        <div><span class="font-semibold w-[90px] inline-block">Resumption:</span><span class="flex-1 border-b border-dotted border-black">${resumptionDate}</span></div>
-                        <div><span class="font-semibold w-[90px] inline-block">Class Teacher:</span><span class="flex-1 border-b border-dotted border-black">${classroom.teacherName || 'N/A'}</span></div>
-                    </div>
-                </div>` : ''}
+                    </div>` : ''}
 
-                ${settings?.subjectsTable.visible ? `
-                <div id="subjects-table-section" class="border border-black">
-                    <table>
-                        <thead>
-                            <tr class="bg-gray-200">
-                                <th class="p-1 text-sm text-left border border-black">Subject</th>
-                                <th class="p-1 text-sm text-center border border-black">CA1 (20)</th>
-                                <th class="p-1 text-sm text-center border border-black">CA2 (20)</th>
-                                <th class="p-1 text-sm text-center border border-black">Exam (60)</th>
-                                <th class="p-1 text-sm text-center border border-black">Total (100)</th>
-                                <th class="p-1 text-sm text-left border border-black">Remark</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${subjectsHtml}
-                        </tbody>
-                    </table>
-                </div>` : ''}
+                    <div class="flex-grow">
+                        ${settings?.subjectsTable.visible ? `
+                        <div id="subjects-table-section" class="border border-black">
+                            <table>
+                                <thead>
+                                    <tr class="bg-gray-200">
+                                        <th class="p-1 text-sm text-left border border-black">Subject</th>
+                                        <th class="p-1 text-sm text-center border border-black">CA1 (20)</th>
+                                        <th class="p-1 text-sm text-center border border-black">CA2 (20)</th>
+                                        <th class="p-1 text-sm text-center border border-black">Exam (60)</th>
+                                        <th class="p-1 text-sm text-center border border-black">Total (100)</th>
+                                        <th class="p-1 text-sm text-left border border-black">Remark</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${subjectsHtml}
+                                </tbody>
+                            </table>
+                        </div>` : ''}
 
-                ${settings?.summary.visible ? `
-                <div id="summary-section" class="mt-2 flex justify-end">
-                    <div class="w-1/2 rounded-md border border-black p-2 text-sm space-y-1">
-                        <div class="flex justify-between"><span class="font-semibold">Overall Average:</span><span>${overall.average}%</span></div>
-                        <div class="flex justify-between"><span class="font-semibold">Overall Grade:</span><span>${overall.grade}</span></div>
+                        ${settings?.summary.visible ? `
+                        <div id="summary-section" class="mt-2 flex justify-end">
+                            <div class="w-1/2 rounded-md border border-black p-2 text-sm space-y-1">
+                                <div class="flex justify-between"><span class="font-semibold">Overall Average:</span><span>${overall.average}%</span></div>
+                                <div class="flex justify-between"><span class="font-semibold">Overall Grade:</span><span>${overall.grade}</span></div>
+                            </div>
+                        </div>` : ''}
                     </div>
-                </div>` : ''}
+                </div>
             </div>
-        </div>
 
-        <div class="report-card p-6 page-break">
-            <img src="${logoBase64}" class="watermark" alt="Watermark">
-            <div class="content">
-                <footer class="pt-2 text-xs">
-                    <section class='border border-black p-2 flex flex-col gap-2'>
-                        ${settings?.softSkills.visible ? `
-                        <div id="soft-skills-section" class="space-y-1">
-                            <h3 class="font-bold text-black text-sm">Soft Skills Assessment</h3>
-                            <div class="grid grid-cols-3 gap-x-2 text-[10px]">
-                                ${softSkillsHtml}
-                            </div>
-                        </div>` : ''}
-                        
-                        ${settings?.gradingKey.visible ? `
-                        <div id="grading-key-section" class="grid grid-cols-2 gap-x-4 pt-2 text-[10px]">
-                            <div class="space-y-1">
-                                <h3 class="font-bold text-black">Grading Key</h3>
-                                <table>
-                                    <thead><tr class="bg-gray-200"><th class="border border-black p-0.5">Score</th><th class="border border-black p-0.5">Grade</th><th class="border border-black p-0.5">Remark</th></tr></thead>
-                                    <tbody>
-                                        <tr><td class="border border-black p-0.5">80 – 100</td><td class="border border-black p-0.5">A</td><td class="border border-black p-0.5">Excellent</td></tr>
-                                        <tr><td class="border border-black p-0.5">70 – 79</td><td class="border border-black p-0.5">B</td><td class="border border-black p-0.5">Very Good</td></tr>
-                                        <tr><td class="border border-black p-0.5">60 – 69</td><td class="border border-black p-0.5">C</td><td class="border border-black p-0.5">Good</td></tr>
-                                        <tr><td class="border border-black p-0.5">50 – 59</td><td class="border border-black p-0.5">D</td><td class="border border-black p-0.5">Fair</td></tr>
-                                        <tr><td class="border border-black p-0.5">0 – 49</td><td class="border border-black p-0.5">F</td><td class="border border-black p-0.5">Fail</td></tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                            <div class="space-y-1">
-                                <h3 class="font-bold text-black">Skill Score Rating</h3>
-                                <table>
-                                    <thead><tr class="bg-gray-200"><th class="border border-black p-0.5">Score</th><th class="border border-black p-0.5">Remark</th></tr></thead>
-                                    <tbody>
-                                        <tr><td class="border border-black p-0.5">5</td><td class="border border-black p-0.5">Excellent</td></tr>
-                                        <tr><td class="border border-black p-0.5">4</td><td class="border border-black p-0.5">Very Good</td></tr>
-                                        <tr><td class="border border-black p-0.5">3</td><td class="border border-black p-0.5">Good</td></tr>
-                                        <tr><td class="border border-black p-0.5">2</td><td class="border border-black p-0.5">Fair</td></tr>
-                                        <tr><td class="border border-black p-0.5">1</td><td class="border border-black p-0.5">Poor</td></tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>` : ''}
+            <!-- PAGE 2 -->
+            <div class="report-page page-break">
+                <img src="${logoBase64}" class="watermark" alt="Watermark">
+                <div class="content-wrapper">
+                    <footer class="w-full">
+                        <section class='border border-black p-2 flex flex-col gap-2'>
+                            ${settings?.softSkills.visible ? `
+                            <div id="soft-skills-section" class="space-y-1">
+                                <h3 class="font-bold text-black text-sm">Soft Skills Assessment</h3>
+                                <div class="grid grid-cols-3 gap-x-2 text-[10px]">
+                                    ${softSkillsHtml}
+                                </div>
+                            </div>` : ''}
+                            
+                            ${settings?.gradingKey.visible ? `
+                            <div id="grading-key-section" class="grid grid-cols-2 gap-x-4 pt-2 text-[10px]">
+                                <div class="space-y-1">
+                                    <h3 class="font-bold text-black">Grading Key</h3>
+                                    <table>
+                                        <thead><tr class="bg-gray-200"><th class="border border-black p-0.5">Score</th><th class="border border-black p-0.5">Grade</th><th class="border border-black p-0.5">Remark</th></tr></thead>
+                                        <tbody>
+                                            <tr><td class="border border-black p-0.5">80 – 100</td><td class="border border-black p-0.5">A</td><td class="border border-black p-0.5">Excellent</td></tr>
+                                            <tr><td class="border border-black p-0.5">70 – 79</td><td class="border border-black p-0.5">B</td><td class="border border-black p-0.5">Very Good</td></tr>
+                                            <tr><td class="border border-black p-0.5">60 – 69</td><td class="border border-black p-0.5">C</td><td class="border border-black p-0.5">Good</td></tr>
+                                            <tr><td class="border border-black p-0.5">50 – 59</td><td class="border border-black p-0.5">D</td><td class="border border-black p-0.5">Fair</td></tr>
+                                            <tr><td class="border border-black p-0.5">0 – 49</td><td class="border border-black p-0.5">F</td><td class="border border-black p-0.5">Fail</td></tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <div class="space-y-1">
+                                    <h3 class="font-bold text-black">Skill Score Rating</h3>
+                                    <table>
+                                        <thead><tr class="bg-gray-200"><th class="border border-black p-0.5">Score</th><th class="border border-black p-0.5">Remark</th></tr></thead>
+                                        <tbody>
+                                            <tr><td class="border border-black p-0.5">5</td><td class="border border-black p-0.5">Excellent</td></tr>
+                                            <tr><td class="border border-black p-0.5">4</td><td class="border border-black p-0.5">Very Good</td></tr>
+                                            <tr><td class="border border-black p-0.5">3</td><td class="border border-black p-0.5">Good</td></tr>
+                                            <tr><td class="border border-black p-0.5">2</td><td class="border border-black p-0.5">Fair</td></tr>
+                                            <tr><td class="border border-black p-0.5">1</td><td class="border border-black p-0.5">Poor</td></tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>` : ''}
 
-                        ${settings?.remarks.visible ? `
-                        <div id="remarks-section" class="pt-2 space-y-2 text-sm">
-                            <div><h3 class="font-bold">Teacher's Remarks:</h3><p class="min-h-[25px] border-b border-black p-1">A brilliant student...</p></div>
-                            <div><h3 class="font-bold">Head Teacher's Remarks:</h3><p class="min-h-[25px] border-b border-black p-1">Excellent performance...</p></div>
-                        </div>` : ''}
+                            ${settings?.remarks.visible ? `
+                            <div id="remarks-section" class="pt-2 space-y-2 text-sm">
+                                <div><h3 class="font-bold">Teacher's Remarks:</h3><p class="min-h-[25px] border-b border-black p-1">A brilliant student...</p></div>
+                                <div><h3 class="font-bold">Head Teacher's Remarks:</h3><p class="min-h-[25px] border-b border-black p-1">Excellent performance...</p></div>
+                            </div>` : ''}
 
-                        ${settings?.signatures.visible ? `
-                        <div id="signatures-section" class="flex justify-between items-end pt-4 text-sm">
-                            <div class="text-center w-48"><div class="border-t border-black pt-1">Class Teacher's Signature</div></div>
-                            <div class="text-center w-48"><div class="border-t border-black pt-1">Head Teacher's Signature</div></div>
-                        </div>` : ''}
-                    </section>
-                </footer>
+                            ${settings?.signatures.visible ? `
+                            <div id="signatures-section" class="flex justify-between items-end pt-4 text-sm mt-auto">
+                                <div class="text-center w-48"><div class="border-t border-black pt-1">Class Teacher's Signature</div></div>
+                                <div class="text-center w-48"><div class="border-t border-black pt-1">Head Teacher's Signature</div></div>
+                            </div>` : ''}
+                        </section>
+                    </footer>
+                </div>
             </div>
         </div>
     </body>
