@@ -16,13 +16,12 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { toast } from '@/hooks/use-toast';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Loader2, Eye, EyeOff } from 'lucide-react';
 import Link from 'next/link';
-import { useAuth, useUser } from '@/firebase';
+import { useAuth, useFirestore } from '@/firebase';
 import { signInWithEmailAndPassword, User } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
-import { useFirestore } from '@/firebase';
 
 const formSchema = z.object({
   email: z.string().email({ message: 'Please enter a valid email.' }),
@@ -46,36 +45,39 @@ export function AdminLoginForm() {
 
   const handleSuccessfulLogin = async (user: User) => {
     if (!firestore) {
-        toast({
-            variant: 'destructive',
-            title: 'Error',
-            description: 'Could not connect to the database.',
-        });
-        setIsLoading(false);
-        return;
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Could not connect to the database.',
+      });
+      setIsLoading(false);
+      return;
     }
-
+  
     const userDocRef = doc(firestore, 'users', user.uid);
     const userDoc = await getDoc(userDocRef);
-
+  
     if (userDoc.exists() && userDoc.data().role === 'Admin') {
       toast({
         title: 'Login Successful',
         description: 'Welcome, Admin! Redirecting...',
       });
+      // The AuthGuard will handle the redirect now.
+      // We just need to push to the intended destination.
       router.push('/admin/dashboard');
     } else {
-       toast({
+      toast({
         variant: 'destructive',
         title: 'Permission Denied',
         description: 'You do not have admin privileges.',
       });
-       await auth?.signOut(); // Sign out the non-admin user
-       setIsLoading(false);
+      if (auth) {
+        await auth.signOut();
+      }
+      setIsLoading(false);
     }
-  }
+  };
   
-
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
     if (!auth) {
@@ -87,7 +89,8 @@ export function AdminLoginForm() {
       const userCredential = await signInWithEmailAndPassword(auth, values.email, values.password);
       await handleSuccessfulLogin(userCredential.user);
     } catch (error: any) {
-      if (error.code === 'auth/invalid-credential') {
+      setIsLoading(false);
+      if (error.code === 'auth/invalid-credential' || error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
         toast({
           variant: 'destructive',
           title: 'Login Failed',
@@ -96,11 +99,10 @@ export function AdminLoginForm() {
       } else {
         toast({
           variant: 'destructive',
-          title: 'Login Failed',
+          title: 'Login Error',
           description: error.message,
         });
       }
-      setIsLoading(false);
     }
   }
 
