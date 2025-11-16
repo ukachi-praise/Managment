@@ -104,7 +104,15 @@ export default function StudentResultEntryPage() {
     return Array.from(subjectIdsForClass)
         .map(id => subjectMap.get(id))
         .filter((s): s is Subject => !!s)
-        .sort((a,b) => a.name.localeCompare(b.name));
+        .sort((a,b) => {
+            const aHasSub = a.subSubjects && a.subSubjects.length > 0;
+            const bHasSub = b.subSubjects && b.subSubjects.length > 0;
+
+            if (aHasSub && !bHasSub) return -1;
+            if (!aHasSub && bHasSub) return 1;
+
+            return a.name.localeCompare(b.name);
+        });
 
   }, [classroomSubjects, allSubjects]);
 
