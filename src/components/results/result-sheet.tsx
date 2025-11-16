@@ -145,7 +145,13 @@ export function ResultSheet({
         return { subjectName: subject.name, subSubjects: subject.subSubjects, ca1: score.ca1, ca2: score.ca2, exam: score.exam, total, grade, remark };
       })
       .filter((r): r is ResultEntry => r !== null)
-      .sort((a, b) => a.subjectName.localeCompare(b.subjectName));
+      .sort((a, b) => {
+        const aHasSub = a.subSubjects && a.subSubjects.length > 0;
+        const bHasSub = b.subSubjects && b.subSubjects.length > 0;
+        if (aHasSub && !bHasSub) return -1;
+        if (!aHasSub && bHasSub) return 1;
+        return a.subjectName.localeCompare(b.subjectName);
+      });
   }, [termResult, allSubjectsMap, isForTemplateBuilder]);
 
   const liveOverall = useMemo(() => {
@@ -198,14 +204,14 @@ export function ResultSheet({
                     <div className="flex items-center gap-4">
                         <div className="relative h-20 w-20"><Image src="/Logo.jpg" alt="School Logo" layout="fill" objectFit="contain" /></div>
                         <div className="text-black">
-                            <h1 className="font-headline text-2xl font-bold text-black">{schoolName}</h1>
-                            <p className="text-base text-black">Katampe 2 Mpape Abuja</p>
-                            <p className="text-base font-semibold text-black">Motto: Exceeding Great</p>
+                            <h1 className="font-headline text-xl font-bold text-black">{schoolName}</h1>
+                            <p className="text-sm text-black">Katampe 2 Mpape Abuja</p>
+                            <p className="text-sm font-semibold text-black">Motto: Exceeding Great</p>
                         </div>
                     </div>
                     <div className="text-right">
-                        <h2 className="font-bold text-lg text-black">Student Report Card</h2>
-                        <p className="text-base text-zinc-600">
+                        <h2 className="font-bold text-base text-black">Student Report Card</h2>
+                        <p className="text-sm text-zinc-600">
                             {reportTermName}, {reportSession}
                         </p>
                     </div>
@@ -339,8 +345,8 @@ export function ResultSheet({
                                     </TableHeader>
                                     <TableBody>
                                         <TableRow><TableCell className="p-0.5 h-auto text-[9px] border border-black">80 – 100</TableCell><TableCell className="p-0.5 h-auto text-[9px] border border-black">A</TableCell><TableCell className="p-0.5 h-auto text-[9px] border border-black">Excellent</TableCell></TableRow>
-                                        <TableRow><TableCell className="p-0.5 h-auto text-[9px] border border-black">70 – 79</TableCell><TableCell className="p-0.5 h-auto text-[9px] border border-black">B</TableCell><TableCell className="p-0.5 h-auto text-[9px] border-black">Very Good</TableCell></TableRow>
-                                        <TableRow><TableCell className="p-0.5 h-auto text-[9px] border border-black">60 – 69</TableCell><TableCell className="p-0.5 h-auto text-[9px] border-black">C</TableCell><TableCell className="p-0.5 h-auto text-[9px] border border-black">Good</TableCell></TableRow>
+                                        <TableRow><TableCell className="p-0.5 h-auto text-[9px] border border-black">70 – 79</TableCell><TableCell className="p-0.5 h-auto text-[9px] border border-black">B</TableCell><TableCell className="p-0.5 h-auto text-[9px] border border-black">Very Good</TableCell></TableRow>
+                                        <TableRow><TableCell className="p-0.5 h-auto text-[9px] border border-black">60 – 69</TableCell><TableCell className="p-0.5 h-auto text-[9px] border border-black">C</TableCell><TableCell className="p-0.5 h-auto text-[9px] border border-black">Good</TableCell></TableRow>
                                         <TableRow><TableCell className="p-0.5 h-auto text-[9px] border border-black">50 – 59</TableCell><TableCell className="p-0.5 h-auto text-[9px] border border-black">D</TableCell><TableCell className="p-0.5 h-auto text-[9px] border border-black">Fair</TableCell></TableRow>
                                         <TableRow><TableCell className="p-0.5 h-auto text-[9px] border border-black">0 – 49</TableCell><TableCell className="p-0.5 h-auto text-[9px] border border-black">F</TableCell><TableCell className="p-0.5 h-auto text-[9px] border border-black">Fail</TableCell></TableRow>
                                     </TableBody>
