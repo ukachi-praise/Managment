@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -277,19 +276,19 @@ export function ResultSheet({
                         <Table>
                             <TableHeader>
                                 <TableRow>
-                                    <TableHead className="border border-black p-1 h-auto text-sm text-black">Subject</TableHead>
-                                    <TableHead className="text-center border border-black p-1 h-auto text-sm text-black">CA1 (20)</TableHead>
-                                    <TableHead className="text-center border border-black p-1 h-auto text-sm text-black">CA2 (20)</TableHead>
-                                    <TableHead className="text-center border border-black p-1 h-auto text-sm text-black">Exam (60)</TableHead>
-                                    <TableHead className="text-center border border-black p-1 h-auto text-sm text-black">Total (100)</TableHead>
-                                    <TableHead className="border border-black p-1 h-auto text-sm text-black">Remark</TableHead>
+                                    <TableHead className="border border-black p-1 h-auto text-lg text-black">Subject</TableHead>
+                                    <TableHead className="text-center border border-black p-1 h-auto text-lg text-black">CA1 (20)</TableHead>
+                                    <TableHead className="text-center border border-black p-1 h-auto text-lg text-black">CA2 (20)</TableHead>
+                                    <TableHead className="text-center border border-black p-1 h-auto text-lg text-black">Exam (60)</TableHead>
+                                    <TableHead className="text-center border border-black p-1 h-auto text-lg text-black">Total (100)</TableHead>
+                                    <TableHead className="border border-black p-1 h-auto text-lg text-black">Remark</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
                             {resultEntries && resultEntries.length > 0 ? (
                                     resultEntries.map((entry, index) => (
                                         <TableRow key={entry.subjectName + index}>
-                                            <TableCell className="border-b border-r border-black p-1 text-base font-semibold">
+                                            <TableCell className="border-b border-r border-black p-1 text-lg font-semibold">
                                                 <div className="font-semibold">{entry.subjectName}</div>
                                                 {entry.subSubjects && entry.subSubjects.length > 0 && (
                                                     <div className="pl-2 text-xs text-muted-foreground">
@@ -299,11 +298,11 @@ export function ResultSheet({
                                                     </div>
                                                 )}
                                             </TableCell>
-                                            <TableCell className="text-center border-b border-r border-black p-1 text-base">{entry.ca1 ?? '--'}</TableCell>
-                                            <TableCell className="text-center border-b border-r border-black p-1 text-base">{entry.ca2 ?? '--'}</TableCell>
-                                            <TableCell className="text-center border-b border-r border-black p-1 text-base">{entry.exam ?? '--'}</TableCell>
-                                            <TableCell className="text-center border-b border-r border-black p-1 text-base font-semibold">{entry.total}</TableCell>
-                                            <TableCell className="border-b border-black p-1 text-base">{entry.remark}</TableCell>
+                                            <TableCell className="text-center border-b border-r border-black p-1 text-lg">{entry.ca1 ?? '--'}</TableCell>
+                                            <TableCell className="text-center border-b border-r border-black p-1 text-lg">{entry.ca2 ?? '--'}</TableCell>
+                                            <TableCell className="text-center border-b border-r border-black p-1 text-lg">{entry.exam ?? '--'}</TableCell>
+                                            <TableCell className="text-center border-b border-r border-black p-1 text-lg font-semibold">{entry.total}</TableCell>
+                                            <TableCell className="border-b border-black p-1 text-lg">{entry.remark}</TableCell>
                                         </TableRow>
                                     ))
                                 ) : (
@@ -372,6 +371,7 @@ export function ResultSheet({
                                             <TableRow><TableCell className="p-0.5 h-auto text-[8px] border border-black">3</TableCell><TableCell className="p-0.5 h-auto text-[8px] border border-black">Good</TableCell></TableRow>
                                             <TableRow><TableCell className="p-0.5 h-auto text-[8px] border border-black">2</TableCell><TableCell className="p-0.5 h-auto text-[8px] border border-black">Fair</TableCell></TableRow>
                                             <TableRow><TableCell className="p-0.5 h-auto text-[8px] border border-black">1</TableCell><TableCell className="p-0.5 h-auto text-[8px] border border-black">Poor</TableCell></TableRow>
+                                            <TableRow><TableCell className="p-0.5 h-auto text-[8px] border-black opacity-0">0</TableCell><TableCell className="p-0.5 h-auto text-[8px] border-black opacity-0">Hidden</TableCell></TableRow>
                                         </TableBody>
                                     </Table>
                                 </div>

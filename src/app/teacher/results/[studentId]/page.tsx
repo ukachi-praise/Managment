@@ -19,6 +19,7 @@ import { Loader2, Save, ArrowLeft } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { RemarkGenerator } from '@/components/teacher/remark-generator';
+import { Label } from '@/components/ui/label';
 
 import {
   useFirestore,
@@ -59,6 +60,7 @@ type TermResult = {
   classroomId: string;
   teacherRemark?: string;
   headTeacherRemark?: string;
+  daysAttended?: number;
 };
 
 
@@ -148,6 +150,7 @@ export default function StudentResultEntryPage() {
           classroomId,
           teacherRemark: existingData?.teacherRemark,
           headTeacherRemark: existingData?.headTeacherRemark,
+          daysAttended: existingData?.daysAttended,
       });
 
     }, (error) => {
@@ -178,6 +181,11 @@ export default function StudentResultEntryPage() {
       return { ...prevResult, scores: newScores };
     });
   };
+
+  const handleDaysAttendedChange = (value: string) => {
+    const numericValue = value === '' ? undefined : Number(value);
+    setTermResult(prev => (prev ? { ...prev, daysAttended: numericValue } : null));
+  }
   
   const handleSave = async () => {
     if (!termResultRef || !termResult) {
@@ -187,7 +195,6 @@ export default function StudentResultEntryPage() {
 
     setIsSaving(true);
     
-    // We only want to save the scores part of the object
     const dataToSave = {
         ...termResult,
         scores: termResult.scores 
@@ -329,15 +336,31 @@ export default function StudentResultEntryPage() {
                 </TableBody>
               </Table>
             </div>
-            <div className="mt-6 flex justify-end">
-              <Button onClick={handleSave} disabled={isSaving || pageIsLoading || subjectsForClass.length === 0}>
-                {isSaving ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                  <Save className="mr-2 h-4 w-4" />
-                )}
-                Save Scores
-              </Button>
+            
+            <div className="mt-6 border-t pt-6 space-y-4">
+                <div className="w-full max-w-xs">
+                    <Label htmlFor="daysAttended" className="font-semibold">Days Attended by Student</Label>
+                     <Input
+                        id="daysAttended"
+                        type="text"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        placeholder="e.g. 60"
+                        value={termResult?.daysAttended ?? ''}
+                        onChange={(e) => handleDaysAttendedChange(e.target.value)}
+                        className="mt-2"
+                     />
+                </div>
+                <div className="flex justify-end">
+                    <Button onClick={handleSave} disabled={isSaving || pageIsLoading || subjectsForClass.length === 0}>
+                        {isSaving ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        ) : (
+                        <Save className="mr-2 h-4 w-4" />
+                        )}
+                        Save All
+                    </Button>
+                </div>
             </div>
           </>
         )}
