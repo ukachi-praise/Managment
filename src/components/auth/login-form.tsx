@@ -48,6 +48,14 @@ export function LoginForm() {
     setIsLoading(true);
     try {
         const userCredential = await signInWithEmailAndPassword(auth, values.email, values.password);
+
+        // Hardcoded admin check
+        if (userCredential.user.uid === 'GOpbb9SsavhpATk1p0KNmPGGQ0S2') {
+            toast({ title: 'Login Successful', description: 'Redirecting...' });
+            router.push('/admin/dashboard');
+            return;
+        }
+
         const userDoc = await getDoc(doc(firestore, 'users', userCredential.user.uid));
         const role = userDoc.data()?.role;
 

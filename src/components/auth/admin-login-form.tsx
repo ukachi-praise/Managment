@@ -50,6 +50,16 @@ export function AdminLoginForm() {
       const userCredential = await signInWithEmailAndPassword(auth, values.email, values.password);
       const user = userCredential.user;
       
+      // Hardcoded admin check
+      if (user.uid === 'GOpbb9SsavhpATk1p0KNmPGGQ0S2') {
+        toast({
+          title: 'Login Successful',
+          description: 'Welcome, Admin! Redirecting...',
+        });
+        router.push('/admin/dashboard');
+        return;
+      }
+
       const userDocRef = doc(firestore, 'users', user.uid);
       const userDoc = await getDoc(userDocRef);
 
