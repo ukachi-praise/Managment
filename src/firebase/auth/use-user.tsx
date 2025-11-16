@@ -24,7 +24,7 @@ export const useUser = (): UserHookResult => {
   const { profile, isLoading: isProfileLoading, error: profileError } = useUserProfile(authUser?.uid);
 
   // Determine the combined loading state. Loading is true if:
-  // 1. The initial auth state is still being determined.
+  // 1. The initial auth state is still being determined (covered by useFirebase's gate).
   // 2. We have an authenticated user, but their Firestore profile is still loading.
   const isUserLoading = isAuthLoading || (!!authUser && isProfileLoading);
   
