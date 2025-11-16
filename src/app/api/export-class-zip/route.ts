@@ -61,9 +61,16 @@ async function generateStudentPDF(
         </div>
     `).join('');
     
-    const resumptionDate = schoolSettings.nextTermResumptionDate.seconds
-        ? format(new Date(schoolSettings.nextTermResumptionDate.seconds * 1000), 'PPP')
-        : format(new Date(schoolSettings.nextTermResumptionDate), 'PPP');
+    // Robust date handling
+    let resumptionDate;
+    if (schoolSettings.nextTermResumptionDate) {
+        const dateValue = schoolSettings.nextTermResumptionDate.seconds 
+            ? new Date(schoolSettings.nextTermResumptionDate.seconds * 1000)
+            : new Date(schoolSettings.nextTermResumptionDate);
+        resumptionDate = format(dateValue, 'PPP');
+    } else {
+        resumptionDate = 'N/A';
+    }
     
     const logoPath = path.join(process.cwd(), 'public', 'Logo.jpg');
     const logoBuffer = await fs.readFile(logoPath);

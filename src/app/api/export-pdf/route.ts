@@ -54,9 +54,17 @@ export async function POST(req: NextRequest) {
         </div>
     `).join('');
     
-    const resumptionDate = schoolSettings.nextTermResumptionDate.seconds
-        ? format(new Date(schoolSettings.nextTermResumptionDate.seconds * 1000), 'PPP')
-        : format(new Date(schoolSettings.nextTermResumptionDate), 'PPP');
+    // Robust date handling
+    let resumptionDate;
+    if (schoolSettings.nextTermResumptionDate) {
+        const dateValue = schoolSettings.nextTermResumptionDate.seconds 
+            ? new Date(schoolSettings.nextTermResumptionDate.seconds * 1000)
+            : new Date(schoolSettings.nextTermResumptionDate);
+        resumptionDate = format(dateValue, 'PPP');
+    } else {
+        resumptionDate = 'N/A';
+    }
+
 
     // Base64 encode the logo for embedding
     const logoPath = path.join(process.cwd(), 'public', 'Logo.jpg');
@@ -115,5 +123,3 @@ export async function POST(req: NextRequest) {
     });
   }
 }
-
-    
