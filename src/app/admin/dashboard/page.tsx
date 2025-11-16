@@ -42,20 +42,20 @@ export default function AdminDashboard() {
   const { user } = useUser();
 
   const studentsQuery = useMemoFirebase(
-    () => (firestore && user ? query(collection(firestore, 'students')) : null),
-    [firestore, user]
+    () => (firestore ? query(collection(firestore, 'students')) : null),
+    [firestore]
   );
   const classroomsQuery = useMemoFirebase(
-    () => (firestore && user ? query(collection(firestore, 'classrooms')) : null),
-    [firestore, user]
+    () => (firestore ? query(collection(firestore, 'classrooms')) : null),
+    [firestore]
   );
   const subjectsQuery = useMemoFirebase(
-    () => (firestore && user ? query(collection(firestore, 'subjects')) : null),
-    [firestore, user]
+    () => (firestore ? query(collection(firestore, 'subjects')) : null),
+    [firestore]
   );
   const usersQuery = useMemoFirebase(
-    () => (firestore && user ? query(collection(firestore, 'users')) : null),
-    [firestore, user]
+    () => (firestore ? query(collection(firestore, 'users')) : null),
+    [firestore]
   );
 
   const { data: students, isLoading: studentsLoading } = useCollection(studentsQuery);

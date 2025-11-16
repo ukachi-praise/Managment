@@ -83,8 +83,8 @@ export function ResultViewTable() {
   const { data: enrollments, isLoading: enrollmentsLoading } = useCollection<Enrollment>(enrollmentsQuery);
 
   const allStudentsQuery = useMemoFirebase(
-    () => (firestore && user ? query(collection(firestore, 'students')) : null),
-    [firestore, user]
+    () => (firestore ? query(collection(firestore, 'students')) : null),
+    [firestore]
   );
   const { data: allStudents, isLoading: allStudentsLoading } = useCollection<Student>(allStudentsQuery);
 

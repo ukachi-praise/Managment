@@ -94,12 +94,12 @@ export default function StaffPage() {
 
   // --- Data Fetching ---
   const usersQuery = useMemoFirebase(
-    () => (firestore && user ? query(collection(firestore, 'users')) : null),
-    [firestore, user]
+    () => (firestore ? query(collection(firestore, 'users')) : null),
+    [firestore]
   );
   const classroomsQuery = useMemoFirebase(
-    () => (firestore && user ? query(collection(firestore, 'classrooms')) : null),
-    [firestore, user]
+    () => (firestore ? query(collection(firestore, 'classrooms')) : null),
+    [firestore]
   );
 
   const { data: users, isLoading: usersLoading } = useCollection<User>(usersQuery);

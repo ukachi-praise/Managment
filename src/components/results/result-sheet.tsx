@@ -305,10 +305,10 @@ export function ResultSheet({
                  <div className="flex-grow min-h-0"></div>
                 
                  {/* This footer now acts as the second page content */}
-                <footer className="text-xs print:break-before-page" style={{ pageBreakBefore: 'always' }}>
+                <footer className="text-[9px] print:break-before-page" style={{ pageBreakBefore: 'always' }}>
                       <section className='border border-black p-1 flex flex-col gap-1'>
                           {settings.gradingKey.visible && (
-                              <div className="pt-1 text-[8px] flex gap-x-4">
+                              <div className="pt-1 flex gap-x-4">
                                   <div className="space-y-1">
                                       <h3 className="font-bold text-black text-[9px]">Grading Key</h3>
                                       <Table>
