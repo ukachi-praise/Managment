@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -306,25 +307,10 @@ export function ResultSheet({
                  {/* This footer now acts as the second page content */}
                 <footer className="text-xs print:break-before-page" style={{ pageBreakBefore: 'always' }}>
                       <section className='border border-black p-1 flex flex-col gap-1'>
-                          {settings.softSkills.visible && (
-                          <div className="space-y-1">
-                              <h3 className="font-bold text-black text-[9px]">Soft Skills Assessment</h3>
-                               <Table>
-                                  <TableBody>
-                                      {allSoftSkills.map((skill, skillIndex) => (
-                                          <TableRow key={skillIndex}>
-                                              <TableCell className="font-medium p-0.5 h-auto text-[8px] border border-black text-black">{skill}</TableCell>
-                                              <TableCell className="text-right p-0.5 h-auto text-[8px] border border-black w-[20px]">5</TableCell>
-                                          </TableRow>
-                                      ))}
-                                  </TableBody>
-                              </Table>
-                          </div>
-                          )}
                           {settings.gradingKey.visible && (
-                              <div className="pt-1 text-[9px] flex gap-x-4">
+                              <div className="pt-1 text-[8px] flex gap-x-4">
                                   <div className="space-y-1">
-                                      <h3 className="font-bold text-black">Grading Key</h3>
+                                      <h3 className="font-bold text-black text-[9px]">Grading Key</h3>
                                       <Table>
                                           <TableHeader>
                                               <TableRow><TableHead className="p-0.5 h-auto text-[8px] border border-black text-black">Score</TableHead><TableHead className="p-0.5 h-auto text-[8px] border border-black text-black">Grade</TableHead><TableHead className="p-0.5 h-auto text-[8px] border border-black text-black">Remark</TableHead></TableRow>
@@ -338,20 +324,40 @@ export function ResultSheet({
                                           </TableBody>
                                       </Table>
                                   </div>
-                                  <div className="space-y-1">
-                                      <h3 className="font-bold text-black">Skill Score Rating</h3>
-                                      <Table>
-                                          <TableHeader>
-                                              <TableRow><TableHead className="p-0.5 h-auto text-[8px] border border-black text-black">Score</TableHead><TableHead className="p-0.5 h-auto text-[8px] border border-black text-black">Remark</TableHead></TableRow>
-                                          </TableHeader>
-                                          <TableBody>
-                                              <TableRow><TableCell className="p-0.5 h-auto text-[8px] border border-black">5</TableCell><TableCell className="p-0.5 h-auto text-[8px] border border-black">Excellent</TableCell></TableRow>
-                                              <TableRow><TableCell className="p-0.5 h-auto text-[8px] border border-black">4</TableCell><TableCell className="p-0.5 h-auto text-[8px] border border-black">Very Good</TableCell></TableRow>
-                                              <TableRow><TableCell className="p-0.5 h-auto text-[8px] border border-black">3</TableCell><TableCell className="p-0.5 h-auto text-[8px] border border-black">Good</TableCell></TableRow>
-                                              <TableRow><TableCell className="p-0.5 h-auto text-[8px] border border-black">2</TableCell><TableCell className="p-0.5 h-auto text-[8px] border border-black">Fair</TableCell></TableRow>
-                                              <TableRow><TableCell className="p-0.5 h-auto text-[8px] border border-black">1</TableCell><TableCell className="p-0.5 h-auto text-[8px] border border-black">Poor</TableCell></TableRow>
-                                          </TableBody>
-                                      </Table>
+                                  
+                                  <div className="flex-1 space-y-1">
+                                      <div className="flex gap-x-4">
+                                          {settings.softSkills.visible && (
+                                              <div className="space-y-1">
+                                                  <h3 className="font-bold text-black text-[9px]">Soft Skills Assessment</h3>
+                                                  <Table>
+                                                      <TableBody>
+                                                          {allSoftSkills.map((skill, skillIndex) => (
+                                                              <TableRow key={skillIndex}>
+                                                                  <TableCell className="font-medium p-0.5 h-auto text-[8px] border border-black text-black">{skill}</TableCell>
+                                                                  <TableCell className="text-right p-0.5 h-auto text-[8px] border border-black w-[20px]">5</TableCell>
+                                                              </TableRow>
+                                                          ))}
+                                                      </TableBody>
+                                                  </Table>
+                                              </div>
+                                          )}
+                                          <div className="space-y-1">
+                                              <h3 className="font-bold text-black text-[9px]">Skill Score Rating</h3>
+                                              <Table>
+                                                  <TableHeader>
+                                                      <TableRow><TableHead className="p-0.5 h-auto text-[8px] border border-black text-black">Score</TableHead><TableHead className="p-0.5 h-auto text-[8px] border border-black text-black">Remark</TableHead></TableRow>
+                                                  </TableHeader>
+                                                  <TableBody>
+                                                      <TableRow><TableCell className="p-0.5 h-auto text-[8px] border border-black">5</TableCell><TableCell className="p-0.5 h-auto text-[8px] border border-black">Excellent</TableCell></TableRow>
+                                                      <TableRow><TableCell className="p-0.5 h-auto text-[8px] border border-black">4</TableCell><TableCell className="p-0.5 h-auto text-[8px] border border-black">Very Good</TableCell></TableRow>
+                                                      <TableRow><TableCell className="p-0.5 h-auto text-[8px] border border-black">3</TableCell><TableCell className="p-0.5 h-auto text-[8px] border border-black">Good</TableCell></TableRow>
+                                                      <TableRow><TableCell className="p-0.5 h-auto text-[8px] border border-black">2</TableCell><TableCell className="p-0.5 h-auto text-[8px] border border-black">Fair</TableCell></TableRow>
+                                                      <TableRow><TableCell className="p-0.5 h-auto text-[8px] border border-black">1</TableCell><TableCell className="p-0.5 h-auto text-[8px] border border-black">Poor</TableCell></TableRow>
+                                                  </TableBody>
+                                              </Table>
+                                          </div>
+                                      </div>
                                   </div>
                               </div>
                           )}
