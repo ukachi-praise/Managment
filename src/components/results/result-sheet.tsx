@@ -24,6 +24,7 @@ import {
   doc,
   Timestamp,
   onSnapshot,
+  getDocs,
 } from 'firebase/firestore';
 import { calculateGrade, cn } from '@/lib/utils';
 import Image from 'next/image';
@@ -32,7 +33,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Separator } from '@/components/ui/separator';
 
 // --- TYPE DEFINITIONS ---
-export type StudentData = { id: string; name: string; admissionNumber: string };
+export type StudentData = { id: string; name: string; admissionNumber: string; isDeleted?: boolean; };
 export type Classroom = { id: string; name: string; teacherName?: string; };
 export type SchoolSettingsData = { currentSession: string; currentTermId: string; daysSchoolOpened: number; nextTermResumptionDate: Timestamp | Date | string; };
 export type TemplateSettings = { studentInfo: { fontSize: number; visible: boolean; }; header: { visible: boolean; }; subjectsTable: { visible: boolean; }; summary: { visible: boolean; }; softSkills: { visible: boolean; }; gradingKey: { visible: boolean; }; remarks: { visible: boolean; }; signatures: { visible: boolean; }; };
@@ -96,6 +97,8 @@ export function ResultSheet({
   const studentId = student.id;
   
   const [termResult, setTermResult] = useState<TermResult | null>(null);
+  const [classPopulation, setClassPopulation] = useState<number | null>(null);
+
 
   // --- DATA FETCHING ---
   const settingsRef = useMemoFirebase(() => (!isForTemplateBuilder && firestore ? doc(firestore, 'schoolSettings', 'current') : null), [firestore, isForTemplateBuilder]);
@@ -124,6 +127,34 @@ export function ResultSheet({
     });
     return () => unsubscribe();
   }, [termResultRef, isForTemplateBuilder]);
+
+  useEffect(() => {
+    const fetchClassPopulation = async () => {
+      if (isForTemplateBuilder || !firestore || !classroom?.id) {
+        setClassPopulation(isForTemplateBuilder ? 25 : null);
+        return;
+      }
+      
+      const enrollmentsQuery = query(collection(firestore, 'enrollments'), where('classroomId', '==', classroom.id));
+      const enrollmentsSnapshot = await getDocs(enrollmentsQuery);
+      const studentIds = enrollmentsSnapshot.docs.map(d => d.data().studentId);
+      
+      if (studentIds.length === 0) {
+        setClassPopulation(0);
+        return;
+      }
+
+      // Fetch all students in the class
+      const studentsQuery = query(collection(firestore, 'students'), where('id', 'in', studentIds));
+      const studentsSnapshot = await getDocs(studentsQuery);
+      
+      // Filter out soft-deleted students
+      const activeStudents = studentsSnapshot.docs.filter(d => !d.data().isDeleted);
+      setClassPopulation(activeStudents.length);
+    };
+
+    fetchClassPopulation();
+  }, [firestore, classroom?.id, isForTemplateBuilder]);
 
 
   // --- DATA PROCESSING & MEMOIZATION ---
@@ -199,7 +230,7 @@ export function ResultSheet({
   const reportTermId = isForTemplateBuilder ? 'term1' : (termResult?.termId || schoolSettings?.currentTermId);
   const reportTermName = reportTermId ? termNames[reportTermId] : 'N/A';
 
-  const isLoading = !isForTemplateBuilder && (settingsLoading || templateLoading || subjectsLoading || !termResultRef);
+  const isLoading = !isForTemplateBuilder && (settingsLoading || templateLoading || subjectsLoading || !termResultRef || classPopulation === null);
   
   const daysAbsent = useMemo(() => {
     if (isForTemplateBuilder) return '--';
@@ -269,7 +300,7 @@ export function ResultSheet({
                                 <div className="w-1/3"><StudentInfoDetail label="Class" value={classroom?.name} /></div>
                             </div>
                             <div className="flex gap-4">
-                                <div className="w-1/3"><StudentInfoDetail label="Term" value={reportTermName} /></div>
+                                <div className="w-1/3"><StudentInfoDetail label="Class Population" value={classPopulation?.toString() ?? '...'} /></div>
                                 <div className="w-1/3"><StudentInfoDetail label="Days Absent" value={daysAbsent} /></div>
                                 <div className="w-1/3"><StudentInfoDetail label="Days Attended" value={isForTemplateBuilder ? '--' : termResult?.daysAttended?.toString() || '--'} /></div>
                             </div>
@@ -436,3 +467,5 @@ export function ResultSheet({
     </div>
   );
 }
+
+    
