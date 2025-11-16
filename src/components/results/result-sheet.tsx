@@ -300,7 +300,7 @@ export function ResultSheet({
                                 <div className="w-1/3"><StudentInfoDetail label="Class" value={classroom?.name} /></div>
                             </div>
                             <div className="flex gap-4">
-                                <div className="w-1/3"><StudentInfoDetail label="Class Population" value={classPopulation?.toString() ?? '...'} /></div>
+                                <div className="w-1/3"><StudentInfoDetail label="No. in class" value={classPopulation?.toString() ?? '...'} /></div>
                                 <div className="w-1/3"><StudentInfoDetail label="Days Absent" value={daysAbsent} /></div>
                                 <div className="w-1/3"><StudentInfoDetail label="Days Attended" value={isForTemplateBuilder ? '--' : termResult?.daysAttended?.toString() || '--'} /></div>
                             </div>
@@ -468,4 +468,3 @@ export function ResultSheet({
   );
 }
 
-    
