@@ -123,11 +123,6 @@ export const useFirebase = (): FirebaseServicesAndUser => {
   if (context === undefined) {
     throw new Error('useFirebase must be used within a FirebaseProvider.');
   }
-   if (context.isCoreLoading) {
-    // This should theoretically not be hit if the loading gate in client-provider works,
-    // but it's a good safeguard.
-    throw new Error('useFirebase was called before core services were initialized.');
-  }
 
   return {
     firebaseApp: context.firebaseApp,
