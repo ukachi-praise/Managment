@@ -171,6 +171,12 @@ export default function StaffPage() {
           assignedClassroomId: role === 'Teacher' ? assignedClassroomId : undefined,
       }, {merge: false});
 
+      // If a teacher was created and assigned to a class, update the classroom doc
+      if (role === 'Teacher' && assignedClassroomId) {
+        const classroomDocRef = doc(firestore, 'classrooms', assignedClassroomId);
+        setDocumentNonBlocking(classroomDocRef, { teacherId: userId, teacherName: name }, { merge: true });
+      }
+
       toast({ title: 'Staff Added', description: `${name} has been added to the staff list.` });
       setAddDialogOpen(false);
       event.currentTarget.reset();
