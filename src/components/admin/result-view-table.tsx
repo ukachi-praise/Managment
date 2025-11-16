@@ -42,7 +42,7 @@ import { saveAs } from 'file-saver';
 
 
 // --- TYPE DEFINITIONS ---
-type Student = { id: string; name: string; admissionNumber: string; };
+type Student = { id: string; name: string; admissionNumber: string; isDeleted?: boolean; };
 type Classroom = { id: string; name: string; teacherName?: string; };
 type Enrollment = { id: string; studentId: string; classroomId: string };
 type Subject = { id: string; name: string; subSubjects?: string[] };
@@ -83,7 +83,7 @@ export function ResultViewTable() {
   const { data: enrollments, isLoading: enrollmentsLoading } = useCollection<Enrollment>(enrollmentsQuery);
 
   const allStudentsQuery = useMemoFirebase(
-    () => (firestore && user ? query(collection(firestore, 'students'), where('isDeleted', '!=', true)) : null),
+    () => (firestore && user ? query(collection(firestore, 'students')) : null),
     [firestore, user]
   );
   const { data: allStudents, isLoading: allStudentsLoading } = useCollection<Student>(allStudentsQuery);
@@ -100,7 +100,7 @@ export function ResultViewTable() {
   const studentsInClass = useMemo(() => {
       if (!enrollments || !allStudents) return [];
       const studentIds = new Set(enrollments.map(e => e.studentId));
-      return allStudents.filter(s => studentIds.has(s.id)).sort((a,b) => a.name.localeCompare(b.name));
+      return allStudents.filter(s => studentIds.has(s.id) && !s.isDeleted).sort((a,b) => a.name.localeCompare(b.name));
   }, [enrollments, allStudents]);
 
 
