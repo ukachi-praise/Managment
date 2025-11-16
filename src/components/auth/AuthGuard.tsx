@@ -29,7 +29,7 @@ export default function AuthGuard({
       return;
     }
 
-    // Hardcode the specified user as admin
+    // Hardcode the specified admin user
     if (user.uid === 'GOpbb9SsavhpATk1p0KNmPGGQ0S2') {
       if (allow.includes('admin')) {
         setIsAuthorized(true);
@@ -38,6 +38,17 @@ export default function AuthGuard({
         router.replace('/unauthorized');
       }
       return;
+    }
+
+    // Hardcode the specified teacher user
+    if (user.uid === 'u3krP4g02DgPJ6Avv1XhVNvvb8R2') {
+        if (allow.includes('teacher')) {
+            setIsAuthorized(true);
+        } else {
+            setIsAuthorized(false);
+            router.replace('/unauthorized');
+        }
+        return;
     }
 
     // For all other users, check their role from Firestore
