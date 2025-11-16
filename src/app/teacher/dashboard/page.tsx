@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useUser, useFirestore } from '@/firebase';
+import { useUser, useFirestore } from '@/firebase/provider';
 import { doc, getDoc } from 'firebase/firestore';
 import { redirect } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -13,7 +13,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 // This page is a fallback if that link is clicked before the classroom ID is resolved,
 // or if the user is truly not assigned to a class.
 export default function TeacherDashboard() {
-  const { user, isUserLoading } = useUser();
+  const { user, isLoading: isUserLoading } = useUser();
   const firestore = useFirestore();
   const [loading, setLoading] = useState(true);
 

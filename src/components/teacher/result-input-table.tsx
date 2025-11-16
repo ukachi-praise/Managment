@@ -25,10 +25,10 @@ import { Loader2, Save } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import {
   useFirestore,
-  useCollection,
   useUser,
-  setDocumentNonBlocking,
-} from '@/firebase';
+} from '@/firebase/provider';
+import { useCollection } from '@/firebase/firestore/use-collection';
+import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { useMemoFirebase } from '@/firebase/provider';
 import {
   collection,
@@ -59,7 +59,7 @@ type UserData = { assignedClassroomId?: string; role: string };
 export function ResultInputTable() {
   const { toast } = useToast();
   const firestore = useFirestore();
-  const { user, isUserLoading } = useUser();
+  const { user, isLoading: isUserLoading } = useUser();
 
   const [teacherClass, setTeacherClass] = useState<Classroom | null>(null);
   const [selectedSubject, setSelectedSubject] = useState<string | null>(null);

@@ -5,9 +5,9 @@ import { useParams, useRouter } from 'next/navigation';
 import { useMemo, useRef, useState } from 'react';
 import {
   useFirestore,
-  useDoc,
-  useCollection,
-} from '@/firebase';
+} from '@/firebase/provider';
+import { useDoc } from '@/firebase/firestore/use-doc';
+import { useCollection } from '@/firebase/firestore/use-collection';
 import { useMemoFirebase } from '@/firebase/provider';
 import { collection, query, where, doc } from 'firebase/firestore';
 import { ResultSheet } from '@/components/results/result-sheet';

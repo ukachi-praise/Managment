@@ -25,10 +25,10 @@ import { Loader2, ArrowLeft } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import {
   useFirestore,
-  useDoc,
   useUser,
-  setDocumentNonBlocking,
-} from '@/firebase';
+} from '@/firebase/provider';
+import { useDoc } from '@/firebase/firestore/use-doc';
+import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { useMemoFirebase } from '@/firebase/provider';
 import { doc } from 'firebase/firestore';
 import { useEffect } from 'react';
@@ -47,7 +47,7 @@ type UserProfile = z.infer<typeof formSchema>;
 export default function ProfilePage() {
   const { toast } = useToast();
   const firestore = useFirestore();
-  const { user, isUserLoading } = useUser();
+  const { user, isLoading: isUserLoading } = useUser();
   const router = useRouter();
 
   // --- Data Fetching ---

@@ -43,12 +43,10 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import {
-  useCollection,
   useFirestore,
-  addDocumentNonBlocking,
-  deleteDocumentNonBlocking,
-  setDocumentNonBlocking,
-} from '@/firebase';
+} from '@/firebase/provider';
+import { useCollection } from '@/firebase/firestore/use-collection';
+import { addDocumentNonBlocking, deleteDocumentNonBlocking, setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { useMemoFirebase } from '@/firebase/provider';
 import { collection, query, doc, getDocs, writeBatch, where, collectionGroup, FieldValue, updateDoc, deleteField } from 'firebase/firestore';
 import {

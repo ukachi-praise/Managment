@@ -22,10 +22,10 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Loader2, Download, FileArchive } from 'lucide-react';
 import {
   useFirestore,
-  useCollection,
   useUser,
-  useDoc,
-} from '@/firebase';
+} from '@/firebase/provider';
+import { useCollection } from '@/firebase/firestore/use-collection';
+import { useDoc } from '@/firebase/firestore/use-doc';
 import { useMemoFirebase } from '@/firebase/provider';
 import {
   collection,

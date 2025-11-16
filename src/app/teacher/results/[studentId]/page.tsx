@@ -23,10 +23,10 @@ import { Label } from '@/components/ui/label';
 
 import {
   useFirestore,
-  useCollection,
-  useDoc,
-  setDocumentNonBlocking,
-} from '@/firebase';
+} from '@/firebase/provider';
+import { useCollection } from '@/firebase/firestore/use-collection';
+import { useDoc } from '@/firebase/firestore/use-doc';
+import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 
 import { useMemoFirebase } from '@/firebase/provider';
 import {

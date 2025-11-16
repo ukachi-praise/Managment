@@ -2,10 +2,10 @@
 'use client';
 
 import { redirect, usePathname } from 'next/navigation';
-import { useUser } from '@/firebase';
+import { useUser } from '@/firebase/provider';
 
 export default function TeacherResultsRedirectPage() {
-  const { user, isUserLoading } = useUser();
+  const { user, isLoading: isUserLoading } = useUser();
   const pathname = usePathname();
 
   if (isUserLoading) {

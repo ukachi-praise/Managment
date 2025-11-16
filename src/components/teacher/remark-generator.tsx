@@ -17,7 +17,7 @@ import { Wand2, Loader2, Save } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { generateRemarks, GenerateRemarksInput } from '@/ai/flows/generate-remarks';
 import { DocumentReference } from 'firebase/firestore';
-import { setDocumentNonBlocking } from '@/firebase';
+import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 
 interface RemarkGeneratorProps {
   studentName: string;

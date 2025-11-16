@@ -12,10 +12,10 @@ import {
   TableFooter,
 } from '@/components/ui/table';
 import {
-  useCollection,
-  useDoc,
   useFirestore,
-} from '@/firebase';
+} from '@/firebase/provider';
+import { useCollection } from '@/firebase/firestore/use-collection';
+import { useDoc } from '@/firebase/firestore/use-doc';
 import { useMemoFirebase } from '@/firebase/provider';
 import {
   collection,
