@@ -46,14 +46,6 @@ export function LoginForm() {
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
-<<<<<<< HEAD
-=======
-    if (!auth) {
-        toast({ variant: 'destructive', title: 'Error', description: 'Authentication service not available. Please try again in a moment.' });
-        setIsLoading(false);
-        return;
-    };
->>>>>>> b047767e425d742f4ec4c87b1f5d03a30785ff8a
     try {
         const userCredential = await signInWithEmailAndPassword(auth, values.email, values.password);
         const user = userCredential.user;
