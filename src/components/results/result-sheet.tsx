@@ -147,7 +147,7 @@ export function ResultSheet({
       
       // Since student documents might not exist for all enrollments, query the students collection
       const studentsQuerySnapshot = await getDocs(collection(firestore, 'students'));
-      const allStudentDocs = studentsSnapshot.docs.map(d => ({id: d.id, ...d.data()}));
+      const allStudentDocs = studentsQuerySnapshot.docs.map(d => ({id: d.id, ...d.data()}));
 
       // Filter for active students in the class
       const activeStudentsInClass = allStudentDocs.filter(s => studentIds.includes(s.id) && !s.isDeleted);
@@ -401,7 +401,7 @@ export function ResultSheet({
                                         <TableRow><TableCell className="p-0.5 h-auto text-[8px] border border-black">80 – 100</TableCell><TableCell className="p-0.5 h-auto text-[8px] border border-black">A</TableCell><TableCell className="p-0.5 h-auto text-[8px] border border-black">Excellent</TableCell></TableRow>
                                         <TableRow><TableCell className="p-0.5 h-auto text-[8px] border border-black">70 – 79</TableCell><TableCell className="p-0.5 h-auto text-[8px] border border-black">B</TableCell><TableCell className="p-0.5 h-auto text-[8px] border border-black">Very Good</TableCell></TableRow>
                                         <TableRow><TableCell className="p-0.5 h-auto text-[8px] border border-black">60 – 69</TableCell><TableCell className="p-0.5 h-auto text-[8px] border border-black">C</TableCell><TableCell className="p-0.5 h-auto text-[8px] border border-black">Good</TableCell></TableRow>
-                                        <TableRow><TableCell className="p-0.5 h-auto text-[8px] border border-black">50 – 59</TableCell><TableCell className="p-0.5 h-auto text-[8px] border border-black">D</TableCell><TableCell className="p-0.5 h-auto text-[8px] border-black">Fair</TableCell></TableRow>
+                                        <TableRow><TableCell className="p-0.5 h-auto text-[8px] border border-black">50 – 59</TableCell><TableCell className="p-0.5 h-auto text-[8px] border border-black">D</TableCell><TableCell className="p-0.5 h-auto text-[8px] border border-black">Fair</TableCell></TableRow>
                                         <TableRow><TableCell className="p-0.5 h-auto text-[8px] border border-black">0 – 49</TableCell><TableCell className="p-0.5 h-auto text-[8px] border border-black">F</TableCell><TableCell className="p-0.5 h-auto text-[8px] border border-black">Fail</TableCell></TableRow>
                                     </TableBody>
                                 </Table>
@@ -421,7 +421,6 @@ export function ResultSheet({
                                             <TableRow><TableCell className="p-0.5 h-auto text-[8px] border border-black">3</TableCell><TableCell className="p-0.5 h-auto text-[8px] border border-black">Good</TableCell></TableRow>
                                             <TableRow><TableCell className="p-0.5 h-auto text-[8px] border border-black">2</TableCell><TableCell className="p-0.5 h-auto text-[8px] border border-black">Fair</TableCell></TableRow>
                                             <TableRow><TableCell className="p-0.5 h-auto text-[8px] border border-black">1</TableCell><TableCell className="p-0.5 h-auto text-[8px] border border-black">Poor</TableCell></TableRow>
-                                            <TableRow><TableCell className="p-0.5 h-auto text-[8px] border border-black opacity-0">0</TableCell><TableCell className="p-0.5 h-auto text-[8px] border-black opacity-0">Hidden</TableCell></TableRow>
                                         </TableBody>
                                     </Table>
                                 </div>
