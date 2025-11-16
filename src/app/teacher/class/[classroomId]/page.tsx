@@ -30,7 +30,7 @@ import { collection, query, where, doc } from 'firebase/firestore';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { Loader2, ArrowLeft, Trash2 } from 'lucide-react';
+import { Loader2, ArrowLeft, Trash2, Edit } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -42,9 +42,26 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { useToast } from '@/hooks/use-toast';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 
-type Student = { id: string; name: string; isDeleted?: boolean; admissionNumber: string };
+type Student = { id: string; name: string; isDeleted?: boolean; admissionNumber: string; dob: string; gender: string; parentName: string; contact: string; };
 type Classroom = { id: string; name: string };
 type Enrollment = { studentId: string; classroomId: string };
 
@@ -57,6 +74,7 @@ export default function TeacherClassPage() {
   const { toast } = useToast();
 
   const [studentToDelete, setStudentToDelete] = useState<Student | null>(null);
+  const [editingStudent, setEditingStudent] = useState<Student | null>(null);
 
   // --- Data Fetching ---
   const classroomRef = useMemoFirebase(
@@ -91,6 +109,29 @@ export default function TeacherClassPage() {
 
   const isLoading = classroomLoading || enrollmentsLoading || allStudentsLoading;
 
+  const handleEditStudent = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!firestore || !editingStudent) return;
+    
+    const form = event.currentTarget;
+    const formData = new FormData(form);
+    const updatedStudentData = {
+      name: formData.get('name') as string,
+      admissionNumber: formData.get('admissionNumber') as string,
+      dob: formData.get('dob') as string,
+      gender: formData.get('gender') as string,
+      parentName: formData.get('parentName') as string,
+      contact: formData.get('contact') as string,
+    };
+    
+    const studentRef = doc(firestore, 'students', editingStudent.id);
+    setDocumentNonBlocking(studentRef, updatedStudentData, { merge: true });
+
+    toast({ title: "Student Updated", description: `${updatedStudentData.name}'s details have been updated.` });
+    setEditingStudent(null);
+  };
+
+
   const handleDeleteStudent = () => {
     if (!firestore || !studentToDelete) return;
     
@@ -123,6 +164,57 @@ export default function TeacherClassPage() {
             </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <Dialog open={!!editingStudent} onOpenChange={(open) => !open && setEditingStudent(null)}>
+          <DialogContent className="sm:max-w-xl">
+            <DialogHeader>
+              <DialogTitle>Edit Student Details</DialogTitle>
+              <DialogDescription>
+                Update the information for {editingStudent?.name}.
+              </DialogDescription>
+            </DialogHeader>
+            <form onSubmit={handleEditStudent} className="grid gap-4 py-4">
+               <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="name">Student Name</Label>
+                  <Input id="name" name="name" defaultValue={editingStudent?.name} required />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="admissionNumber">Admission Number</Label>
+                  <Input id="admissionNumber" name="admissionNumber" defaultValue={editingStudent?.admissionNumber} required />
+                </div>
+                 <div className="space-y-2">
+                  <Label htmlFor="dob">Date of Birth</Label>
+                  <Input id="dob" name="dob" type="date" defaultValue={editingStudent?.dob} required />
+                </div>
+                <div className="space-y-2">
+                   <Label htmlFor="gender">Gender</Label>
+                    <Select name="gender" required defaultValue={editingStudent?.gender}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select Gender" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Male">Male</SelectItem>
+                        <SelectItem value="Female">Female</SelectItem>
+                      </SelectContent>
+                    </Select>
+                 </div>
+                 <div className="space-y-2">
+                  <Label htmlFor="parentName">Parent / Guardian Name</Label>
+                  <Input id="parentName" name="parentName" defaultValue={editingStudent?.parentName} required />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="contact">Contact Number</Label>
+                  <Input id="contact" name="contact" defaultValue={editingStudent?.contact} required />
+                </div>
+               </div>
+              <DialogFooter className="mt-4">
+                <Button type="submit">Save Changes</Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
+
 
       <div className="flex items-center justify-between">
         <div>
@@ -163,14 +255,14 @@ export default function TeacherClassPage() {
                   studentsInClass.map((student) => (
                       <TableRow key={student.id}>
                         <TableCell className="font-medium">
-                          <Link href={`/teacher/results/${student.id}`} className="flex items-center gap-3 hover:underline">
+                          <div className="flex items-center gap-3">
                             <Avatar>
                               <AvatarFallback>
                                 {student.name.charAt(0).toUpperCase()}
                               </AvatarFallback>
                             </Avatar>
                             <span>{student.name}</span>
-                          </Link>
+                          </div>
                         </TableCell>
                         <TableCell>
                           {student.admissionNumber || 'N/A'}
@@ -178,8 +270,11 @@ export default function TeacherClassPage() {
                          <TableCell className="text-right">
                           <Button asChild variant="outline" size="sm">
                             <Link href={`/teacher/results/${student.id}`}>
-                              Enter/View Scores
+                              Scores
                             </Link>
+                          </Button>
+                           <Button variant="ghost" size="icon" onClick={() => setEditingStudent(student)}>
+                            <Edit className="h-4 w-4" />
                           </Button>
                           <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => setStudentToDelete(student)}>
                             <Trash2 className="h-4 w-4" />

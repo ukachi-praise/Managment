@@ -53,6 +53,11 @@ type Classroom = {
   name: string;
 };
 
+type Student = {
+    id: string;
+    isDeleted?: boolean;
+}
+
 type Enrollment = {
     classroomId: string;
     studentId: string;
@@ -69,23 +74,37 @@ export default function StudentsPage() {
     () => (firestore ? query(collection(firestore, 'classrooms')) : null),
     [firestore]
   );
+   const allStudentsQuery = useMemoFirebase(
+    () => (firestore ? query(collection(firestore, 'students')) : null),
+    [firestore]
+  );
   const enrollmentsQuery = useMemoFirebase(
     () => (firestore ? query(collection(firestore, 'enrollments')) : null),
     [firestore]
   );
  
   const { data: classrooms, isLoading: classroomsLoading } = useCollection<Classroom>(classroomsQuery);
+  const { data: allStudents, isLoading: allStudentsLoading } = useCollection<Student>(allStudentsQuery);
   const { data: enrollments, isLoading: enrollmentsLoading } = useCollection<Enrollment>(enrollmentsQuery);
   
-  const isLoading = classroomsLoading || enrollmentsLoading;
+  const isLoading = classroomsLoading || enrollmentsLoading || allStudentsLoading;
+  
+  const validStudentIds = useMemo(() => {
+    if (!allStudents) return new Set<string>();
+    return new Set(allStudents.filter(s => !s.isDeleted).map(s => s.id));
+  }, [allStudents]);
+
 
   const studentCounts = useMemo(() => {
     if (!enrollments) return {};
     return enrollments.reduce((acc, enrollment) => {
-        acc[enrollment.classroomId] = (acc[enrollment.classroomId] || 0) + 1;
+        // Only count the student if they are not soft-deleted
+        if (validStudentIds.has(enrollment.studentId)) {
+            acc[enrollment.classroomId] = (acc[enrollment.classroomId] || 0) + 1;
+        }
         return acc;
     }, {} as Record<string, number>);
-  }, [enrollments]);
+  }, [enrollments, validStudentIds]);
 
   // --- Event Handlers ---
   const handleAddStudent = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -101,6 +120,7 @@ export default function StudentsPage() {
       gender: formData.get('gender') as string,
       parentName: formData.get('parentName') as string,
       contact: formData.get('contact') as string,
+      isDeleted: false, // Ensure new students are not deleted
     };
     const classroomId = formData.get('classroomId') as string;
 
