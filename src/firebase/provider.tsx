@@ -1,8 +1,9 @@
+
 'use client';
 
 import React, { createContext, useContext, ReactNode, useState, useEffect, useMemo, DependencyList } from 'react';
 import { FirebaseApp } from 'firebase/app';
-import { Firestore, doc } from 'firebase/firestore';
+import { Firestore, doc, getDoc } from 'firebase/firestore';
 import { Auth, User, onAuthStateChanged } from 'firebase/auth';
 import { Loader2 } from 'lucide-react';
 import { FirebaseErrorListener } from '@/components/FirebaseErrorListener';
@@ -27,13 +28,12 @@ interface FirebaseContextState {
   firestore: Firestore | null;
   user: AppUser | null;
   isLoading: boolean;
-  isLoggedIn: boolean;
+  isLoggedIn: boolean; // Retaining for compatibility, derived from user state
   error: Error | null;
 }
 
 // --- CONTEXT ---
 const FirebaseContext = createContext<FirebaseContextState | undefined>(undefined);
-
 
 // --- PROVIDER COMPONENT ---
 export function FirebaseProvider({ children }: { children: ReactNode }) {
@@ -41,44 +41,43 @@ export function FirebaseProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
   
-  // Use the safe, singleton instances directly.
   const services = { app: firebaseApp, auth, firestore };
 
   useEffect(() => {
-    // No need to get services from useMemo anymore.
     const { auth, firestore } = services;
 
     const unsubscribe = onAuthStateChanged(
       auth,
       async (authUser) => {
+        setIsLoading(true); // Set loading true at the start of any auth change
         if (authUser) {
           // User is signed in, now fetch their profile
           try {
             const userDocRef = doc(firestore, 'users', authUser.uid);
-            const userDoc = await (await import('firebase/firestore')).getDoc(userDocRef);
+            const userDoc = await getDoc(userDocRef);
 
+            let profile: UserProfile = {};
             if (userDoc.exists()) {
-              const profile = userDoc.data() as UserProfile;
-              setUser({ ...authUser, ...profile });
+              profile = userDoc.data() as UserProfile;
             } else {
-              // Check for hardcoded users
+              // Handle hardcoded users as a fallback
               if (authUser.uid === 'GOpbb9SsavhpATk1p0KNmPGGQ0S2') {
-                setUser({ ...authUser, role: 'Admin', name: 'Admin User', email: authUser.email || 'admin@example.com' });
+                profile = { role: 'Admin', name: 'Admin User', email: authUser.email || 'admin@example.com' };
               } else if (authUser.uid === 'u3krP4g02DgPJ6Avv1XhVNvvb8R2') {
-                 setUser({ ...authUser, role: 'Teacher', name: 'Primary 4 Teacher', email: authUser.email || 'teacher@example.com', assignedClassroomId: 'mG24k9p8T7y0r5B3s1A9' });
-              } else {
-                setUser(authUser as AppUser);
+                profile = { role: 'Teacher', name: 'Primary 4 Teacher', email: authUser.email || 'teacher@example.com', assignedClassroomId: 'mG24k9p8T7y0r5B3s1A9' };
               }
             }
+            setUser({ ...authUser, ...profile });
           } catch (e) {
             console.error("Error fetching user profile:", e);
-            setUser(authUser as AppUser);
+            setUser(authUser as AppUser); // Fallback to authUser without profile
+            if (e instanceof Error) setError(e);
           }
         } else {
           // User is signed out
           setUser(null);
         }
-        
+        // IMPORTANT: Set loading to false only after all async operations (like profile fetch) are complete
         setIsLoading(false);
       },
       (error) => {
@@ -90,7 +89,8 @@ export function FirebaseProvider({ children }: { children: ReactNode }) {
     );
 
     return () => unsubscribe();
-  }, [services]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Run only once on mount
 
   const value = {
     app: services.app,
@@ -102,14 +102,8 @@ export function FirebaseProvider({ children }: { children: ReactNode }) {
     error,
   };
 
-  if (isLoading) {
-      return (
-        <div className="flex h-screen w-full items-center justify-center">
-            <Loader2 className="h-12 w-12 animate-spin text-primary" />
-        </div>
-    );
-  }
-
+  // The provider itself no longer shows a global loader.
+  // The consumer of the context (e.g., AuthGuard) will decide when to show a loader.
   return (
     <FirebaseContext.Provider value={value}>
         <FirebaseErrorListener />
