@@ -7,6 +7,8 @@ import { Logo } from '@/components/shared/logo';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 export default function LoginPage() {
+  // This page should be simple. Its only job is to show the login form.
+  // Redirection logic should be handled by AuthGuards on protected pages.
   return (
     <div className="relative min-h-screen w-full">
       <Image

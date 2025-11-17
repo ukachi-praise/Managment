@@ -14,7 +14,8 @@ export default function AdminLayout({
 }) {
   const pathname = usePathname();
 
-  // Don't apply the main layout to the login page
+  // The login page has its own minimal layout.
+  // For all other admin routes, apply the main layout with the AuthGuard.
   if (pathname === '/admin/login') {
     return <>{children}</>;
   }

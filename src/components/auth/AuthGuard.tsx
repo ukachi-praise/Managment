@@ -1,10 +1,10 @@
+
 'use client';
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useFirebase, useUser } from '@/firebase/provider';
+import { useUser } from '@/firebase/provider';
 import { Loader2 } from 'lucide-react';
-import { doc, getDoc } from 'firebase/firestore';
 
 export default function AuthGuard({
   children,
@@ -14,59 +14,38 @@ export default function AuthGuard({
   allow: ("Admin" | "Teacher")[];
 }) {
   const router = useRouter();
-  const { firestore, isCoreLoading } = useFirebase();
-  const { user, isLoading: isUserLoading, isLoggedIn } = useUser();
+  const { user, isLoading, isLoggedIn } = useUser();
   const [authChecked, setAuthChecked] = useState(false);
 
   useEffect(() => {
-    // Don't do anything until Firebase core services are ready and the initial user state has been resolved.
-    if (isCoreLoading || isUserLoading) {
+    // Don't do anything until the initial user loading is complete.
+    if (isLoading) {
       return;
     }
 
-    const checkPermissions = async () => {
-      // If auth has finished loading and there's no user, redirect to login.
-      if (!isLoggedIn) {
-        router.replace('/login');
-        return;
-      }
-      
-      // If we have a user but firestore isn't ready for some reason, show an error.
-      if (!firestore) {
-         console.error("Firestore is not available for permission check.");
-         router.replace("/unauthorized"); // Or a generic error page
-         return;
-      }
+    // If loading is finished and there's still no user, they are not logged in.
+    if (!isLoggedIn) {
+      router.replace('/login');
+      return; // Stop execution
+    }
 
-      try {
-        const userDocRef = doc(firestore, "users", user.uid);
-        const userDoc = await getDoc(userDocRef);
-        const role = userDoc.data()?.role as "Admin" | "Teacher";
+    // At this point, user is not null. Check their role.
+    const userRole = user?.role;
 
-        // Also check hardcoded roles as a fallback
-        const hardcodedRole = user.role;
-
-        if (allow.includes(role) || allow.includes(hardcodedRole)) {
-          // If all checks pass, mark auth as checked and allow rendering children
-          setAuthChecked(true);
-        } else {
-          // If the role doesn't match, redirect.
-          router.replace("/unauthorized");
-        }
-      } catch (e) {
-          console.error("Permission check failed:", e);
-          router.replace('/login');
-      }
-    };
-
-    checkPermissions();
-
-  }, [router, allow, firestore, user, isLoggedIn, isCoreLoading, isUserLoading]);
+    if (userRole && allow.includes(userRole)) {
+      // Role is allowed, authentication check is complete.
+      setAuthChecked(true);
+    } else {
+      // User is logged in, but their role is not allowed for this route.
+      router.replace('/unauthorized');
+    }
+    
+  }, [isLoading, isLoggedIn, user, allow, router]);
 
 
-  // While the initial user state is loading, or we are waiting for the permission check to complete,
+  // While the initial user state is loading or we are waiting for the permission check to complete,
   // show a full-screen loader.
-  if (isUserLoading || !authChecked) {
+  if (!authChecked) {
     return (
       <div className="flex h-screen w-full items-center justify-center">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
