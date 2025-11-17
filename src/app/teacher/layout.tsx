@@ -1,6 +1,7 @@
 
 'use client';
 
+import AuthGuard from '@/components/auth/AuthGuard';
 import { Header } from '@/components/shared/header';
 import { SidebarNav } from '@/components/shared/sidebar-nav';
 import { SidebarProvider } from '@/components/ui/sidebar';
@@ -11,6 +12,7 @@ export default function TeacherLayout({
   children: React.ReactNode;
 }) {
   return (
+    <AuthGuard allow={['Teacher']}>
       <SidebarProvider>
         <div className="flex min-h-screen">
           <SidebarNav role="teacher" />
@@ -20,5 +22,6 @@ export default function TeacherLayout({
           </div>
         </div>
       </SidebarProvider>
+    </AuthGuard>
   );
 }

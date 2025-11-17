@@ -39,9 +39,7 @@ const FirebaseContext = createContext<FirebaseContextState | undefined>(undefine
 export function FirebaseProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AppUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [error, setError] = useState<Error | null>(null);
-  const [authInitialized, setAuthInitialized] = useState(false);
   
   // Use the safe, singleton instances directly.
   const services = { app: firebaseApp, auth, firestore };
@@ -53,13 +51,7 @@ export function FirebaseProvider({ children }: { children: ReactNode }) {
     const unsubscribe = onAuthStateChanged(
       auth,
       async (authUser) => {
-        console.log('Auth state changed:', authUser?.uid || 'no user'); // Debug log
-        
-        // Don't set loading if already initialized (prevents flickering)
-        if (authInitialized) {
-          setIsLoading(true);
-        }
-        
+        setIsLoading(true);
         if (authUser) {
           // User is signed in, now fetch their profile
           try {
@@ -79,37 +71,27 @@ export function FirebaseProvider({ children }: { children: ReactNode }) {
                 setUser(authUser as AppUser);
               }
             }
-            setIsLoggedIn(true);
           } catch (e) {
             console.error("Error fetching user profile:", e);
             setUser(authUser as AppUser);
-            setIsLoggedIn(true);
           }
         } else {
           // User is signed out
           setUser(null);
-          setIsLoggedIn(false);
         }
         
         setIsLoading(false);
-        if (!authInitialized) {
-          setAuthInitialized(true);
-        }
       },
       (error) => {
         console.error("Auth State Error:", error);
         setError(error);
         setUser(null);
-        setIsLoggedIn(false);
         setIsLoading(false);
-        if (!authInitialized) {
-          setAuthInitialized(true);
-        }
       }
     );
 
     return () => unsubscribe();
-  }, [services, authInitialized]);
+  }, [services]);
 
   const value = {
     app: services.app,
@@ -117,19 +99,12 @@ export function FirebaseProvider({ children }: { children: ReactNode }) {
     firestore: services.firestore,
     user,
     isLoading,
-    isLoggedIn,
+    isLoggedIn: !isLoading && !!user,
     error,
   };
 
-  // Only show initial loader, not subsequent ones
-  if (!authInitialized) {
-    return (
-        <div className="flex h-screen w-full items-center justify-center">
-            <Loader2 className="h-12 w-12 animate-spin text-primary" />
-        </div>
-    );
-  }
-
+  // The initial loading state is now implicitly handled by the isLoading flag.
+  // AuthGuard and other components will use the `isLoading` from `useUser` to show spinners.
   return (
     <FirebaseContext.Provider value={value}>
         <FirebaseErrorListener />

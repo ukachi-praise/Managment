@@ -6,6 +6,7 @@ import { doc, getDoc } from 'firebase/firestore';
 import { redirect } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Loader2 } from 'lucide-react';
 
 
 // This page now primarily acts as a loading/fallback page.
@@ -14,44 +15,36 @@ import { Skeleton } from '@/components/ui/skeleton';
 // or if the user is truly not assigned to a class.
 export default function TeacherDashboard() {
   const { user, isLoading: isUserLoading } = useUser();
-  const firestore = useFirestore();
-  const [loading, setLoading] = useState(true);
+  const [message, setMessage] = useState('Checking your classroom assignment...');
 
   useEffect(() => {
-    // If we're still loading user info or don't have firestore, wait.
-    if (isUserLoading || !firestore) {
+    // If we're still loading user info, wait.
+    if (isUserLoading) {
       return;
     }
-    // If no user, send to login.
+    
+    // If no user, this page should not be reachable due to AuthGuard, but as a fallback:
     if (!user) {
       redirect('/login');
       return;
     }
 
-    const fetchUserClass = async () => {
-      const userDocRef = doc(firestore, 'users', user.uid);
-      const userDoc = await getDoc(userDocRef);
-
-      if (userDoc.exists() && userDoc.data().assignedClassroomId) {
-        // If a class is assigned, redirect immediately.
-        redirect(`/teacher/class/${userDoc.data().assignedClassroomId}`);
-      } else {
+    // The user object from the provider already contains the classroomId if it exists.
+    if (user.assignedClassroomId) {
+        redirect(`/teacher/class/${user.assignedClassroomId}`);
+    } else {
         // If not, stop loading and show the 'No Class' message.
-        setLoading(false);
-      }
-    };
+        setMessage('You are not currently assigned to a classroom. Please contact an administrator.');
+    }
 
-    fetchUserClass();
-
-  }, [user, isUserLoading, firestore]);
+  }, [user, isUserLoading]);
 
   // While fetching, show a skeleton loader.
-  if (loading) {
+  if (isUserLoading || !message.includes('not currently assigned')) {
     return (
-       <div className="flex flex-col gap-4 p-6">
-        <Skeleton className="h-9 w-48" />
-        <Skeleton className="h-6 w-full" />
-        <Skeleton className="h-40 w-full" />
+       <div className="flex flex-col h-full items-center justify-center gap-4 p-6">
+        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+        <p className="text-muted-foreground">{message}</p>
       </div>
     )
   }
@@ -60,7 +53,7 @@ export default function TeacherDashboard() {
   return (
     <div className="p-6">
         <h1 className="text-2xl font-bold">No Class Assigned</h1>
-        <p className="text-muted-foreground">You are not currently assigned to a classroom. Please contact an administrator.</p>
+        <p className="text-muted-foreground">{message}</p>
     </div>
   );
 }

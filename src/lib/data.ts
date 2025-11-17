@@ -1,11 +1,8 @@
-import type { ImagePlaceholder } from './placeholder-images';
-import { PlaceHolderImages } from './placeholder-images';
 
 export type Student = {
   id: string;
   name: string;
   classId: string;
-  avatar: ImagePlaceholder;
   attendance: string;
 };
 
