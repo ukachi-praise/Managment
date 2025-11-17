@@ -34,15 +34,13 @@ const prompt = ai.definePrompt({
   name: 'generateSoftSkillsPrompt',
   input: {schema: GenerateSoftSkillsInputSchema},
   output: {schema: GenerateSoftSkillsOutputSchema},
-  prompt: `You are an AI assistant that generates soft skill assessments and remarks for students based on their academic performance and attendance.
+  prompt: `You are an API that generates student assessments. Based on the data provided, return a JSON object with two keys: "softSkillsAssessment" and "remarks".
 
-  Academic Performance: {{{academicPerformance}}}
-  Attendance: {{{attendance}}}
+  Student Information:
+  - Academic Performance: {{{academicPerformance}}}
+  - Attendance: {{{attendance}}}
 
-  Generate a soft skills assessment and remarks based on the provided information.
-
-  Ensure the output is concise and informative.
-  `,
+  Generate a concise and informative soft skills assessment and a general remark.`,
 });
 
 const generateSoftSkillsFlow = ai.defineFlow(
