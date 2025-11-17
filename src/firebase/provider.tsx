@@ -65,6 +65,8 @@ export function FirebaseProvider({ children }: { children: ReactNode }) {
                 profile = { role: 'Teacher', name: 'Nursery 1b Teacher', email: authUser.email || 'teacher.nursery1b@example.com', assignedClassroomId: 'nursery-1b-id' };
               } else if (authUser.uid === 'vhyAkcnmE2OD9cheoDeXdsdUL1a2') {
                 profile = { role: 'Teacher', name: 'Nursery 1a Teacher', email: authUser.email || 'teacher.nursery1a@example.com', assignedClassroomId: 'nursery-1a-id' };
+              } else if (authUser.uid === 'lqMDWRYrbugIlhVBA083OVpJO3p1') {
+                profile = { role: 'Teacher', name: 'Primary 1b Teacher', email: authUser.email || 'teacher.primary1b@example.com', assignedClassroomId: 'primary-1b-id' };
               }
             }
             setUser({ ...authUser, ...profile });
