@@ -16,6 +16,14 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
+// Debug: Check if config is loaded
+console.log('Firebase Config Check:', {
+  hasApiKey: !!firebaseConfig.apiKey,
+  hasAuthDomain: !!firebaseConfig.authDomain,
+  hasProjectId: !!firebaseConfig.projectId,
+  projectId: firebaseConfig.projectId, // Safe to log
+});
+
 
 // --- PROFILE TYPE ---
 export type UserProfile = {
@@ -33,7 +41,7 @@ interface FirebaseContextState {
   firestore: Firestore | null;
   user: AppUser | null;
   isLoading: boolean;
-  isLoggedIn: boolean; // True only after auth state is confirmed and user exists
+  isLoggedIn: boolean;
   error: Error | null;
 }
 
@@ -47,7 +55,7 @@ export function FirebaseProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [error, setError] = useState<Error | null>(null);
-  const [authInitialized, setAuthInitialized] = useState(false); // NEW: Track if auth has initialized
+  const [authInitialized, setAuthInitialized] = useState(false);
   
   const services = useMemo(() => {
     const app = initializeApp(firebaseConfig);
@@ -62,7 +70,13 @@ export function FirebaseProvider({ children }: { children: ReactNode }) {
     const unsubscribe = onAuthStateChanged(
       auth,
       async (authUser) => {
-        setIsLoading(true);
+        console.log('Auth state changed:', authUser?.uid || 'no user'); // Debug log
+        
+        // Don't set loading if already initialized (prevents flickering)
+        if (authInitialized) {
+          setIsLoading(true);
+        }
+        
         if (authUser) {
           // User is signed in, now fetch their profile
           try {
@@ -73,8 +87,7 @@ export function FirebaseProvider({ children }: { children: ReactNode }) {
               const profile = userDoc.data() as UserProfile;
               setUser({ ...authUser, ...profile });
             } else {
-              // Authenticated user has no profile doc. Treat as a partial user.
-               // Check for hardcoded users
+              // Check for hardcoded users
               if (authUser.uid === 'GOpbb9SsavhpATk1p0KNmPGGQ0S2') {
                 setUser({ ...authUser, role: 'Admin', name: 'Admin User', email: authUser.email || 'admin@example.com' });
               } else if (authUser.uid === 'u3krP4g02DgPJ6Avv1XhVNvvb8R2') {
@@ -86,16 +99,19 @@ export function FirebaseProvider({ children }: { children: ReactNode }) {
             setIsLoggedIn(true);
           } catch (e) {
             console.error("Error fetching user profile:", e);
-            setUser(authUser as AppUser); // Fallback to auth user only
-            setIsLoggedIn(true); // Still logged in, even if profile fails
+            setUser(authUser as AppUser);
+            setIsLoggedIn(true);
           }
         } else {
           // User is signed out
           setUser(null);
           setIsLoggedIn(false);
         }
+        
         setIsLoading(false);
-        setAuthInitialized(true); // NEW: Mark auth as initialized
+        if (!authInitialized) {
+          setAuthInitialized(true);
+        }
       },
       (error) => {
         console.error("Auth State Error:", error);
@@ -103,12 +119,14 @@ export function FirebaseProvider({ children }: { children: ReactNode }) {
         setUser(null);
         setIsLoggedIn(false);
         setIsLoading(false);
-        setAuthInitialized(true); // NEW: Mark auth as initialized even on error
+        if (!authInitialized) {
+          setAuthInitialized(true);
+        }
       }
     );
 
     return () => unsubscribe();
-  }, [services]);
+  }, [services, authInitialized]);
 
   const value = {
     app: services.app,
@@ -120,7 +138,7 @@ export function FirebaseProvider({ children }: { children: ReactNode }) {
     error,
   };
 
-  // FIXED: Only show loader if auth hasn't initialized yet
+  // Only show initial loader, not subsequent ones
   if (!authInitialized) {
     return (
         <div className="flex h-screen w-full items-center justify-center">
