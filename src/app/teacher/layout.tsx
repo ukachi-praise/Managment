@@ -12,6 +12,7 @@ export default function TeacherLayout({
   children: React.ReactNode;
 }) {
   return (
+    // All teacher routes are protected.
     <AuthGuard allow={['Teacher']}>
       <SidebarProvider>
         <div className="flex min-h-screen">

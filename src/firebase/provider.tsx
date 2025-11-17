@@ -5,7 +5,6 @@ import React, { createContext, useContext, ReactNode, useState, useEffect, useMe
 import { FirebaseApp } from 'firebase/app';
 import { Firestore, doc, getDoc } from 'firebase/firestore';
 import { Auth, User, onAuthStateChanged } from 'firebase/auth';
-import { Loader2 } from 'lucide-react';
 import { FirebaseErrorListener } from '@/components/FirebaseErrorListener';
 import { initializeFirebase } from '@/firebase'; // SAFE IMPORT
 
@@ -23,13 +22,11 @@ export type AppUser = User & UserProfile;
 
 // --- CONTEXT STATE ---
 interface FirebaseContextState {
-  app: FirebaseApp | null;
-  auth: Auth | null;
-  firestore: Firestore | null;
+  app: FirebaseApp;
+  auth: Auth;
+  firestore: Firestore;
   user: AppUser | null;
   isLoading: boolean;
-  isLoggedIn: boolean; // Retaining for compatibility, derived from user state
-  error: Error | null;
 }
 
 // --- CONTEXT ---
@@ -39,7 +36,6 @@ const FirebaseContext = createContext<FirebaseContextState | undefined>(undefine
 export function FirebaseProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AppUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
   
   const services = { app: firebaseApp, auth, firestore };
 
@@ -49,9 +45,7 @@ export function FirebaseProvider({ children }: { children: ReactNode }) {
     const unsubscribe = onAuthStateChanged(
       auth,
       async (authUser) => {
-        setIsLoading(true); // Set loading true at the start of any auth change
         if (authUser) {
-          // User is signed in, now fetch their profile
           try {
             const userDocRef = doc(firestore, 'users', authUser.uid);
             const userDoc = await getDoc(userDocRef);
@@ -71,18 +65,16 @@ export function FirebaseProvider({ children }: { children: ReactNode }) {
           } catch (e) {
             console.error("Error fetching user profile:", e);
             setUser(authUser as AppUser); // Fallback to authUser without profile
-            if (e instanceof Error) setError(e);
           }
         } else {
           // User is signed out
           setUser(null);
         }
-        // IMPORTANT: Set loading to false only after all async operations (like profile fetch) are complete
+        // This is the key: loading is false only after all auth logic is complete.
         setIsLoading(false);
       },
       (error) => {
         console.error("Auth State Error:", error);
-        setError(error);
         setUser(null);
         setIsLoading(false);
       }
@@ -90,7 +82,7 @@ export function FirebaseProvider({ children }: { children: ReactNode }) {
 
     return () => unsubscribe();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Run only once on mount
+  }, []); 
 
   const value = {
     app: services.app,
@@ -98,12 +90,8 @@ export function FirebaseProvider({ children }: { children: ReactNode }) {
     firestore: services.firestore,
     user,
     isLoading,
-    isLoggedIn: !isLoading && !!user,
-    error,
   };
 
-  // The provider itself no longer shows a global loader.
-  // The consumer of the context (e.g., AuthGuard) will decide when to show a loader.
   return (
     <FirebaseContext.Provider value={value}>
         <FirebaseErrorListener />
@@ -114,29 +102,24 @@ export function FirebaseProvider({ children }: { children: ReactNode }) {
 
 
 // --- HOOKS ---
-export const useFirebase = (): Omit<FirebaseContextState, 'user' | 'isLoading' | 'error' | 'isLoggedIn'> & { isCoreLoading: boolean } => {
+export const useFirebase = (): Omit<FirebaseContextState, 'user' | 'isLoading' > => {
   const context = useContext(FirebaseContext);
   if (context === undefined) {
     throw new Error('useFirebase must be used within a FirebaseProvider.');
-  }
-  const isCoreLoading = !context.app || !context.auth || !context.firestore;
-  if (isCoreLoading) {
-    // This state should be brief, but we handle it.
   }
   return { 
     app: context.app, 
     auth: context.auth, 
     firestore: context.firestore,
-    isCoreLoading,
   };
 };
 
-export const useUser = (): { user: AppUser | null, isLoading: boolean, isLoggedIn: boolean, error: Error | null } => {
+export const useUser = (): { user: AppUser | null, isLoading: boolean, isLoggedIn: boolean } => {
     const context = useContext(FirebaseContext);
     if (context === undefined) {
         throw new Error('useUser must be used within a FirebaseProvider.');
     }
-    return { user: context.user, isLoading: context.isLoading, isLoggedIn: context.isLoggedIn, error: context.error };
+    return { user: context.user, isLoading: context.isLoading, isLoggedIn: !context.isLoading && !!context.user };
 }
 
 export const useAuth = (): Auth => {

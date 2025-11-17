@@ -18,42 +18,36 @@ export default function AuthGuard({
   const { user, isLoading } = useUser();
 
   useEffect(() => {
-    // Don't do anything until the initial user loading is complete.
+    // Wait until the initial loading is complete before doing any checks.
     if (isLoading) {
       return;
     }
 
-    // Determine the correct login path based on the allowed roles for this route.
-    const targetLogin = allow.includes('Admin') ? '/admin/login' : '/login';
-
-    // If loading is finished and there's no user, they are not logged in.
-    if (!user) {
-      // *** FIX: Only redirect if we are NOT already on the target login page. ***
-      if(pathname !== targetLogin) {
-        router.replace(targetLogin);
-      }
-      return;
-    }
-
-    // At this point, user is not null. Check their role.
+    const isAuthPage = pathname === '/login' || pathname === '/admin/login';
     const userRole = user?.role;
 
-    if (userRole && allow.includes(userRole)) {
-      // Role is allowed, user can stay.
-      // If a logged-in user with the correct role somehow lands on a login page, send them to their dashboard.
-      if (pathname === '/login' || pathname === '/admin/login') {
-          const dashboard = userRole === 'Admin' ? '/admin/dashboard' : '/teacher/dashboard';
-          router.replace(dashboard);
+    if (!user) {
+      // If user is not logged in and not on an auth page, redirect them.
+      const targetLogin = allow.includes('Admin') ? '/admin/login' : '/login';
+       if (pathname !== targetLogin) {
+         router.replace(targetLogin);
       }
     } else {
-      // User is logged in, but their role is not allowed for this route.
-      router.replace('/unauthorized');
+      // User is logged in.
+      if (userRole && allow.includes(userRole)) {
+        // If user has the correct role and is on a login page, redirect to their dashboard.
+        if (isAuthPage) {
+          const dashboard = userRole === 'Admin' ? '/admin/dashboard' : '/teacher/dashboard';
+          router.replace(dashboard);
+        }
+      } else {
+        // If user's role is not allowed for this route, send them to unauthorized page.
+        router.replace('/unauthorized');
+      }
     }
-    
   }, [isLoading, user, allow, router, pathname]);
 
-
-  // While the initial user state is loading, show a full-screen loader.
+  // While loading, show a full-screen loader to prevent flash of content.
   if (isLoading) {
     return (
       <div className="flex h-screen w-full items-center justify-center">
@@ -63,16 +57,16 @@ export default function AuthGuard({
     );
   }
   
-  // Render the protected children only if the user is logged in with the correct role.
-  // This prevents a flash of incorrect content.
-  if (user?.role && allow.includes(user.role)) {
-    return <>{children}</>;
+  // If user has the correct role OR if it's an authentication page (and user is not logged in), render children.
+  // This prevents the login page from being blank while AuthGuard logic runs.
+  if ((user?.role && allow.includes(user.role)) || (!user && (pathname === '/login' || pathname === '/admin/login'))) {
+      return <>{children}</>;
   }
 
-  // Otherwise, show a loader while redirecting.
+  // In all other cases (e.g., redirecting), show a loader.
   return (
-      <div className="flex h-screen w-full items-center justify-center">
-        <Loader2 className="h-12 w-12 animate-spin text-primary" />
-      </div>
+    <div className="flex h-screen w-full items-center justify-center">
+      <Loader2 className="h-12 w-12 animate-spin text-primary" />
+    </div>
   );
 }
