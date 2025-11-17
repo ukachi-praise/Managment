@@ -19,17 +19,41 @@ export default function AuthGuard({
 
   const isAuthPage = pathname === '/login' || pathname === '/admin/login';
 
-  // **STEP 1: PERMANENT FIX - HALT EXECUTION ON LOGIN PAGE**
-  // If we are on an authentication page and the user state is still loading,
-  // or if there is no user, we should just render the page itself and stop.
-  // This prevents a loading screen from flashing or a redirect loop from starting.
-  if (isAuthPage && (isLoading || !user)) {
-    return <>{children}</>;
-  }
+  useEffect(() => {
+    // Don't do anything until the user's auth state is fully loaded
+    if (isLoading) {
+      return;
+    }
 
-  // **STEP 2: Handle Loading State (for all other pages)**
-  // If we are not on an auth page and still loading, show a full-screen loader.
-  // This protects protected routes from flashing their content.
+    const userRole = user?.role;
+    const isAllowed = userRole && allow.includes(userRole);
+
+    // If user is not logged in, redirect them to the correct login page
+    if (!user) {
+      const targetLogin = allow.includes('Admin') ? '/admin/login' : '/login';
+      // Only redirect if they aren't already on an auth page
+      if (!isAuthPage) {
+        router.replace(targetLogin);
+      }
+      return;
+    }
+
+    // If a logged-in user is on a login page, redirect them to their dashboard
+    if (user && isAuthPage && isAllowed) {
+      const dashboard = userRole === 'Admin' ? '/admin/dashboard' : '/teacher/dashboard';
+      router.replace(dashboard);
+      return;
+    }
+    
+    // If user is logged in but not allowed for this route, redirect to unauthorized
+    if (user && !isAllowed && !isAuthPage) {
+        router.replace('/unauthorized');
+    }
+
+  }, [isLoading, user, pathname, router, allow, isAuthPage]);
+
+
+  // While loading, show a full-screen loader to prevent content flashing
   if (isLoading) {
     return (
       <div className="flex h-screen w-full items-center justify-center">
@@ -39,36 +63,22 @@ export default function AuthGuard({
     );
   }
 
-  // **STEP 3: Handle Redirects (now that loading is complete)**
-  if (!user) {
-    // If there's no user AND we are not on an auth page, redirect to the correct login.
-    // This is safe because the isLoading check has passed.
-    const targetLogin = allow.includes('Admin') ? '/admin/login' : '/login';
-    if (!isAuthPage) {
-        router.replace(targetLogin);
-    }
-    return null; // Do not render children while redirecting.
-  }
-
-  // At this point, we have a user.
-  const userRole = user?.role;
-  const isAllowed = userRole && allow.includes(userRole);
-
-  if (isAuthPage && isAllowed) {
-    // If the user is on a login page but is already logged in and allowed,
-    // redirect them to their dashboard.
-    const dashboard = userRole === 'Admin' ? '/admin/dashboard' : '/teacher/dashboard';
-    router.replace(dashboard);
-    return null; // Do not render the login page while redirecting.
+  // If we are on an auth page, render it while useEffect handles potential redirects.
+  if (isAuthPage) {
+    return <>{children}</>;
   }
   
-  if (!isAllowed && !isAuthPage) {
-    // If the user is not allowed for this route, and it's not a login page,
-    // send them to the unauthorized page.
-    router.replace('/unauthorized');
-    return null;
+  // For protected routes, only render children if user is fully loaded and allowed.
+  // The useEffect handles the redirection, so we can conditionally render here.
+  if (user && user.role && allow.includes(user.role)) {
+    return <>{children}</>;
   }
-  
-  // **STEP 4: Render the content if all checks pass**
-  return <>{children}</>;
+
+  // In the moments before a redirect, show the loading screen
+  // to prevent rendering a page the user shouldn't see.
+  return (
+      <div className="flex h-screen w-full items-center justify-center">
+        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+      </div>
+  );
 }
