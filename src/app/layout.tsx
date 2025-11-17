@@ -5,7 +5,7 @@ import { Toaster } from '@/components/ui/toaster';
 import { FirebaseProvider } from '@/firebase/provider';
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://justvision.netlify.app'),
+  metadataBase: new URL('https://justvision-management.netlify.app'),
   title: 'JustVision Kiddies School',
   description: 'Database & Result Management System',
   keywords: ['school management', 'result portal', 'education', 'JustVision Kiddies School', 'student database', 'JustVision Kiddies', 'JustVision'],
