@@ -1,29 +1,15 @@
 'use client';
 
 import React, { createContext, useContext, ReactNode, useState, useEffect, useMemo, DependencyList } from 'react';
-import { FirebaseApp, initializeApp } from 'firebase/app';
-import { Firestore, doc, getFirestore } from 'firebase/firestore';
-import { Auth, User, onAuthStateChanged, getAuth } from 'firebase/auth';
+import { FirebaseApp } from 'firebase/app';
+import { Firestore, doc } from 'firebase/firestore';
+import { Auth, User, onAuthStateChanged } from 'firebase/auth';
 import { Loader2 } from 'lucide-react';
 import { FirebaseErrorListener } from '@/components/FirebaseErrorListener';
+import { initializeFirebase } from '@/firebase'; // SAFE IMPORT
 
-const firebaseConfig = {
-  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
-  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
-};
-
-// Debug: Check if config is loaded
-console.log('Firebase Config Check:', {
-  hasApiKey: !!firebaseConfig.apiKey,
-  hasAuthDomain: !!firebaseConfig.authDomain,
-  hasProjectId: !!firebaseConfig.projectId,
-  projectId: firebaseConfig.projectId, // Safe to log
-});
-
+// Get the singleton instances of Firebase services
+const { firebaseApp, auth, firestore } = initializeFirebase();
 
 // --- PROFILE TYPE ---
 export type UserProfile = {
@@ -57,14 +43,11 @@ export function FirebaseProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState<Error | null>(null);
   const [authInitialized, setAuthInitialized] = useState(false);
   
-  const services = useMemo(() => {
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const firestore = getFirestore(app);
-    return { app, auth, firestore };
-  }, []);
+  // Use the safe, singleton instances directly.
+  const services = { app: firebaseApp, auth, firestore };
 
   useEffect(() => {
+    // No need to get services from useMemo anymore.
     const { auth, firestore } = services;
 
     const unsubscribe = onAuthStateChanged(
@@ -157,15 +140,21 @@ export function FirebaseProvider({ children }: { children: ReactNode }) {
 
 
 // --- HOOKS ---
-export const useFirebase = (): Omit<FirebaseContextState, 'user' | 'isLoading' | 'error' | 'isLoggedIn'> => {
+export const useFirebase = (): Omit<FirebaseContextState, 'user' | 'isLoading' | 'error' | 'isLoggedIn'> & { isCoreLoading: boolean } => {
   const context = useContext(FirebaseContext);
   if (context === undefined) {
     throw new Error('useFirebase must be used within a FirebaseProvider.');
   }
-  if (!context.app || !context.auth || !context.firestore) {
-    throw new Error("Firebase services are not available. Check your configuration.");
+  const isCoreLoading = !context.app || !context.auth || !context.firestore;
+  if (isCoreLoading) {
+    // This state should be brief, but we handle it.
   }
-  return { app: context.app, auth: context.auth, firestore: context.firestore };
+  return { 
+    app: context.app, 
+    auth: context.auth, 
+    firestore: context.firestore,
+    isCoreLoading,
+  };
 };
 
 export const useUser = (): { user: AppUser | null, isLoading: boolean, isLoggedIn: boolean, error: Error | null } => {
