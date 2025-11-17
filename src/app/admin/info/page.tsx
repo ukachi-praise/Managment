@@ -38,12 +38,8 @@ import { CalendarIcon, Loader2, ArrowLeft } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
-import {
-  useFirestore,
-  useDoc,
-  setDocumentNonBlocking,
-} from '@/firebase/firestore/use-doc';
-import { useMemoFirebase } from '@/firebase/provider';
+import { useFirestore, useMemoFirebase } from '@/firebase/provider';
+import { useDoc } from '@/firebase/firestore/use-doc';
 import { doc, Timestamp } from 'firebase/firestore';
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
@@ -322,3 +318,5 @@ export default function InfoPage() {
     </div>
   );
 }
+
+    
