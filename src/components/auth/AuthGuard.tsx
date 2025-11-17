@@ -23,9 +23,12 @@ export default function AuthGuard({
       return;
     }
 
+    // Determine the correct login path based on the allowed roles for this route.
+    const targetLogin = allow.includes('Admin') ? '/admin/login' : '/login';
+
     // If loading is finished and there's no user, they are not logged in.
     if (!user) {
-      const targetLogin = allow.includes('Admin') ? '/admin/login' : '/login';
+      // *** FIX: Only redirect if we are NOT already on the target login page. ***
       if(pathname !== targetLogin) {
         router.replace(targetLogin);
       }
@@ -37,6 +40,11 @@ export default function AuthGuard({
 
     if (userRole && allow.includes(userRole)) {
       // Role is allowed, user can stay.
+      // If a logged-in user with the correct role somehow lands on a login page, send them to their dashboard.
+      if (pathname === '/login' || pathname === '/admin/login') {
+          const dashboard = userRole === 'Admin' ? '/admin/dashboard' : '/teacher/dashboard';
+          router.replace(dashboard);
+      }
     } else {
       // User is logged in, but their role is not allowed for this route.
       router.replace('/unauthorized');
@@ -46,7 +54,6 @@ export default function AuthGuard({
 
 
   // While the initial user state is loading, show a full-screen loader.
-  // This is the key to preventing the redirect loop.
   if (isLoading) {
     return (
       <div className="flex h-screen w-full items-center justify-center">
@@ -56,6 +63,16 @@ export default function AuthGuard({
     );
   }
   
-  // Render the protected children only once the check is complete and successful.
-  return <>{children}</>;
+  // Render the protected children only if the user is logged in with the correct role.
+  // This prevents a flash of incorrect content.
+  if (user?.role && allow.includes(user.role)) {
+    return <>{children}</>;
+  }
+
+  // Otherwise, show a loader while redirecting.
+  return (
+      <div className="flex h-screen w-full items-center justify-center">
+        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+      </div>
+  );
 }
