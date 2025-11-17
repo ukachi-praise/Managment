@@ -51,7 +51,6 @@ export function FirebaseProvider({ children }: { children: ReactNode }) {
     const unsubscribe = onAuthStateChanged(
       auth,
       async (authUser) => {
-        setIsLoading(true);
         if (authUser) {
           // User is signed in, now fetch their profile
           try {
@@ -103,8 +102,14 @@ export function FirebaseProvider({ children }: { children: ReactNode }) {
     error,
   };
 
-  // The initial loading state is now implicitly handled by the isLoading flag.
-  // AuthGuard and other components will use the `isLoading` from `useUser` to show spinners.
+  if (isLoading) {
+      return (
+        <div className="flex h-screen w-full items-center justify-center">
+            <Loader2 className="h-12 w-12 animate-spin text-primary" />
+        </div>
+    );
+  }
+
   return (
     <FirebaseContext.Provider value={value}>
         <FirebaseErrorListener />
