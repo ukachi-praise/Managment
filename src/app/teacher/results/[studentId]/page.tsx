@@ -195,9 +195,18 @@ export default function StudentResultEntryPage() {
 
     setIsSaving(true);
     
+    // Create a clean data object for Firestore, ensuring no 'undefined' values
     const dataToSave = {
         ...termResult,
-        scores: termResult.scores 
+        daysAttended: termResult.daysAttended ?? null, // Convert undefined to null
+        scores: Object.entries(termResult.scores).reduce((acc, [key, value]) => {
+            acc[key] = {
+                ca1: value.ca1 ?? null,
+                ca2: value.ca2 ?? null,
+                exam: value.exam ?? null,
+            };
+            return acc;
+        }, {} as Record<string, SubjectScore>)
     };
 
     setDocumentNonBlocking(termResultRef, dataToSave, { merge: true });

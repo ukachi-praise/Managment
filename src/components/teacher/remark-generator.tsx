@@ -37,8 +37,8 @@ export function RemarkGenerator({
   const { toast } = useToast();
   const [isGenerating, setIsGenerating] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [teacherRemark, setTeacherRemark] = useState('');
-  const [headTeacherRemark, setHeadTeacherRemark] = useState('');
+  const [teacherRemark, setTeacherRemark] = useState(initialTeacherRemark || '');
+  const [headTeacherRemark, setHeadTeacherRemark] = useState(initialHeadTeacherRemark || '');
 
   useEffect(() => {
     setTeacherRemark(initialTeacherRemark || '');
@@ -72,8 +72,8 @@ export function RemarkGenerator({
     setIsSaving(true);
     
     setDocumentNonBlocking(resultRef, {
-        teacherRemark,
-        headTeacherRemark
+        teacherRemark: teacherRemark || '',
+        headTeacherRemark: headTeacherRemark || ''
     }, { merge: true });
 
     setTimeout(() => {
