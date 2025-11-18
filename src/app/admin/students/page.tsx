@@ -143,14 +143,14 @@ export default function StudentsPage() {
     if (!newStudentData.name || !classroomId) return;
 
     // 1. Create the student
-    const studentRef = await addDoc(
+    const studentRef = await addDocumentNonBlocking(
       collection(firestore, 'students'),
       newStudentData
     );
 
     if (studentRef) {
       // 2. Create the enrollment
-      await addDoc(collection(firestore, 'enrollments'), {
+      await addDocumentNonBlocking(collection(firestore, 'enrollments'), {
         studentId: studentRef.id,
         classroomId: classroomId,
         // In a real app, you'd also have sessionId (e.g. "2025/2026")
@@ -274,7 +274,7 @@ export default function StudentsPage() {
                                     <TableCell>{studentCounts[classroom.id] || 0}</TableCell>
                                     <TableCell className="text-right">
                                         <Button asChild variant="outline" size="sm">
-                                            <Link href={`/teacher/class/${classroom.id}`}>
+                                            <Link href={`/admin/students/${classroom.id}`}>
                                                 View Students
                                                 <ArrowRight className="ml-2 h-4 w-4" />
                                             </Link>
