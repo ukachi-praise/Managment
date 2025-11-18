@@ -199,6 +199,8 @@ export default function StudentResultEntryPage() {
     const dataToSave = {
         ...termResult,
         daysAttended: termResult.daysAttended ?? null, // Convert undefined to null
+        teacherRemark: termResult.teacherRemark ?? '',
+        headTeacherRemark: termResult.headTeacherRemark ?? '',
         scores: Object.entries(termResult.scores).reduce((acc, [key, value]) => {
             acc[key] = {
                 ca1: value.ca1 ?? null,
@@ -389,3 +391,5 @@ export default function StudentResultEntryPage() {
     </div>
   );
 }
+
+    
