@@ -222,6 +222,7 @@ export default function TeacherClassPage() {
                 </div>
                </div>
               <DialogFooter className="mt-4">
+                 <Button type="button" variant="outline" onClick={() => setEditingStudent(null)}>Cancel</Button>
                 <Button type="submit">Save Changes</Button>
               </DialogFooter>
             </form>
@@ -232,7 +233,7 @@ export default function TeacherClassPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">
-            {classroomName}
+            {isLoading ? 'Loading...' : classroomName}
           </h1>
           <p className="text-muted-foreground">
               Your assigned class dashboard. View students and manage results.
