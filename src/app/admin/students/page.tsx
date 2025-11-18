@@ -125,7 +125,7 @@ export default function StudentsPage() {
         });
 
         // 2. Add the student reference to the class's subcollection
-        const classStudentRef = doc(collection(firestore, 'classrooms', classroomId, 'students'), newStudentRef.id);
+        const classStudentRef = doc(firestore, 'classrooms', classroomId, 'students', newStudentRef.id);
         batch.set(classStudentRef, {
             name: studentName, // Denormalized for easy display
             studentId: newStudentRef.id,
@@ -282,5 +282,3 @@ export default function StudentsPage() {
     </div>
   );
 }
-
-    
