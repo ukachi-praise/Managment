@@ -74,38 +74,22 @@ export default function TeacherClassPage() {
   const [studentDetails, setStudentDetails] = useState<Student[]>([]);
   const [detailsLoading, setDetailsLoading] = useState(false);
 
-  // FIXED: Query the correct subcollection that admin writes to
+  // Query the classrooms/{id}/students subcollection
   const studentsInClassQuery = useMemoFirebase(
     () => {
-      console.log('🔧 Building students query for classroomId:', classroomId);
       if (!classroomId || !firestore) {
-        console.log('❌ Missing classroomId or firestore');
         return null;
       }
-      const q = query(collection(firestore, 'classrooms', classroomId, 'students'));
-      console.log('✅ Query created for path: classrooms/' + classroomId + '/students');
-      return q;
+      return query(collection(firestore, 'classrooms', classroomId, 'students'));
     },
     [classroomId, firestore]
   );
   const { data: studentsInClass, isLoading: studentsLoading } = useCollection<{id: string; name: string; studentId: string}>(studentsInClassQuery);
   
-  // Debug: Log students whenever they change
-  useEffect(() => {
-    console.log('📊 Students in class updated:', {
-      count: studentsInClass?.length || 0,
-      data: studentsInClass,
-      isLoading: studentsLoading
-    });
-  }, [studentsInClass, studentsLoading]);
-  
-  // Fetch student details based on the list from the subcollection
+  // Fetch full student details from the root /students collection
   useEffect(() => {
     const fetchStudentDetails = async () => {
-      console.log('🔍 Students in class:', studentsInClass);
-      
       if (!firestore || !studentsInClass || studentsInClass.length === 0) {
-        console.log('⚠️ No students found in subcollection');
         setStudentDetails([]);
         return;
       }
@@ -113,12 +97,10 @@ export default function TeacherClassPage() {
       setDetailsLoading(true);
       try {
         const studentIds = studentsInClass.map(e => e.studentId);
-        console.log('📋 Student IDs to fetch:', studentIds);
         
-        // Fetch in batches of 10 (Firestore 'in' limit)
         const batches = [];
-        for (let i = 0; i < studentIds.length; i += 10) {
-          const batch = studentIds.slice(i, i + 10);
+        for (let i = 0; i < studentIds.length; i += 30) {
+          const batch = studentIds.slice(i, i + 30);
           if (batch.length > 0) {
             const q = query(collection(firestore, 'students'), where('__name__', 'in', batch));
             batches.push(getDocs(q));
@@ -129,17 +111,13 @@ export default function TeacherClassPage() {
         const allStudents: Student[] = [];
         
         results.forEach(snapshot => {
-          console.log('📦 Batch result - docs found:', snapshot.docs.length);
           snapshot.docs.forEach(doc => {
-            console.log('👤 Found student:', doc.id, doc.data());
             allStudents.push({ id: doc.id, ...doc.data() } as Student);
           });
         });
-
-        console.log('✅ All students fetched:', allStudents);
         setStudentDetails(allStudents);
       } catch (error) {
-        console.error('❌ Error fetching student details:', error);
+        console.error('Error fetching student details:', error);
         toast({
           variant: 'destructive',
           title: 'Error',
