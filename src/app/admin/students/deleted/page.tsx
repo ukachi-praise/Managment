@@ -26,7 +26,7 @@ import {
   useFirestore,
   useMemoFirebase,
 } from '@/firebase/provider';
-import { collection, query, doc, writeBatch, where } from 'firebase/firestore';
+import { collection, query, doc, writeBatch, where, getDocs } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -44,7 +44,9 @@ type Student = {
 
 export default function DeletedStudentsPage() {
   const [studentToRestore, setStudentToRestore] = useState<Student | null>(null);
+  const [studentToDelete, setStudentToDelete] = useState<Student | null>(null);
   const [isRestoring, setIsRestoring] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const firestore = useFirestore();
   const router = useRouter();
   const { toast } = useToast();
@@ -70,9 +72,53 @@ export default function DeletedStudentsPage() {
     setStudentToRestore(null);
     setIsRestoring(false);
   }
+  
+  const handlePermanentDelete = async () => {
+    if (!firestore || !studentToDelete) return;
+    setIsDeleting(true);
+    
+    try {
+        const batch = writeBatch(firestore);
+
+        // 1. Delete main student doc
+        const studentRef = doc(firestore, 'students', studentToDelete.id);
+        batch.delete(studentRef);
+
+        // 2. Delete from enrollments
+        const enrollmentsQuery = query(collection(firestore, 'enrollments'), where('studentId', '==', studentToDelete.id));
+        const enrollmentsSnapshot = await getDocs(enrollmentsQuery);
+        enrollmentsSnapshot.forEach(doc => batch.delete(doc.ref));
+        
+        // 3. Delete all their results
+        const resultsRef = collection(firestore, 'students', studentToDelete.id, 'results');
+        const resultsSnapshot = await getDocs(resultsRef);
+        resultsSnapshot.forEach(doc => batch.delete(doc.ref));
+
+        await batch.commit();
+
+        toast({
+            variant: 'destructive',
+            title: 'Student Permanently Deleted',
+            description: `${studentToDelete.name} and all their associated data have been erased.`,
+        });
+    } catch(error: any) {
+        toast({
+            variant: 'destructive',
+            title: 'Error Deleting Student',
+            description: error.message || 'Could not permanently delete the student.',
+        });
+    } finally {
+        setStudentToDelete(null);
+        setIsDeleting(false);
+    }
+  }
 
   const openRestoreDialog = (student: Student) => {
     setStudentToRestore(student);
+  }
+  
+  const openDeleteDialog = (student: Student) => {
+    setStudentToDelete(student);
   }
 
   const sortedStudents = useMemo(() => {
@@ -100,6 +146,25 @@ export default function DeletedStudentsPage() {
             </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      
+      <AlertDialog open={!!studentToDelete} onOpenChange={(open) => !open && setStudentToDelete(null)}>
+        <AlertDialogContent>
+            <AlertDialogHeader>
+                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                <AlertDialogDescription>
+                    This action is irreversible. This will permanently delete <span className="font-semibold">{studentToDelete?.name}</span> and all of their associated data, including results and enrollment history.
+                </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={handlePermanentDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90" disabled={isDeleting}>
+                  {isDeleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Trash2 className="mr-2 h-4 w-4" />}
+                  Delete Permanently
+                </AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
 
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
@@ -114,7 +179,7 @@ export default function DeletedStudentsPage() {
             <CardHeader>
             <CardTitle>Deleted Students</CardTitle>
             <CardDescription>
-                This is a list of all students who have been removed from classes. You can restore them from here.
+                This is a list of all students who have been removed from classes. You can restore them or permanently delete their records.
             </CardDescription>
             </CardHeader>
             <CardContent>
@@ -143,10 +208,14 @@ export default function DeletedStudentsPage() {
                                         </div>
                                     </TableCell>
                                     <TableCell>{student.admissionNumber}</TableCell>
-                                    <TableCell className="text-right">
+                                    <TableCell className="text-right space-x-2">
                                         <Button onClick={() => openRestoreDialog(student)} variant="outline" size="sm">
                                             <RotateCcw className="mr-2 h-4 w-4" />
                                             Restore
+                                        </Button>
+                                        <Button onClick={() => openDeleteDialog(student)} variant="destructive" size="sm">
+                                            <Trash2 className="mr-2 h-4 w-4" />
+                                            Delete Permanently
                                         </Button>
                                     </TableCell>
                                 </TableRow>
