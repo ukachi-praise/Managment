@@ -59,14 +59,14 @@ export function LoginForm() {
 
         // Hardcoded Primary 4 teacher check
         if (user.uid === 'u3krP4g02DgPJ6Avv1XhVNvvb8R2') {
-            toast({ title: 'Login Successful', description: 'Redirecting...' });
+            toast({ title: 'Login Successful', description: 'Redirecting to mG24k9p8T7y0r5B3s1A9' });
             router.push('/teacher/class/mG24k9p8T7y0r5B3s1A9');
             return; // Add return to stop execution
         }
         
         // Hardcoded Pre-nursery teacher check
         if (user.uid === 'YAemjwMFEAOnvp6RL6STw3GJK0I2') {
-            toast({ title: 'Login Successful', description: 'Redirecting...' });
+            toast({ title: 'Login Successful', description: 'Redirecting to pre-nursery-id' });
             router.push('/teacher/class/pre-nursery-id');
             return; 
         }
