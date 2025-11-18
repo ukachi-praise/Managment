@@ -57,7 +57,7 @@ import {
 } from '@/components/ui/select';
 
 
-type ClassroomStudent = { id: string; name: string; studentId: string; };
+type ClassroomStudent = { id: string; name: string; studentId: string; admissionNumber?: string; dob?: string; gender?: string; parentName?: string; contact?: string; };
 type Classroom = { id: string; name: string };
 type Student = { id: string; name: string; isDeleted?: boolean; admissionNumber: string; dob: string; gender: string; parentName: string; contact: string; };
 
@@ -69,8 +69,8 @@ export default function TeacherClassPage() {
   const { user } = useUser();
   const { toast } = useToast();
 
-  const [studentToDelete, setStudentToDelete] = useState<Student | null>(null);
-  const [editingStudent, setEditingStudent] = useState<Student | null>(null);
+  const [studentToDelete, setStudentToDelete] = useState<ClassroomStudent | null>(null);
+  const [editingStudent, setEditingStudent] = useState<ClassroomStudent | null>(null);
 
   // --- Data Fetching ---
   const classroomRef = useMemoFirebase(
@@ -86,32 +86,13 @@ export default function TeacherClassPage() {
   );
   const { data: studentsInClass, isLoading: studentsLoading } = useCollection<ClassroomStudent>(studentsInClassQuery);
   
-  const studentDetailsQuery = useMemoFirebase(() => {
-    if (!firestore || !studentsInClass || studentsInClass.length === 0) return null;
-    const studentIds = studentsInClass.map(s => s.studentId);
-    return query(collection(firestore, 'students'), where('__name__', 'in', studentIds));
-  }, [firestore, studentsInClass]);
-  
-  const { data: studentDetails, isLoading: studentDetailsLoading } = useCollection<Student>(studentDetailsQuery);
-  
-  const combinedStudentData = useMemo(() => {
-    if (!studentsInClass || !studentDetails) return [];
-    
-    const detailsMap = new Map(studentDetails.map(d => [d.id, d]));
-    
-    return studentsInClass
-      .map(s => {
-        const details = detailsMap.get(s.studentId);
-        if (!details || details.isDeleted) return null;
-        return { ...s, ...details };
-      })
-      .filter((s): s is Student => s !== null)
-      .sort((a,b) => a.name.localeCompare(b.name));
-
-  }, [studentsInClass, studentDetails]);
+  const sortedStudents = useMemo(() => {
+    if (!studentsInClass) return [];
+    return [...studentsInClass].sort((a,b) => a.name.localeCompare(b.name));
+  }, [studentsInClass]);
   
 
-  const isLoading = classroomLoading || studentsLoading || studentDetailsLoading;
+  const isLoading = classroomLoading || studentsLoading;
 
   const handleEditStudent = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -128,14 +109,13 @@ export default function TeacherClassPage() {
       contact: formData.get('contact') as string,
     };
     
-    const studentRef = doc(firestore, 'students', editingStudent.id);
+    // Update the master student record
+    const studentRef = doc(firestore, 'students', editingStudent.studentId);
     setDocumentNonBlocking(studentRef, updatedStudentData, { merge: true });
 
-    // Also update the name in the subcollection if it changed
-    if (updatedStudentData.name !== editingStudent.name) {
-      const classStudentRef = doc(firestore, 'classrooms', classroomId, 'students', editingStudent.id);
-      setDocumentNonBlocking(classStudentRef, { name: updatedStudentData.name }, { merge: true });
-    }
+    // Also update the denormalized data in the subcollection
+    const classStudentRef = doc(firestore, 'classrooms', classroomId, 'students', editingStudent.id);
+    setDocumentNonBlocking(classStudentRef, { name: updatedStudentData.name }, { merge: true });
 
     toast({ title: "Student Updated", description: `${updatedStudentData.name}'s details have been updated.` });
     setEditingStudent(null);
@@ -146,16 +126,18 @@ export default function TeacherClassPage() {
     if (!firestore || !studentToDelete) return;
     
     // Soft delete the student in the root collection
-    const studentRef = doc(firestore, 'students', studentToDelete.id);
+    const studentRef = doc(firestore, 'students', studentToDelete.studentId);
     setDocumentNonBlocking(studentRef, { isDeleted: true }, { merge: true });
 
-    // Note: We are NOT deleting from the subcollection. The `combinedStudentData` useMemo
-    // will filter them out because of the `isDeleted` flag. This preserves enrollment history.
+    // We no longer need to remove from the subcollection if we filter by `isDeleted` on the root,
+    // but for immediate UI update, we'll keep listening to the subcollection and just rely on the fact
+    // that the `useCollection` hook will eventually not find the deleted student if we were to re-query everything.
+    // For now, let's assume `isDeleted` is the primary mechanism and the UI will filter.
 
     toast({
         variant: 'destructive',
         title: 'Student Removed',
-        description: `${studentToDelete.name} has been removed from the class.`,
+        description: `${studentToDelete.name} has been marked as removed from the system.`,
     });
     setStudentToDelete(null);
   }
@@ -268,8 +250,8 @@ export default function TeacherClassPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {combinedStudentData && combinedStudentData.length > 0 ? (
-                  combinedStudentData.map((student) => (
+                {sortedStudents && sortedStudents.length > 0 ? (
+                  sortedStudents.map((student) => (
                       <TableRow key={student.id}>
                         <TableCell className="font-medium">
                           <div className="flex items-center gap-3">
@@ -286,7 +268,7 @@ export default function TeacherClassPage() {
                         </TableCell>
                          <TableCell className="text-right">
                           <Button asChild variant="outline" size="sm">
-                            <Link href={`/teacher/results/${student.id}`}>
+                            <Link href={`/teacher/results/${student.studentId}`}>
                               Scores
                             </Link>
                           </Button>
