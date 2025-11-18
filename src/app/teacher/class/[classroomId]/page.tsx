@@ -42,7 +42,6 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
@@ -77,7 +76,7 @@ export default function TeacherClassPage() {
     () => (firestore && classroomId ? doc(firestore, 'classrooms', classroomId) : null),
     [firestore, classroomId]
   );
-  const { data: classroom, isLoading: classroomLoading } = useDoc<Classroom>(classroomRef);
+  const { data: classroomFromDB, isLoading: classroomLoading } = useDoc<Classroom>(classroomRef);
 
   const enrollmentsQuery = useMemoFirebase(
     () =>
@@ -102,6 +101,23 @@ export default function TeacherClassPage() {
       const studentIds = new Set(enrollments.map(e => e.studentId));
       return allStudents.filter(s => studentIds.has(s.id) && !s.isDeleted).sort((a,b) => a.name.localeCompare(b.name));
   }, [enrollments, allStudents]);
+  
+  // Logic to determine classroom name for both hardcoded and DB users
+  const classroomName = useMemo(() => {
+    if (classroomLoading && !user?.name?.includes('Teacher')) {
+        return 'Loading...';
+    }
+    // For hardcoded users, derive name from user profile
+    if (user?.name && user.name.includes(' Teacher')) {
+        return user.name.replace(' Teacher', '');
+    }
+    // For users from DB, use the fetched classroom name
+    if (classroomFromDB) {
+        return classroomFromDB.name;
+    }
+    return 'Class';
+  }, [classroomFromDB, user, classroomLoading]);
+
 
   const isLoading = classroomLoading || enrollmentsLoading || allStudentsLoading;
 
@@ -215,7 +231,7 @@ export default function TeacherClassPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">
-            {classroomLoading ? 'Loading...' : classroom?.name || 'Class'}
+            {classroomName}
           </h1>
           <p className="text-muted-foreground">
               Your assigned class dashboard. View students and manage results.
@@ -295,3 +311,5 @@ export default function TeacherClassPage() {
     </div>
   );
 }
+
+    
