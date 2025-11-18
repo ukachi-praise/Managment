@@ -135,10 +135,7 @@ export default function StudentsPage() {
     const newStudentData = {
       name: formData.get('name') as string,
       admissionNumber: admissionNumber,
-      dob: formData.get('dob') as string,
       gender: formData.get('gender') as string,
-      parentName: formData.get('parentName') as string,
-      contact: formData.get('contact') as string,
       isDeleted: false, // Ensure new students are not deleted
     };
     const classroomId = formData.get('classroomId') as string;
@@ -218,10 +215,6 @@ export default function StudentsPage() {
                       </SelectContent>
                     </Select>
                  </div>
-                 <div className="space-y-2">
-                  <Label htmlFor="dob">Date of Birth</Label>
-                  <Input id="dob" name="dob" type="date" required />
-                </div>
                 <div className="space-y-2">
                    <Label htmlFor="gender">Gender</Label>
                     <Select name="gender" required>
@@ -234,14 +227,6 @@ export default function StudentsPage() {
                       </SelectContent>
                     </Select>
                  </div>
-                 <div className="space-y-2">
-                  <Label htmlFor="parentName">Parent / Guardian Name</Label>
-                  <Input id="parentName" name="parentName" placeholder="Jane Doe" required />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="contact">Contact Number</Label>
-                  <Input id="contact" name="contact" placeholder="+1234567890" required />
-                </div>
                </div>
               <DialogFooter className="mt-4">
                 <Button type="submit">Save Student</Button>
