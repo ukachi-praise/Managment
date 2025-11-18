@@ -106,6 +106,12 @@ export default function AdminStudentListPage() {
       try {
         const studentIds = studentsInClass.map(e => e.studentId);
         
+        if (studentIds.length === 0) {
+            setStudentDetails([]);
+            setDetailsLoading(false);
+            return;
+        }
+        
         const batches = [];
         for (let i = 0; i < studentIds.length; i += 30) {
           const batch = studentIds.slice(i, i + 30);
@@ -344,5 +350,3 @@ export default function AdminStudentListPage() {
     </div>
   );
 }
-
-    
