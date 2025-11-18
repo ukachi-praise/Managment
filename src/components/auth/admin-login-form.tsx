@@ -45,53 +45,51 @@ export function AdminLoginForm() {
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
-    try {
-      const userCredential = await signInWithEmailAndPassword(auth, values.email, values.password);
-      const user = userCredential.user;
-      
-      // Hardcoded admin check
-      if (user.uid === 'GOpbb9SsavhpATk1p0KNmPGGQ0S2') {
-        toast({
-          title: 'Login Successful',
-          description: 'Welcome, Admin! Redirecting...',
-        });
-        router.push('/admin/dashboard');
-        return;
-      }
-
-      const userDocRef = doc(firestore, 'users', user.uid);
-      const userDoc = await getDoc(userDocRef);
-
-      if (userDoc.exists() && userDoc.data().role === 'Admin') {
-        toast({
-          title: 'Login Successful',
-          description: 'Welcome, Admin! Redirecting...',
-        });
-        router.push('/admin/dashboard');
-      } else {
-        toast({
-          variant: 'destructive',
-          title: 'Permission Denied',
-          description: 'You do not have admin privileges.',
-        });
-        await auth.signOut();
+    if (!auth) {
+        toast({ variant: 'destructive', title: 'Firebase not initialized.' });
         setIsLoading(false);
-      }
+        return;
+    }
+    try {
+        const userCredential = await signInWithEmailAndPassword(auth, values.email, values.password);
+        const user = userCredential.user;
+        
+        const userDocRef = doc(firestore, 'users', user.uid);
+        const userDoc = await getDoc(userDocRef);
+
+        const isHardcodedAdmin = user.uid === 'GOpbb9SsavhpATk1p0KNmPGGQ0S2';
+        const isFirestoreAdmin = userDoc.exists() && userDoc.data().role === 'Admin';
+
+        if (isHardcodedAdmin || isFirestoreAdmin) {
+            toast({
+                title: 'Login Successful',
+                description: 'Welcome, Admin! Redirecting...',
+            });
+            router.push('/admin/dashboard');
+        } else {
+             toast({
+                variant: 'destructive',
+                title: 'Permission Denied',
+                description: 'You do not have admin privileges.',
+            });
+            await auth.signOut();
+        }
     } catch (error: any) {
-      setIsLoading(false);
-      if (error.code === 'auth/invalid-credential' || error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
-        toast({
-          variant: 'destructive',
-          title: 'Login Failed',
-          description: 'Invalid credentials. Please check your email and password.',
-        });
-      } else {
-        toast({
-          variant: 'destructive',
-          title: 'Login Error',
-          description: error.message,
-        });
-      }
+        if (error.code === 'auth/invalid-credential' || error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
+            toast({
+            variant: 'destructive',
+            title: 'Login Failed',
+            description: 'Invalid credentials. Please check your email and password.',
+            });
+        } else {
+            toast({
+            variant: 'destructive',
+            title: 'Login Error',
+            description: error.message,
+            });
+        }
+    } finally {
+        setIsLoading(false);
     }
   }
 

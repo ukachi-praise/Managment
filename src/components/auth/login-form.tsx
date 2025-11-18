@@ -19,9 +19,8 @@ import { toast } from '@/hooks/use-toast';
 import { useState } from 'react';
 import { Loader2, Eye, EyeOff } from 'lucide-react';
 import Link from 'next/link';
-import { useAuth, useFirestore } from '@/firebase/provider';
+import { useAuth } from '@/firebase/provider';
 import { signInWithEmailAndPassword } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
 
 const formSchema = z.object({
   email: z.string().email({ message: 'Please enter a valid email.' }),
@@ -33,7 +32,6 @@ export function LoginForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const auth = useAuth();
-  const firestore = useFirestore();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -45,49 +43,25 @@ export function LoginForm() {
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
-    if (!auth || !firestore) {
+    if (!auth) {
         toast({ variant: 'destructive', title: 'Firebase not initialized.'});
         setIsLoading(false);
         return;
     }
 
     try {
-        const userCredential = await signInWithEmailAndPassword(auth, values.email, values.password);
-        const user = userCredential.user;
+        await signInWithEmailAndPassword(auth, values.email, values.password);
+        
+        // After successful sign-in, the AuthGuard will handle the redirection
+        // based on the user's role, which is determined by the FirebaseProvider.
+        toast({ title: 'Login Successful', description: 'Redirecting...' });
+        
+        // We no longer need to manually check the role and redirect here.
+        // The AuthGuard and useUser hook will now manage the user's destination.
+        // A simple push to a generic logged-in page or root is sufficient.
+        // The AuthGuard will then take over. Let's push to root.
+        router.push('/admin/dashboard'); 
 
-        // Fetch user document from Firestore to determine role
-        const userDocRef = doc(firestore, 'users', user.uid);
-        const userDoc = await getDoc(userDocRef);
-
-        if (!userDoc.exists()) {
-            // Also check hardcoded admin as a fallback
-             if (user.uid === 'GOpbb9SsavhpATk1p0KNmPGGQ0S2') {
-                 toast({ title: 'Login Successful', description: 'Redirecting...' });
-                 router.push('/admin/dashboard');
-             } else {
-                throw new Error("No user profile found in database.");
-             }
-        } else {
-            const userData = userDoc.data();
-            const role = userData.role;
-            const assignedClassroomId = userData.assignedClassroomId;
-
-            toast({ title: 'Login Successful', description: 'Redirecting...' });
-
-            // Redirect based on role
-            if (role === 'Admin') {
-                router.push('/admin/dashboard');
-            } else if (role === 'Teacher') {
-                if (assignedClassroomId) {
-                    router.push(`/teacher/class/${assignedClassroomId}`);
-                } else {
-                    router.push('/teacher/dashboard'); // Fallback for teachers with no assigned class
-                }
-            } else {
-                // Default redirect for any other roles or if role is undefined
-                 router.push('/');
-            }
-        }
 
     } catch (error: any) {
         setIsLoading(false);
