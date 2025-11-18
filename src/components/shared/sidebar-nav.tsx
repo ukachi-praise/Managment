@@ -16,6 +16,7 @@ import {
   Info,
   Users2,
   User as UserIcon,
+  Trash2,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -48,6 +49,7 @@ const adminNavItems: NavItem[] = [
   { href: () => '/admin/remarks', label: 'Remarks', icon: MessageSquareQuote },
   { href: () => '/admin/results', label: 'Results', icon: ClipboardList },
   { href: () => '/admin/templates', label: 'Templates', icon: LayoutTemplate },
+  { href: () => '/admin/students/deleted', label: 'Recycle Bin', icon: Trash2 },
   { href: () => '/admin/settings', label: 'Settings', icon: Settings },
 ];
 

@@ -21,7 +21,7 @@ import {
 import { useFirestore, useUser, useMemoFirebase } from '@/firebase/provider';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { useDoc } from '@/firebase/firestore/use-doc';
-import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+import { setDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { collection, query, where, doc, getDoc, getDocs } from 'firebase/firestore';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -91,7 +91,7 @@ export default function TeacherClassPage() {
     const fetchStudentDetails = async () => {
       if (!firestore || !studentsInClass) {
         setStudentDetails([]);
-        setDetailsLoading(false);
+        setDetailsLoading(false); // Stop loading if there's nothing to fetch
         return;
       }
       
@@ -202,16 +202,20 @@ export default function TeacherClassPage() {
 
 
   const handleDeleteStudent = () => {
-    if (!firestore || !studentToDelete) return;
+    if (!firestore || !studentToDelete || !classroomId) return;
     
-    // Soft delete the student in the root collection
+    // 1. Soft delete the student in the root collection
     const studentRef = doc(firestore, 'students', studentToDelete.id);
     setDocumentNonBlocking(studentRef, { isDeleted: true }, { merge: true });
+
+    // 2. Remove the student from the class's subcollection
+    const studentInClassRef = doc(firestore, 'classrooms', classroomId, 'students', studentToDelete.id);
+    deleteDocumentNonBlocking(studentInClassRef);
     
     toast({
         variant: 'destructive',
         title: 'Student Removed',
-        description: `${studentToDelete.name} has been marked as removed from the system.`,
+        description: `${studentToDelete.name} has been removed from this class.`,
     });
     setStudentToDelete(null);
   }
