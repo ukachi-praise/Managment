@@ -28,7 +28,7 @@ import {
   useFirestore,
   useMemoFirebase,
 } from '@/firebase/provider';
-import { collection, query, addDoc, doc, serverTimestamp, writeBatch } from 'firebase/firestore';
+import { collection, query, addDoc, doc, serverTimestamp, writeBatch, getDocs } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   Dialog,
@@ -49,7 +49,6 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useRouter } from 'next/navigation';
-import { addDocumentNonBlocking, setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { useToast } from '@/hooks/use-toast';
 
 type Classroom = {
@@ -122,12 +121,13 @@ export default function StudentsPage() {
             admissionNumber: admissionNumber,
             gender: gender,
             isDeleted: false,
+            // Add other fields as needed from a more detailed form
         });
 
-        // 2. Add the student to the class's subcollection
+        // 2. Add the student reference to the class's subcollection
         const classStudentRef = doc(collection(firestore, 'classrooms', classroomId, 'students'), newStudentRef.id);
         batch.set(classStudentRef, {
-            name: studentName,
+            name: studentName, // Denormalized for easy display
             studentId: newStudentRef.id,
             createdAt: serverTimestamp()
         });
@@ -192,7 +192,7 @@ export default function StudentsPage() {
                         {classroomsLoading ? (
                           <SelectItem value="loading" disabled>Loading...</SelectItem>
                         ) : (
-                          classrooms?.map((c) => (
+                          sortedClassrooms?.map((c) => (
                             <SelectItem key={c.id} value={c.id}>
                               {c.name}
                             </SelectItem>
@@ -282,3 +282,5 @@ export default function StudentsPage() {
     </div>
   );
 }
+
+    

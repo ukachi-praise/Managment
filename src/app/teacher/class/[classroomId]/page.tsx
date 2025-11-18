@@ -22,7 +22,7 @@ import { useFirestore, useUser, useMemoFirebase } from '@/firebase/provider';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { useDoc } from '@/firebase/firestore/use-doc';
 import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
-import { collection, query, where, doc, serverTimestamp } from 'firebase/firestore';
+import { collection, query, where, doc } from 'firebase/firestore';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
@@ -56,10 +56,9 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 
-
-type ClassroomStudent = { id: string; name: string; studentId: string; admissionNumber?: string; dob?: string; gender?: string; parentName?: string; contact?: string; };
-type Classroom = { id: string; name: string };
+type ClassroomStudent = { id: string; name: string; studentId: string; };
 type Student = { id: string; name: string; isDeleted?: boolean; admissionNumber: string; dob: string; gender: string; parentName: string; contact: string; };
+type Classroom = { id: string; name: string };
 
 export default function TeacherClassPage() {
   const params = useParams();
@@ -69,8 +68,8 @@ export default function TeacherClassPage() {
   const { user } = useUser();
   const { toast } = useToast();
 
-  const [studentToDelete, setStudentToDelete] = useState<ClassroomStudent | null>(null);
-  const [editingStudent, setEditingStudent] = useState<ClassroomStudent | null>(null);
+  const [studentToDelete, setStudentToDelete] = useState<Student | null>(null);
+  const [editingStudent, setEditingStudent] = useState<Student | null>(null);
 
   // --- Data Fetching ---
   const classroomRef = useMemoFirebase(
@@ -79,21 +78,44 @@ export default function TeacherClassPage() {
   );
   const { data: classroom, isLoading: classroomLoading } = useDoc<Classroom>(classroomRef);
 
-  // Listen directly to the students subcollection for this classroom
+  // Step 1: Get the list of student references from the subcollection
   const studentsInClassQuery = useMemoFirebase(
-      () => classroomId && firestore ? query(collection(firestore, 'classrooms', classroomId, 'students')) : null,
-      [classroomId, firestore]
+    () => classroomId && firestore ? query(collection(firestore, 'classrooms', classroomId, 'students')) : null,
+    [classroomId, firestore]
   );
   const { data: studentsInClass, isLoading: studentsLoading } = useCollection<ClassroomStudent>(studentsInClassQuery);
-  
-  const sortedStudents = useMemo(() => {
-    if (!studentsInClass) return [];
-    return [...studentsInClass].sort((a,b) => a.name.localeCompare(b.name));
-  }, [studentsInClass]);
-  
 
-  const isLoading = classroomLoading || studentsLoading;
+  // Step 2: Get the full details for those students from the root collection
+  const studentDetailsQuery = useMemoFirebase(() => {
+    if (!firestore || !studentsInClass || studentsInClass.length === 0) return null;
+    const studentIds = studentsInClass.map(s => s.studentId);
+    // Firestore 'in' queries are limited to 30 items. For larger classes, pagination would be needed.
+    return query(collection(firestore, 'students'), where('__name__', 'in', studentIds));
+  }, [firestore, studentsInClass]);
+  
+  const { data: studentDetails, isLoading: studentDetailsLoading } = useCollection<Student>(studentDetailsQuery);
+  
+  // Step 3: Combine the data into a single, usable list
+  const combinedStudentData = useMemo(() => {
+    if (!studentsInClass || !studentDetails) return [];
+    
+    const detailsMap = new Map(studentDetails.map(d => [d.id, d]));
+    
+    return studentsInClass
+      .map(s => {
+        const details = detailsMap.get(s.studentId);
+        // Only include students that exist and are not soft-deleted
+        if (!details || details.isDeleted) return null;
+        // Combine data, prioritizing the root student doc for details, but ensuring correct ID usage
+        return { ...s, ...details, id: s.id, studentId: s.studentId };
+      })
+      .filter((s): s is (ClassroomStudent & Student) => s !== null)
+      .sort((a,b) => a.name.localeCompare(b.name));
 
+  }, [studentsInClass, studentDetails]);
+
+  const isLoading = classroomLoading || studentsLoading || studentDetailsLoading;
+  
   const handleEditStudent = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!firestore || !editingStudent) return;
@@ -110,12 +132,14 @@ export default function TeacherClassPage() {
     };
     
     // Update the master student record
-    const studentRef = doc(firestore, 'students', editingStudent.studentId);
+    const studentRef = doc(firestore, 'students', editingStudent.id);
     setDocumentNonBlocking(studentRef, updatedStudentData, { merge: true });
 
-    // Also update the denormalized data in the subcollection
-    const classStudentRef = doc(firestore, 'classrooms', classroomId, 'students', editingStudent.id);
-    setDocumentNonBlocking(classStudentRef, { name: updatedStudentData.name }, { merge: true });
+    // Also update the denormalized name in the subcollection
+    if (updatedStudentData.name !== editingStudent.name) {
+        const classStudentRef = doc(firestore, 'classrooms', classroomId, 'students', editingStudent.id);
+        setDocumentNonBlocking(classStudentRef, { name: updatedStudentData.name }, { merge: true });
+    }
 
     toast({ title: "Student Updated", description: `${updatedStudentData.name}'s details have been updated.` });
     setEditingStudent(null);
@@ -126,14 +150,9 @@ export default function TeacherClassPage() {
     if (!firestore || !studentToDelete) return;
     
     // Soft delete the student in the root collection
-    const studentRef = doc(firestore, 'students', studentToDelete.studentId);
+    const studentRef = doc(firestore, 'students', studentToDelete.id);
     setDocumentNonBlocking(studentRef, { isDeleted: true }, { merge: true });
-
-    // We no longer need to remove from the subcollection if we filter by `isDeleted` on the root,
-    // but for immediate UI update, we'll keep listening to the subcollection and just rely on the fact
-    // that the `useCollection` hook will eventually not find the deleted student if we were to re-query everything.
-    // For now, let's assume `isDeleted` is the primary mechanism and the UI will filter.
-
+    
     toast({
         variant: 'destructive',
         title: 'Student Removed',
@@ -216,7 +235,7 @@ export default function TeacherClassPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">
-            {isLoading ? 'Loading...' : classroom?.name}
+            {classroomLoading ? 'Loading...' : classroom?.name}
           </h1>
           <p className="text-muted-foreground">
               Your assigned class dashboard. View students and manage results.
@@ -236,7 +255,7 @@ export default function TeacherClassPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {isLoading ? (
+          {isLoading && combinedStudentData.length === 0 ? (
             <div className="flex h-64 items-center justify-center">
               <Loader2 className="h-12 w-12 animate-spin text-primary" />
             </div>
@@ -250,8 +269,8 @@ export default function TeacherClassPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {sortedStudents && sortedStudents.length > 0 ? (
-                  sortedStudents.map((student) => (
+                {combinedStudentData && combinedStudentData.length > 0 ? (
+                  combinedStudentData.map((student) => (
                       <TableRow key={student.id}>
                         <TableCell className="font-medium">
                           <div className="flex items-center gap-3">
@@ -296,3 +315,5 @@ export default function TeacherClassPage() {
     </div>
   );
 }
+
+    
