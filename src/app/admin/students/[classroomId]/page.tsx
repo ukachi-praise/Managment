@@ -106,8 +106,8 @@ export default function AdminStudentListPage() {
         const studentIds = enrollments.map(e => e.studentId);
         
         const batches = [];
-        for (let i = 0; i < studentIds.length; i += 10) {
-          const batch = studentIds.slice(i, i + 10);
+        for (let i = 0; i < studentIds.length; i += 30) { // Increased batch size
+          const batch = studentIds.slice(i, i + 30);
           if (batch.length > 0) {
             const q = query(collection(firestore, 'students'), where('__name__', 'in', batch));
             batches.push(getDocs(q));
@@ -148,8 +148,7 @@ export default function AdminStudentListPage() {
       .map(e => {
         const details = detailsMap.get(e.studentId);
         if (!details || details.isDeleted) return null;
-        // Use the enrollment ID for the subcollection doc, but the details from the main student doc
-        return { ...details, id: e.studentId }; 
+        return { ...details }; 
       })
       .filter((s): s is Student => s !== null)
       .sort((a,b) => a.name.localeCompare(b.name));

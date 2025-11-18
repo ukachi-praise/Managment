@@ -109,6 +109,9 @@ export default function StudentsPage() {
     const studentName = formData.get('name') as string;
     const classroomId = formData.get('classroomId') as string;
     const gender = formData.get('gender') as string;
+    const dob = formData.get('dob') as string;
+    const parentName = formData.get('parentName') as string;
+    const contact = formData.get('contact') as string;
 
     if (!studentName || !classroomId || !gender) {
         toast({variant: 'destructive', title: 'Missing fields', description: 'Please fill out all fields.'});
@@ -132,8 +135,10 @@ export default function StudentsPage() {
             name: studentName,
             admissionNumber: admissionNumber,
             gender: gender,
+            dob: dob,
+            parentName: parentName,
+            contact: contact,
             isDeleted: false,
-            // Add other fields as needed from a more detailed form
         });
 
         // 2. Create an enrollment document in the root /enrollments collection
@@ -225,6 +230,18 @@ export default function StudentsPage() {
                       </SelectContent>
                     </Select>
                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="dob">Date of Birth</Label>
+                    <Input id="dob" name="dob" type="date" required />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="parentName">Parent / Guardian Name</Label>
+                    <Input id="parentName" name="parentName" placeholder="Jane Doe" required />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="contact">Contact Number</Label>
+                    <Input id="contact" name="contact" placeholder="08012345678" required />
+                  </div>
                </div>
               <DialogFooter className="mt-4">
                 <Button type="submit">Save Student</Button>
