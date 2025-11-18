@@ -74,53 +74,55 @@ export default function TeacherClassPage() {
   const [studentDetails, setStudentDetails] = useState<Student[]>([]);
   const [detailsLoading, setDetailsLoading] = useState(false);
 
-  // FIXED: Query enrollments collection instead of classrooms/{id}/students subcollection
-  const enrollmentsQuery = useMemoFirebase(
+  // FIXED: Query the correct subcollection that admin writes to
+  const studentsInClassQuery = useMemoFirebase(
     () => {
-      console.log('🔧 Building enrollments query for classroomId:', classroomId);
+      console.log('🔧 Building students query for classroomId:', classroomId);
       if (!classroomId || !firestore) {
         console.log('❌ Missing classroomId or firestore');
         return null;
       }
-      const q = query(collection(firestore, 'enrollments'), where('classroomId', '==', classroomId));
-      console.log('✅ Query created');
+      const q = query(collection(firestore, 'classrooms', classroomId, 'students'));
+      console.log('✅ Query created for path: classrooms/' + classroomId + '/students');
       return q;
     },
     [classroomId, firestore]
   );
-  const { data: enrollments, isLoading: enrollmentsLoading } = useCollection<Enrollment>(enrollmentsQuery);
+  const { data: studentsInClass, isLoading: studentsLoading } = useCollection<{id: string; name: string; studentId: string}>(studentsInClassQuery);
   
-  // Debug: Log enrollments whenever they change
+  // Debug: Log students whenever they change
   useEffect(() => {
-    console.log('📊 Enrollments data updated:', {
-      count: enrollments?.length || 0,
-      data: enrollments,
-      isLoading: enrollmentsLoading
+    console.log('📊 Students in class updated:', {
+      count: studentsInClass?.length || 0,
+      data: studentsInClass,
+      isLoading: studentsLoading
     });
-  }, [enrollments, enrollmentsLoading]);
+  }, [studentsInClass, studentsLoading]);
   
-  // Fetch student details based on enrollments
+  // Fetch student details based on the list from the subcollection
   useEffect(() => {
     const fetchStudentDetails = async () => {
-      console.log('🔍 Enrollments:', enrollments);
+      console.log('🔍 Students in class:', studentsInClass);
       
-      if (!firestore || !enrollments || enrollments.length === 0) {
-        console.log('⚠️ No enrollments found');
+      if (!firestore || !studentsInClass || studentsInClass.length === 0) {
+        console.log('⚠️ No students found in subcollection');
         setStudentDetails([]);
         return;
       }
 
       setDetailsLoading(true);
       try {
-        const studentIds = enrollments.map(e => e.studentId);
+        const studentIds = studentsInClass.map(e => e.studentId);
         console.log('📋 Student IDs to fetch:', studentIds);
         
         // Fetch in batches of 10 (Firestore 'in' limit)
         const batches = [];
         for (let i = 0; i < studentIds.length; i += 10) {
           const batch = studentIds.slice(i, i + 10);
-          const q = query(collection(firestore, 'students'), where('__name__', 'in', batch));
-          batches.push(getDocs(q));
+          if (batch.length > 0) {
+            const q = query(collection(firestore, 'students'), where('__name__', 'in', batch));
+            batches.push(getDocs(q));
+          }
         }
 
         const results = await Promise.all(batches);
@@ -149,14 +151,14 @@ export default function TeacherClassPage() {
     };
 
     fetchStudentDetails();
-  }, [firestore, enrollments, toast]);
+  }, [firestore, studentsInClass, toast]);
   
   const combinedStudentData = useMemo(() => {
-    if (!enrollments || !studentDetails) return [];
+    if (!studentsInClass || !studentDetails) return [];
     
     const detailsMap = new Map(studentDetails.map(d => [d.id, d]));
     
-    return enrollments
+    return studentsInClass
       .map(e => {
         const details = detailsMap.get(e.studentId);
         if (!details || details.isDeleted) return null;
@@ -165,7 +167,7 @@ export default function TeacherClassPage() {
       .filter((s): s is Student => s !== null)
       .sort((a,b) => a.name.localeCompare(b.name));
 
-  }, [enrollments, studentDetails]);
+  }, [studentsInClass, studentDetails]);
 
 
   useEffect(() => {
@@ -182,7 +184,7 @@ export default function TeacherClassPage() {
   }, [firestore, classroomId]);
 
 
-  const isLoading = enrollmentsLoading || detailsLoading;
+  const isLoading = studentsLoading || detailsLoading;
   
   const handleEditStudent = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
