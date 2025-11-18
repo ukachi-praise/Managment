@@ -67,6 +67,11 @@ type Enrollment = {
     studentId: string;
 }
 
+type Student = {
+    id: string;
+    isDeleted?: boolean;
+}
+
 
 export default function StudentsPage() {
   const [open, setOpen] = useState(false);
@@ -87,16 +92,31 @@ export default function StudentsPage() {
   );
   const { data: enrollments, isLoading: enrollmentsLoading } = useCollection<Enrollment>(enrollmentsQuery);
   
+  const allStudentsQuery = useMemoFirebase(
+    () => (firestore ? query(collection(firestore, 'students')) : null),
+    [firestore]
+  );
+  const { data: allStudents, isLoading: studentsLoading } = useCollection<Student>(allStudentsQuery);
+  
   const settingsRef = useMemoFirebase(() => (firestore ? doc(firestore, 'schoolSettings', 'current') : null), [firestore]);
   const { data: settings, isLoading: settingsLoading } = useDoc<SchoolSettings>(settingsRef);
 
   const studentCounts = useMemo(() => {
-    if (!enrollments) return {};
+    if (!enrollments || !allStudents) return {};
+    
+    // Create a set of active student IDs for quick lookup
+    const activeStudentIds = new Set(
+      allStudents.filter(student => !student.isDeleted).map(student => student.id)
+    );
+
+    // Count enrollments only if the student is active
     return enrollments.reduce((acc, enrollment) => {
+      if (activeStudentIds.has(enrollment.studentId)) {
         acc[enrollment.classroomId] = (acc[enrollment.classroomId] || 0) + 1;
-        return acc;
+      }
+      return acc;
     }, {} as Record<string, number>);
-  }, [enrollments]);
+  }, [enrollments, allStudents]);
 
   // --- Event Handlers ---
   const handleAddStudent = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -176,7 +196,7 @@ export default function StudentsPage() {
         return [...classrooms].sort((a, b) => a.name.localeCompare(b.name));
     }, [classrooms]);
 
-  const isLoading = classroomsLoading || settingsLoading || enrollmentsLoading;
+  const isLoading = classroomsLoading || settingsLoading || enrollmentsLoading || studentsLoading;
 
 
   return (
@@ -320,5 +340,3 @@ export default function StudentsPage() {
     </div>
   );
 }
-
-    
