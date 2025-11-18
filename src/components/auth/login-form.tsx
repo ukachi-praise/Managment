@@ -84,6 +84,13 @@ export function LoginForm() {
             router.push('/teacher/class/nursery-1a-id');
             return;
         }
+        
+        // Hardcoded Primary 1a teacher check
+        if (user.uid === 'UJ71VwEZhhVclFS8FdeVEL1jH1C3') {
+            toast({ title: 'Login Successful', description: 'Redirecting to Primary 1a' });
+            router.push('/teacher/class/primary-1a-id');
+            return;
+        }
 
         // Hardcoded Primary 1b teacher check
         if (user.uid === 'lqMDWRYrbugIlhVBA083OVpJO3p1') {
