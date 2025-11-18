@@ -1,3 +1,4 @@
+
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -61,6 +62,13 @@ export function LoginForm() {
             toast({ title: 'Login Successful', description: 'Redirecting...' });
             router.push('/teacher/class/mG24k9p8T7y0r5B3s1A9');
             return; // Add return to stop execution
+        }
+        
+        // Hardcoded Pre-nursery teacher check
+        if (user.uid === 'YAemjwMFEAOnvp6RL6STw3GJK0I2') {
+            toast({ title: 'Login Successful', description: 'Redirecting...' });
+            router.push('/teacher/class/pre-nursery-id');
+            return; 
         }
 
         const userDoc = await getDoc(doc(firestore, 'users', user.uid));
