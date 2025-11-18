@@ -72,7 +72,7 @@ export default function TeacherClassPage() {
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
   const [classroomName, setClassroomName] = useState<string | null>(null);
   const [studentDetails, setStudentDetails] = useState<Student[]>([]);
-  const [detailsLoading, setDetailsLoading] = useState(false);
+  const [detailsLoading, setDetailsLoading] = useState(true);
 
   // Query the classrooms/{id}/students subcollection
   const studentsInClassQuery = useMemoFirebase(
@@ -89,8 +89,15 @@ export default function TeacherClassPage() {
   // Fetch full student details from the root /students collection
   useEffect(() => {
     const fetchStudentDetails = async () => {
-      if (!firestore || !studentsInClass || studentsInClass.length === 0) {
+      if (!firestore || !studentsInClass) {
         setStudentDetails([]);
+        setDetailsLoading(false);
+        return;
+      }
+      
+      if (studentsInClass.length === 0) {
+        setStudentDetails([]);
+        setDetailsLoading(false);
         return;
       }
 
@@ -98,6 +105,12 @@ export default function TeacherClassPage() {
       try {
         const studentIds = studentsInClass.map(e => e.studentId);
         
+        if (studentIds.length === 0) {
+            setStudentDetails([]);
+            setDetailsLoading(false);
+            return;
+        }
+
         const batches = [];
         for (let i = 0; i < studentIds.length; i += 30) {
           const batch = studentIds.slice(i, i + 30);
