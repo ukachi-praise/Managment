@@ -141,6 +141,15 @@
       },
       "required": ["studentId", "termId", "skillName", "score", "remark"]
     },
+    "SoftSkillGrade": {
+      "title": "SoftSkillGrade",
+      "type": "object",
+      "description": "Represents the AI-generated grade for a soft skill.",
+      "properties": {
+          "remark": { "type": "string" }
+      },
+      "required": ["remark"]
+    },
     "HeadTeacherRemark": {
         "title": "HeadTeacherRemark",
         "type": "object",
