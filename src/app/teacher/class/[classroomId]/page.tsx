@@ -22,7 +22,7 @@ import { useFirestore, useUser, useMemoFirebase } from '@/firebase/provider';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { useDoc } from '@/firebase/firestore/use-doc';
 import { setDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
-import { collection, query, where, doc, getDoc, getDocs } from 'firebase/firestore';
+import { collection, query, where, doc, getDoc, getDocs, writeBatch } from 'firebase/firestore';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
@@ -201,23 +201,41 @@ export default function TeacherClassPage() {
   };
 
 
-  const handleDeleteStudent = () => {
+  const handleDeleteStudent = async () => {
     if (!firestore || !studentToDelete || !classroomId) return;
     
-    // 1. Soft delete the student in the root collection
-    const studentRef = doc(firestore, 'students', studentToDelete.id);
-    setDocumentNonBlocking(studentRef, { isDeleted: true }, { merge: true });
+    try {
+        const batch = writeBatch(firestore);
 
-    // 2. Remove the student from the class's subcollection
-    const studentInClassRef = doc(firestore, 'classrooms', classroomId, 'students', studentToDelete.id);
-    deleteDocumentNonBlocking(studentInClassRef);
-    
-    toast({
-        variant: 'destructive',
-        title: 'Student Removed',
-        description: `${studentToDelete.name} has been removed from this class.`,
-    });
-    setStudentToDelete(null);
+        // 1. Mark the main student record as deleted
+        const studentRef = doc(firestore, 'students', studentToDelete.id);
+        batch.update(studentRef, { isDeleted: true });
+
+        // 2. Delete their reference from the classroom's subcollection
+        const classStudentRef = doc(firestore, 'classrooms', classroomId, 'students', studentToDelete.id);
+        batch.delete(classStudentRef);
+        
+        // 3. Delete from the root /enrollments collection
+        const enrollmentsQuery = query(collection(firestore, 'enrollments'), where('studentId', '==', studentToDelete.id), where('classroomId', '==', classroomId));
+        const enrollmentsSnapshot = await getDocs(enrollmentsQuery);
+        enrollmentsSnapshot.forEach(doc => batch.delete(doc.ref));
+
+        await batch.commit();
+
+        toast({
+            variant: 'destructive',
+            title: 'Student Removed',
+            description: `${studentToDelete.name} has been moved to the Recycle Bin.`,
+        });
+    } catch(error: any) {
+        toast({
+            variant: 'destructive',
+            title: 'Error Removing Student',
+            description: error.message || 'Could not remove the student.',
+        });
+    } finally {
+        setStudentToDelete(null);
+    }
   }
 
   return (
@@ -227,7 +245,7 @@ export default function TeacherClassPage() {
             <AlertDialogHeader>
                 <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                 <AlertDialogDescription>
-                    This will remove <span className="font-semibold">{studentToDelete?.name}</span> from the class. This action marks the student as deleted but does not permanently erase their data.
+                    This will remove <span className="font-semibold">{studentToDelete?.name}</span> from the class. This action moves the student to the recycle bin but does not permanently erase their data.
                 </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
@@ -374,3 +392,5 @@ export default function TeacherClassPage() {
     </div>
   );
 }
+
+    
