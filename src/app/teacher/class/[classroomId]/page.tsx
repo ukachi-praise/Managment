@@ -2,7 +2,7 @@
 'use client';
 
 import { useParams, useRouter } from 'next/navigation';
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import {
   Card,
   CardContent,
@@ -22,7 +22,7 @@ import { useFirestore, useUser, useMemoFirebase } from '@/firebase/provider';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { useDoc } from '@/firebase/firestore/use-doc';
 import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
-import { collection, query, where, doc } from 'firebase/firestore';
+import { collection, query, where, doc, getDoc } from 'firebase/firestore';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
@@ -70,32 +70,23 @@ export default function TeacherClassPage() {
 
   const [studentToDelete, setStudentToDelete] = useState<Student | null>(null);
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
+  const [classroomName, setClassroomName] = useState<string | null>(null);
 
   // --- Data Fetching ---
-  const classroomRef = useMemoFirebase(
-    () => (firestore && classroomId ? doc(firestore, 'classrooms', classroomId) : null),
-    [firestore, classroomId]
-  );
-  const { data: classroom, isLoading: classroomLoading } = useDoc<Classroom>(classroomRef);
-
-  // Step 1: Get the list of student references from the subcollection
   const studentsInClassQuery = useMemoFirebase(
     () => classroomId && firestore ? query(collection(firestore, 'classrooms', classroomId, 'students')) : null,
     [classroomId, firestore]
   );
   const { data: studentsInClass, isLoading: studentsLoading } = useCollection<ClassroomStudent>(studentsInClassQuery);
-
-  // Step 2: Get the full details for those students from the root collection
+  
   const studentDetailsQuery = useMemoFirebase(() => {
     if (!firestore || !studentsInClass || studentsInClass.length === 0) return null;
     const studentIds = studentsInClass.map(s => s.studentId);
-    // Firestore 'in' queries are limited to 30 items. For larger classes, pagination would be needed.
     return query(collection(firestore, 'students'), where('__name__', 'in', studentIds));
   }, [firestore, studentsInClass]);
   
   const { data: studentDetails, isLoading: studentDetailsLoading } = useCollection<Student>(studentDetailsQuery);
   
-  // Step 3: Combine the data into a single, usable list
   const combinedStudentData = useMemo(() => {
     if (!studentsInClass || !studentDetails) return [];
     
@@ -104,17 +95,34 @@ export default function TeacherClassPage() {
     return studentsInClass
       .map(s => {
         const details = detailsMap.get(s.studentId);
-        // Only include students that exist and are not soft-deleted
         if (!details || details.isDeleted) return null;
-        // Combine data, prioritizing the root student doc for details, but ensuring correct ID usage
-        return { ...s, ...details, id: s.id, studentId: s.studentId };
+        // The main student record (details) is the source of truth for name, ID, etc.
+        return { ...details };
       })
-      .filter((s): s is (ClassroomStudent & Student) => s !== null)
+      .filter((s): s is Student => s !== null)
       .sort((a,b) => a.name.localeCompare(b.name));
 
   }, [studentsInClass, studentDetails]);
 
-  const isLoading = classroomLoading || studentsLoading || studentDetailsLoading;
+
+  useEffect(() => {
+    const fetchClassroomName = async () => {
+      if (user?.name && user.name.toLowerCase().includes('teacher')) {
+        const derivedName = user.name.replace(/ teacher/i, '').trim();
+        setClassroomName(derivedName);
+      } else if (firestore && classroomId) {
+        const docRef = doc(firestore, 'classrooms', classroomId);
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+          setClassroomName(docSnap.data().name);
+        }
+      }
+    };
+    fetchClassroomName();
+  }, [user, firestore, classroomId]);
+
+
+  const isLoading = studentsLoading || studentDetailsLoading;
   
   const handleEditStudent = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -235,7 +243,7 @@ export default function TeacherClassPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">
-            {classroomLoading ? 'Loading...' : classroom?.name}
+            {classroomName || 'Loading...'}
           </h1>
           <p className="text-muted-foreground">
               Your assigned class dashboard. View students and manage results.
@@ -287,7 +295,7 @@ export default function TeacherClassPage() {
                         </TableCell>
                          <TableCell className="text-right">
                           <Button asChild variant="outline" size="sm">
-                            <Link href={`/teacher/results/${student.studentId}`}>
+                            <Link href={`/teacher/results/${student.id}`}>
                               Scores
                             </Link>
                           </Button>
@@ -315,5 +323,3 @@ export default function TeacherClassPage() {
     </div>
   );
 }
-
-    

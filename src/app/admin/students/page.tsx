@@ -28,7 +28,7 @@ import {
   useFirestore,
   useMemoFirebase,
 } from '@/firebase/provider';
-import { collection, query, addDoc, doc, serverTimestamp, writeBatch, getDocs } from 'firebase/firestore';
+import { collection, query, doc, serverTimestamp, writeBatch, getDocs } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   Dialog,
@@ -50,6 +50,7 @@ import {
 } from '@/components/ui/select';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
+import { addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 
 type Classroom = {
   id: string;
@@ -282,5 +283,3 @@ export default function StudentsPage() {
     </div>
   );
 }
-
-    
