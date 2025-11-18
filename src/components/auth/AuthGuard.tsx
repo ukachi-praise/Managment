@@ -25,26 +25,33 @@ export default function AuthGuard({
 
     const userRole = user?.role;
     const isAllowed = userRole && allow.includes(userRole);
-
-    // Determine target login page based on the allowed roles for this guard
-    const targetLogin = allow.includes('Admin') ? '/admin/login' : '/login';
+    
+    const isAdminRoute = pathname.startsWith('/admin');
+    const isTeacherRoute = pathname.startsWith('/teacher');
+    
+    // Determine target login page based on the route prefix
+    const targetLogin = isAdminRoute ? '/admin/login' : '/login';
 
     // If user is not logged in, redirect them to the correct login page.
     if (!user) {
-      router.replace(targetLogin);
+      if (pathname !== targetLogin) {
+          router.replace(targetLogin);
+      }
       return;
     }
 
     // If user is logged in but does not have the required role, redirect to unauthorized.
-    // We also make sure they are not already on an auth page to prevent redirect loops.
-    const isAuthPage = pathname === '/login' || pathname === '/admin/login';
-    if (!isAllowed && !isAuthPage) {
-        router.replace('/unauthorized');
+    if (!isAllowed) {
+        // Prevent redirect loop if already on an auth page or unauthorized page
+        if (pathname !== '/unauthorized' && !pathname.endsWith('/login')) {
+            router.replace('/unauthorized');
+        }
         return;
     }
 
     // If a logged-in and authorized user tries to access a login page,
     // redirect them to their respective dashboard.
+    const isAuthPage = pathname === '/login' || pathname === '/admin/login';
     if (isAuthPage && isAllowed) {
         const dashboard = userRole === 'Admin' ? '/admin/dashboard' : '/teacher/dashboard';
         router.replace(dashboard);
@@ -64,13 +71,13 @@ export default function AuthGuard({
     );
   }
 
-  // If user is loaded and has the correct role, render the children.
-  // The useEffect handles all redirection cases.
+  // If user is loaded and has the correct role for the current section, render children.
+  // The useEffect handles all redirection logic.
   if (user && user.role && allow.includes(user.role)) {
     return <>{children}</>;
   }
   
-  // In the moments before a redirect, or if user is null, show the loading screen.
+  // In the moments before a redirect, or if user state is indeterminate, show the loader.
   // This prevents rendering a page the user shouldn't see.
   return (
       <div className="flex h-screen w-full items-center justify-center">
