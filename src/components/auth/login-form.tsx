@@ -92,6 +92,13 @@ export function LoginForm() {
             return;
         }
 
+        // Hardcoded Nursery 2 teacher check
+        if (user.uid === 'Z1yDssDNRshnMOcnKlxK7wSmhpE3') {
+            toast({ title: 'Login Successful', description: 'Redirecting to Nursery 2' });
+            router.push('/teacher/class/nursery-2-id');
+            return;
+        }
+
         const userDoc = await getDoc(doc(firestore, 'users', user.uid));
         const role = userDoc.data()?.role;
 
