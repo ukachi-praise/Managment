@@ -76,7 +76,7 @@ export function SidebarNav({ role }: { role: 'admin' | 'teacher' }) {
 
   const teacherNavItems: NavItem[] = [
     { href: ({classroomId}) => classroomId ? `/teacher/class/${classroomId}` : '/teacher/dashboard', label: 'My Class', icon: Presentation, exact: true },
-    { href: ({classroomId}) => classroomId ? `/teacher/class/${classroomId}/profile` : '/teacher/profile', label: 'Profile', icon: UserIcon },
+    { href: ({classroomId}) => classroomId ? `/teacher/class/${classroomId}/profile` : '/teacher/dashboard', label: 'Profile', icon: UserIcon },
   ];
 
   const navItems = role === 'admin' ? adminNavItems : teacherNavItems;
