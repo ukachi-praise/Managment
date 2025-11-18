@@ -1,8 +1,7 @@
-
 'use client';
 
 import { useParams, useRouter } from 'next/navigation';
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import {
   Card,
   CardContent,
@@ -22,7 +21,7 @@ import { useFirestore, useUser, useMemoFirebase } from '@/firebase/provider';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { useDoc } from '@/firebase/firestore/use-doc';
 import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
-import { collection, query, where, doc, deleteDoc } from 'firebase/firestore';
+import { collection, query, where, doc, getDocs } from 'firebase/firestore';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
@@ -42,7 +41,6 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
@@ -55,9 +53,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { DialogFooter } from '@/components/ui/dialog';
 
-
-type ClassroomStudent = { id: string; name: string; studentId: string; };
+type Enrollment = { id: string; classroomId: string; studentId: string; };
 type Student = { id: string; name: string; isDeleted?: boolean; admissionNumber: string; dob: string; gender: string; parentName: string; contact: string; };
 type Classroom = { id: string; name: string };
 
@@ -71,47 +69,102 @@ export default function TeacherClassPage() {
 
   const [studentToDelete, setStudentToDelete] = useState<Student | null>(null);
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
+  const [classroomName, setClassroomName] = useState<string | null>(null);
+  const [studentDetails, setStudentDetails] = useState<Student[]>([]);
+  const [detailsLoading, setDetailsLoading] = useState(false);
 
-  // --- Data Fetching ---
-  const classroomRef = useMemoFirebase(
-    () => (firestore && classroomId ? doc(firestore, 'classrooms', classroomId) : null),
-    [firestore, classroomId]
-  );
-  const { data: classroom, isLoading: classroomLoading } = useDoc<Classroom>(classroomRef);
-
-  const studentsInClassQuery = useMemoFirebase(
-    () => classroomId && firestore ? query(collection(firestore, 'classrooms', classroomId, 'students')) : null,
+  // FIXED: Query enrollments collection instead of classrooms/{id}/students subcollection
+  const enrollmentsQuery = useMemoFirebase(
+    () => classroomId && firestore ? query(collection(firestore, 'enrollments'), where('classroomId', '==', classroomId)) : null,
     [classroomId, firestore]
   );
-  const { data: studentsInClass, isLoading: studentsLoading } = useCollection<ClassroomStudent>(studentsInClassQuery);
+  const { data: enrollments, isLoading: enrollmentsLoading } = useCollection<Enrollment>(enrollmentsQuery);
   
-  const studentDetailsQuery = useMemoFirebase(() => {
-    if (!firestore || !studentsInClass || studentsInClass.length === 0) return null;
-    const studentIds = studentsInClass.map(s => s.studentId);
-    return query(collection(firestore, 'students'), where('__name__', 'in', studentIds));
-  }, [firestore, studentsInClass]);
-  
-  const { data: studentDetails, isLoading: studentDetailsLoading } = useCollection<Student>(studentDetailsQuery);
+  // Fetch student details based on enrollments
+  useEffect(() => {
+    const fetchStudentDetails = async () => {
+      console.log('🔍 Enrollments:', enrollments);
+      
+      if (!firestore || !enrollments || enrollments.length === 0) {
+        console.log('⚠️ No enrollments found');
+        setStudentDetails([]);
+        return;
+      }
+
+      setDetailsLoading(true);
+      try {
+        const studentIds = enrollments.map(e => e.studentId);
+        console.log('📋 Student IDs to fetch:', studentIds);
+        
+        // Fetch in batches of 10 (Firestore 'in' limit)
+        const batches = [];
+        for (let i = 0; i < studentIds.length; i += 10) {
+          const batch = studentIds.slice(i, i + 10);
+          const q = query(collection(firestore, 'students'), where('__name__', 'in', batch));
+          batches.push(getDocs(q));
+        }
+
+        const results = await Promise.all(batches);
+        const allStudents: Student[] = [];
+        
+        results.forEach(snapshot => {
+          console.log('📦 Batch result - docs found:', snapshot.docs.length);
+          snapshot.docs.forEach(doc => {
+            console.log('👤 Found student:', doc.id, doc.data());
+            allStudents.push({ id: doc.id, ...doc.data() } as Student);
+          });
+        });
+
+        console.log('✅ All students fetched:', allStudents);
+        setStudentDetails(allStudents);
+      } catch (error) {
+        console.error('❌ Error fetching student details:', error);
+        toast({
+          variant: 'destructive',
+          title: 'Error',
+          description: 'Failed to load student details.'
+        });
+      } finally {
+        setDetailsLoading(false);
+      }
+    };
+
+    fetchStudentDetails();
+  }, [firestore, enrollments, toast]);
   
   const combinedStudentData = useMemo(() => {
-    if (!studentsInClass || !studentDetails) return [];
+    if (!enrollments || !studentDetails) return [];
     
     const detailsMap = new Map(studentDetails.map(d => [d.id, d]));
     
-    return studentsInClass
-      .map(s => {
-        const details = detailsMap.get(s.studentId);
+    return enrollments
+      .map(e => {
+        const details = detailsMap.get(e.studentId);
         if (!details || details.isDeleted) return null;
-        return { ...s, ...details, id: s.studentId }; // Ensure the main student ID is used
+        return { ...details };
       })
       .filter((s): s is Student => s !== null)
       .sort((a,b) => a.name.localeCompare(b.name));
 
-  }, [studentsInClass, studentDetails]);
+  }, [enrollments, studentDetails]);
 
 
-  const isLoading = classroomLoading || studentsLoading || studentDetailsLoading;
+  useEffect(() => {
+    const fetchClassroomName = async () => {
+        if (firestore && classroomId) {
+            const docRef = doc(firestore, 'classrooms', classroomId);
+            const docSnap = await getDoc(docRef);
+            if (docSnap.exists()) {
+                setClassroomName(docSnap.data().name);
+            }
+        }
+    };
+    fetchClassroomName();
+  }, [firestore, classroomId]);
 
+
+  const isLoading = enrollmentsLoading || detailsLoading;
+  
   const handleEditStudent = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!firestore || !editingStudent) return;
@@ -127,14 +180,9 @@ export default function TeacherClassPage() {
       contact: formData.get('contact') as string,
     };
     
+    // Update the master student record
     const studentRef = doc(firestore, 'students', editingStudent.id);
     setDocumentNonBlocking(studentRef, updatedStudentData, { merge: true });
-    
-    // Also update the name in the subcollection if it changed
-    if (updatedStudentData.name !== editingStudent.name) {
-      const classStudentRef = doc(firestore, 'classrooms', classroomId, 'students', editingStudent.id);
-      setDocumentNonBlocking(classStudentRef, { name: updatedStudentData.name }, { merge: true });
-    }
 
     toast({ title: "Student Updated", description: `${updatedStudentData.name}'s details have been updated.` });
     setEditingStudent(null);
@@ -144,16 +192,14 @@ export default function TeacherClassPage() {
   const handleDeleteStudent = () => {
     if (!firestore || !studentToDelete) return;
     
+    // Soft delete the student in the root collection
     const studentRef = doc(firestore, 'students', studentToDelete.id);
     setDocumentNonBlocking(studentRef, { isDeleted: true }, { merge: true });
     
-    // We don't delete from the subcollection, just mark as deleted.
-    // The list is filtered by `isDeleted` flag.
-
     toast({
         variant: 'destructive',
         title: 'Student Removed',
-        description: `${studentToDelete.name} has been removed from the class.`,
+        description: `${studentToDelete.name} has been marked as removed from the system.`,
     });
     setStudentToDelete(null);
   }
@@ -232,7 +278,7 @@ export default function TeacherClassPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">
-            {isLoading ? 'Loading...' : classroom?.name}
+            {classroomName || 'Loading...'}
           </h1>
           <p className="text-muted-foreground">
               Your assigned class dashboard. View students and manage results.
@@ -252,7 +298,7 @@ export default function TeacherClassPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {isLoading ? (
+          {isLoading && combinedStudentData.length === 0 ? (
             <div className="flex h-64 items-center justify-center">
               <Loader2 className="h-12 w-12 animate-spin text-primary" />
             </div>
@@ -312,5 +358,4 @@ export default function TeacherClassPage() {
     </div>
   );
 }
-
     
