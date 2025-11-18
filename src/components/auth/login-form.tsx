@@ -71,6 +71,13 @@ export function LoginForm() {
             return; 
         }
 
+        // Hardcoded Nursery 1b teacher check
+        if (user.uid === 'VEjzC6td3HNfWBg4CjNnCtSlC7g1') {
+            toast({ title: 'Login Successful', description: 'Redirecting to nursery-1b-id' });
+            router.push('/teacher/class/nursery-1b-id');
+            return;
+        }
+
         const userDoc = await getDoc(doc(firestore, 'users', user.uid));
         const role = userDoc.data()?.role;
 

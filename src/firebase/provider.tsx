@@ -61,20 +61,6 @@ export function FirebaseProvider({ children }: { children: ReactNode }) {
               profile = { role: 'Teacher', name: 'Pre-Nursery Teacher', email: authUser.email || 'teacher.prenursery@example.com', assignedClassroomId: 'pre-nursery-id' };
             } else if (authUser.uid === 'VEjzC6td3HNfWBg4CjNnCtSlC7g1') {
               profile = { role: 'Teacher', name: 'Nursery 1b Teacher', email: authUser.email || 'teacher.nursery1b@example.com', assignedClassroomId: 'nursery-1b-id' };
-            } else if (authUser.uid === 'vhyAkcnmE2OD9cheoDeXdsdUL1a2') {
-              profile = { role: 'Teacher', name: 'Nursery 1a Teacher', email: authUser.email || 'teacher.nursery1a@example.com', assignedClassroomId: 'nursery-1a-id' };
-            } else if (authUser.uid === 'lqMDWRYrbugIlhVBA083OVpJO3p1') {
-              profile = { role: 'Teacher', name: 'Primary 1b Teacher', email: authUser.email || 'teacher.primary1b@example.com', assignedClassroomId: 'primary-1b-id' };
-            } else if (authUser.uid === 'Z1yDssDNRshnMOcnKlxK7wSmhpE3') {
-              profile = { role: 'Teacher', name: 'Nursery 2 Teacher', email: authUser.email || 'teacher.nursery2@example.com', assignedClassroomId: 'nursery-2-id' };
-            } else if (authUser.uid === 'UJ71VwEZhhVclFS8FdeVEL1jH1C3') {
-              profile = { role: 'Teacher', name: 'Primary 1a Teacher', email: authUser.email || 'teacher.primary1a@example.com', assignedClassroomId: 'primary-1a-id' };
-            } else if (authUser.uid === '0wYNrCqR0ZTJgEykZ9R1mqvDO5o2') {
-              profile = { role: 'Teacher', name: 'Primary 3 Teacher', email: authUser.email || 'teacher.primary3@example.com', assignedClassroomId: 'primary-3-id' };
-            } else if (authUser.uid === 'vzT4PhW7g5SipKPScj89DGodBZF2') {
-              profile = { role: 'Teacher', name: 'Creche Teacher', email: authUser.email || 'teacher.creche@example.com', assignedClassroomId: 'creche-id' };
-            } else if (authUser.uid === '41N67kFTBqYVataTwg5UuIxAwHq2') {
-              profile = { role: 'Teacher', name: 'Primary 2 Teacher', email: authUser.email || 'teacher.primary2@example.com', assignedClassroomId: 'primary-2-id' };
             }
             
             setUser({ ...authUser, ...profile });
