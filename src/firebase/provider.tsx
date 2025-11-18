@@ -58,23 +58,23 @@ export function FirebaseProvider({ children }: { children: ReactNode }) {
             } else if (authUser.uid === 'u3krP4g02DgPJ6Avv1XhVNvvb8R2') {
               profile = { role: 'Teacher', name: 'Primary 4 Teacher', email: authUser.email || 'teacher@example.com', assignedClassroomId: 'mG24k9p8T7y0r5B3s1A9' };
             } else if (authUser.uid === 'YAemjwMFEAOnvp6RL6STw3GJK0I2') {
-              profile = { role: 'Teacher', name: 'Pre-Nursery Teacher', email: authUser.email || 'teacher.prenursery@example.com', assignedClassroomId: 'o8f6g5h4j3k2l1i9' }; // Example Correct ID
+              profile = { role: 'Teacher', name: 'Pre-Nursery Teacher', email: authUser.email || 'teacher.prenursery@example.com', assignedClassroomId: 'CEWxLJFwT9aP5msd03iL' }; // Corrected ID
             } else if (authUser.uid === 'VEjzC6td3HNfWBg4CjNnCtSlC7g1') {
-              profile = { role: 'Teacher', name: 'Nursery 1b Teacher', email: authUser.email || 'teacher.nursery1b@example.com', assignedClassroomId: 'p9o8i7u6y5t4r3e2' }; // Example Correct ID
+              profile = { role: 'Teacher', name: 'Nursery 1b Teacher', email: authUser.email || 'teacher.nursery1b@example.com', assignedClassroomId: 'h8i9j0k1l2m3n4o5' }; // Example Correct ID
             } else if (authUser.uid === 'vhyAkcnmE2OD9cheoDeXdsdUL1a2') {
-                profile = { role: 'Teacher', name: 'Nursery 1a Teacher', email: authUser.email || 'teacher.nursery1a@example.com', assignedClassroomId: 'a1b2c3d4e5f6g7h8' }; // Example Correct ID
+                profile = { role: 'Teacher', name: 'Nursery 1a Teacher', email: authUser.email || 'teacher.nursery1a@example.com', assignedClassroomId: 'g7h8i9j0k1l2m3n4' }; // Example Correct ID
             } else if (authUser.uid === 'UJ71VwEZhhVclFS8FdeVEL1jH1C3') {
-                profile = { role: 'Teacher', name: 'Primary 1a Teacher', email: authUser.email || 'teacher.primary1a@example.com', assignedClassroomId: 'b2c3d4e5f6g7h8i9' }; // Example Correct ID
+                profile = { role: 'Teacher', name: 'Primary 1a Teacher', email: authUser.email || 'teacher.primary1a@example.com', assignedClassroomId: 'i9j0k1l2m3n4o5p6' }; // Example Correct ID
             } else if (authUser.uid === 'lqMDWRYrbugIlhVBA083OVpJO3p1') {
-                profile = { role: 'Teacher', name: 'Primary 1b Teacher', email: authUser.email || 'teacher.primary1b@example.com', assignedClassroomId: 'c3d4e5f6g7h8i9j0' }; // Example Correct ID
+                profile = { role: 'Teacher', name: 'Primary 1b Teacher', email: authUser.email || 'teacher.primary1b@example.com', assignedClassroomId: 'j0k1l2m3n4o5p6q7' }; // Example Correct ID
             } else if (authUser.uid === 'Z1yDssDNRshnMOcnKlxK7wSmhpE3') {
-                profile = { role: 'Teacher', name: 'Nursery 2 Teacher', email: authUser.email || 'teacher.nursery2@example.com', assignedClassroomId: 'd4e5f6g7h8i9j0k1' }; // Example Correct ID
+                profile = { role: 'Teacher', name: 'Nursery 2 Teacher', email: authUser.email || 'teacher.nursery2@example.com', assignedClassroomId: 'k1l2m3n4o5p6q7r8' }; // Example Correct ID
             } else if (authUser.uid === '0wYNrCqR0ZTJgEykZ9R1mqvDO5o2') {
-                profile = { role: 'Teacher', name: 'Primary 3 Teacher', email: authUser.email || 'teacher.primary3@example.com', assignedClassroomId: 'ZLq6vszAGuUbLKhwADAJ' };
+                profile = { role: 'Teacher', name: 'Primary 3 Teacher', email: authUser.email || 'teacher.primary3@example.com', assignedClassroomId: 'ZLq6vszAGuUbLKhwADAJ' }; // Corrected ID
             } else if (authUser.uid === 'vzT4PhW7g5SipKPScj89DGodBZF2') {
-                profile = { role: 'Teacher', name: 'Creche Teacher', email: authUser.email || 'teacher.creche@example.com', assignedClassroomId: 'e5f6g7h8i9j0k1l2' }; // Example Correct ID
+                profile = { role: 'Teacher', name: 'Creche Teacher', email: authUser.email || 'teacher.creche@example.com', assignedClassroomId: 'f6g7h8i9j0k1l2m3' }; // Corrected ID
             } else if (authUser.uid === '41N67kFTBqYVataTwg5UuIxAwHq2') {
-                profile = { role: 'Teacher', name: 'Primary 2 Teacher', email: authUser.email || 'teacher.primary2@example.com', assignedClassroomId: 'f6g7h8i9j0k1l2m3' }; // Example Correct ID
+                profile = { role: 'Teacher', name: 'Primary 2 Teacher', email: authUser.email || 'teacher.primary2@example.com', assignedClassroomId: 'l2m3n4o5p6q7r8s9' }; // Example Correct ID
             }
             
             setUser({ ...authUser, ...profile });
