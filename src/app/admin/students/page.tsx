@@ -61,6 +61,12 @@ type SchoolSettings = {
     totalStudentCapacity?: number;
 }
 
+type Enrollment = {
+    id: string;
+    classroomId: string;
+    studentId: string;
+}
+
 
 export default function StudentsPage() {
   const [open, setOpen] = useState(false);
@@ -75,16 +81,22 @@ export default function StudentsPage() {
   );
   const { data: classrooms, isLoading: classroomsLoading } = useCollection<Classroom>(classroomsQuery);
   
+  const enrollmentsQuery = useMemoFirebase(
+    () => (firestore ? query(collection(firestore, 'enrollments')) : null),
+    [firestore]
+  );
+  const { data: enrollments, isLoading: enrollmentsLoading } = useCollection<Enrollment>(enrollmentsQuery);
+  
   const settingsRef = useMemoFirebase(() => (firestore ? doc(firestore, 'schoolSettings', 'current') : null), [firestore]);
   const { data: settings, isLoading: settingsLoading } = useDoc<SchoolSettings>(settingsRef);
 
   const studentCounts = useMemo(() => {
-    // This part is tricky without fetching all subcollections.
-    // For simplicity, we will fetch student counts on demand or accept that it might not be real-time.
-    // A better solution for large scale would be a cloud function to update counts on the classroom doc.
-    // For now, let's leave this part as is and focus on the add/view logic.
-    return {};
-  }, []);
+    if (!enrollments) return {};
+    return enrollments.reduce((acc, enrollment) => {
+        acc[enrollment.classroomId] = (acc[enrollment.classroomId] || 0) + 1;
+        return acc;
+    }, {} as Record<string, number>);
+  }, [enrollments]);
 
   // --- Event Handlers ---
   const handleAddStudent = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -124,11 +136,11 @@ export default function StudentsPage() {
             // Add other fields as needed from a more detailed form
         });
 
-        // 2. Add the student reference to the class's subcollection
-        const classStudentRef = doc(firestore, 'classrooms', classroomId, 'students', newStudentRef.id);
-        batch.set(classStudentRef, {
-            name: studentName, // Denormalized for easy display
+        // 2. Create an enrollment document in the root /enrollments collection
+        const enrollmentRef = doc(collection(firestore, 'enrollments'));
+        batch.set(enrollmentRef, {
             studentId: newStudentRef.id,
+            classroomId: classroomId,
             createdAt: serverTimestamp()
         });
 
@@ -150,7 +162,7 @@ export default function StudentsPage() {
         return [...classrooms].sort((a, b) => a.name.localeCompare(b.name));
     }, [classrooms]);
 
-  const isLoading = classroomsLoading || settingsLoading;
+  const isLoading = classroomsLoading || settingsLoading || enrollmentsLoading;
 
 
   return (
@@ -257,7 +269,7 @@ export default function StudentsPage() {
                             {sortedClassrooms.length > 0 ? sortedClassrooms.map((classroom) => (
                                 <TableRow key={classroom.id}>
                                     <TableCell className="font-medium">{classroom.name}</TableCell>
-                                    <TableCell>{studentCounts[classroom.id] || 'N/A'}</TableCell>
+                                    <TableCell>{studentCounts[classroom.id] || 0}</TableCell>
                                     <TableCell className="text-right">
                                         <Button asChild variant="outline" size="sm">
                                             <Link href={`/admin/students/${classroom.id}`}>
