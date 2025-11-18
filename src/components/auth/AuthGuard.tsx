@@ -37,8 +37,9 @@ export default function AuthGuard({
   const isLoading = isUserLoading || (specificClassroomId ? isClassroomLoading : false);
 
   useEffect(() => {
+    // Only run checks once all data is loaded
     if (isLoading) {
-      return; // Wait until all necessary data is loaded.
+      return;
     }
 
     const userRole = user?.role;
@@ -117,7 +118,9 @@ export default function AuthGuard({
 
   // Determine if children should be rendered based on final permission state.
   const canRenderChildren = () => {
+    // This now only runs after isLoading is false.
     if (!user || !user.role) return false;
+    
     if (allow.includes(user.role)) {
         if(specificClassroomId) {
             // If it's a specific page, we need the classroom data to be present and match
