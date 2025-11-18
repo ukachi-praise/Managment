@@ -107,19 +107,16 @@ export default function TeacherClassPage() {
 
   useEffect(() => {
     const fetchClassroomName = async () => {
-      if (user?.name && user.name.toLowerCase().includes('teacher')) {
-        const derivedName = user.name.replace(/ teacher/i, '').trim();
-        setClassroomName(derivedName);
-      } else if (firestore && classroomId) {
-        const docRef = doc(firestore, 'classrooms', classroomId);
-        const docSnap = await getDoc(docRef);
-        if (docSnap.exists()) {
-          setClassroomName(docSnap.data().name);
+        if (firestore && classroomId) {
+            const docRef = doc(firestore, 'classrooms', classroomId);
+            const docSnap = await getDoc(docRef);
+            if (docSnap.exists()) {
+                setClassroomName(docSnap.data().name);
+            }
         }
-      }
     };
     fetchClassroomName();
-  }, [user, firestore, classroomId]);
+  }, [firestore, classroomId]);
 
 
   const isLoading = studentsLoading || studentDetailsLoading;
@@ -323,3 +320,5 @@ export default function TeacherClassPage() {
     </div>
   );
 }
+
+    

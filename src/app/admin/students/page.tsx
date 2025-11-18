@@ -50,7 +50,6 @@ import {
 } from '@/components/ui/select';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
-import { addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 
 type Classroom = {
   id: string;
@@ -283,3 +282,5 @@ export default function StudentsPage() {
     </div>
   );
 }
+
+    
