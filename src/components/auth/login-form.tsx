@@ -85,6 +85,13 @@ export function LoginForm() {
             return;
         }
 
+        // Hardcoded Primary 1b teacher check
+        if (user.uid === 'lqMDWRYrbugIlhVBA083OVpJO3p1') {
+            toast({ title: 'Login Successful', description: 'Redirecting to Primary 1b' });
+            router.push('/teacher/class/primary-1b-id');
+            return;
+        }
+
         const userDoc = await getDoc(doc(firestore, 'users', user.uid));
         const role = userDoc.data()?.role;
 
