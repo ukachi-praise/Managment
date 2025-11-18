@@ -21,7 +21,7 @@ import {
 import { useFirestore, useUser, useMemoFirebase } from '@/firebase/provider';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { useDoc } from '@/firebase/firestore/use-doc';
-import { setDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { collection, query, where, doc, getDoc, getDocs, writeBatch } from 'firebase/firestore';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -44,6 +44,7 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
+  DialogFooter,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -54,11 +55,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { DialogFooter } from '@/components/ui/dialog';
 
-type Enrollment = { id: string; classroomId: string; studentId: string; };
+
 type Student = { id: string; name: string; isDeleted?: boolean; admissionNumber: string; dob: string; gender: string; parentName: string; contact: string; };
 type Classroom = { id: string; name: string };
+type StudentInClass = { id: string; name: string; studentId: string; };
+
 
 export default function TeacherClassPage() {
   const params = useParams();
@@ -70,28 +72,28 @@ export default function TeacherClassPage() {
 
   const [studentToDelete, setStudentToDelete] = useState<Student | null>(null);
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
-  const [classroomName, setClassroomName] = useState<string | null>(null);
   const [studentDetails, setStudentDetails] = useState<Student[]>([]);
   const [detailsLoading, setDetailsLoading] = useState(true);
 
-  // Query the classrooms/{id}/students subcollection
-  const studentsInClassQuery = useMemoFirebase(
-    () => {
-      if (!classroomId || !firestore) {
-        return null;
-      }
-      return query(collection(firestore, 'classrooms', classroomId, 'students'));
-    },
-    [classroomId, firestore]
+  // --- Data Fetching ---
+  const classroomRef = useMemoFirebase(
+    () => (firestore && classroomId ? doc(firestore, 'classrooms', classroomId) : null),
+    [firestore, classroomId]
   );
-  const { data: studentsInClass, isLoading: studentsLoading } = useCollection<{id: string; name: string; studentId: string}>(studentsInClassQuery);
+  const { data: classroom, isLoading: classroomLoading } = useDoc<Classroom>(classroomRef);
+
+  const studentsInClassQuery = useMemoFirebase(
+    () => (firestore && classroomId) ? query(collection(firestore, 'classrooms', classroomId, 'students')) : null,
+    [firestore, classroomId]
+  );
+  const { data: studentsInClass, isLoading: studentsLoading } = useCollection<StudentInClass>(studentsInClassQuery);
   
-  // Fetch full student details from the root /students collection
+  
   useEffect(() => {
     const fetchStudentDetails = async () => {
       if (!firestore || !studentsInClass) {
         setStudentDetails([]);
-        setDetailsLoading(false); // Stop loading if there's nothing to fetch
+        setDetailsLoading(false);
         return;
       }
       
@@ -110,7 +112,7 @@ export default function TeacherClassPage() {
             setDetailsLoading(false);
             return;
         }
-
+        
         const batches = [];
         for (let i = 0; i < studentIds.length; i += 30) {
           const batch = studentIds.slice(i, i + 30);
@@ -128,6 +130,7 @@ export default function TeacherClassPage() {
             allStudents.push({ id: doc.id, ...doc.data() } as Student);
           });
         });
+
         setStudentDetails(allStudents);
       } catch (error) {
         console.error('Error fetching student details:', error);
@@ -153,7 +156,7 @@ export default function TeacherClassPage() {
       .map(e => {
         const details = detailsMap.get(e.studentId);
         if (!details || details.isDeleted) return null;
-        return { ...details };
+        return { ...details }; 
       })
       .filter((s): s is Student => s !== null)
       .sort((a,b) => a.name.localeCompare(b.name));
@@ -161,22 +164,8 @@ export default function TeacherClassPage() {
   }, [studentsInClass, studentDetails]);
 
 
-  useEffect(() => {
-    const fetchClassroomName = async () => {
-        if (firestore && classroomId) {
-            const docRef = doc(firestore, 'classrooms', classroomId);
-            const docSnap = await getDoc(docRef);
-            if (docSnap.exists()) {
-                setClassroomName(docSnap.data().name);
-            }
-        }
-    };
-    fetchClassroomName();
-  }, [firestore, classroomId]);
+  const isLoading = classroomLoading || studentsLoading || detailsLoading;
 
-
-  const isLoading = studentsLoading || detailsLoading;
-  
   const handleEditStudent = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!firestore || !editingStudent) return;
@@ -192,17 +181,16 @@ export default function TeacherClassPage() {
       contact: formData.get('contact') as string,
     };
     
-    // Update the master student record
     const studentRef = doc(firestore, 'students', editingStudent.id);
     setDocumentNonBlocking(studentRef, updatedStudentData, { merge: true });
-
+    
     toast({ title: "Student Updated", description: `${updatedStudentData.name}'s details have been updated.` });
     setEditingStudent(null);
   };
 
 
   const handleDeleteStudent = async () => {
-    if (!firestore || !studentToDelete || !classroomId) return;
+    if (!firestore || !studentToDelete) return;
     
     try {
         const batch = writeBatch(firestore);
@@ -312,7 +300,7 @@ export default function TeacherClassPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">
-            {classroomName || 'Loading...'}
+            {isLoading ? 'Loading...' : classroom?.name}
           </h1>
           <p className="text-muted-foreground">
               Your assigned class dashboard. View students and manage results.
@@ -332,7 +320,7 @@ export default function TeacherClassPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {isLoading && combinedStudentData.length === 0 ? (
+          {isLoading ? (
             <div className="flex h-64 items-center justify-center">
               <Loader2 className="h-12 w-12 animate-spin text-primary" />
             </div>
@@ -392,5 +380,3 @@ export default function TeacherClassPage() {
     </div>
   );
 }
-
-    
