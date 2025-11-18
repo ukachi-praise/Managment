@@ -128,7 +128,7 @@ export default function StudentResultEntryPage() {
 
   // --- REAL-TIME DATA SUBSCRIPTION ---
   useEffect(() => {
-    if (!termResultRef || !classroomId || !schoolSettings || subjectsForClass.length === 0) return;
+    if (!termResultRef || !classroomId || !schoolSettings) return;
 
     const unsubscribe = onSnapshot(termResultRef, (snap) => {
       const existingData = snap.exists() ? snap.data() : null;
