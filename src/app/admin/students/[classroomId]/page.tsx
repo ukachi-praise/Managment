@@ -92,7 +92,7 @@ export default function AdminStudentListPage() {
     const fetchStudentDetails = async () => {
       if (!firestore || !studentsInClass) {
         setStudentDetails([]);
-        setDetailsLoading(false); // Stop loading if there's nothing to fetch
+        setDetailsLoading(false);
         return;
       }
       
@@ -373,5 +373,3 @@ export default function AdminStudentListPage() {
     </div>
   );
 }
-
-    

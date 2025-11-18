@@ -59,24 +59,34 @@ export function LoginForm() {
         const userDocRef = doc(firestore, 'users', user.uid);
         const userDoc = await getDoc(userDocRef);
 
-        let role, assignedClassroomId;
-        if (userDoc.exists()) {
-            role = userDoc.data().role;
-            assignedClassroomId = userDoc.data().assignedClassroomId;
-        } else if (user.uid === 'GOpbb9SsavhpATk1p0KNmPGGQ0S2') { // Hardcoded fallback for default admin
-            role = 'Admin';
-        }
-
-        toast({ title: 'Login Successful', description: 'Redirecting...' });
-
-        // Redirect based on role
-        if (role === 'Admin') {
-            router.push('/admin/dashboard');
-        } else if (role === 'Teacher' && assignedClassroomId) {
-            router.push(`/teacher/class/${assignedClassroomId}`);
+        if (!userDoc.exists()) {
+            // Also check hardcoded admin as a fallback
+             if (user.uid === 'GOpbb9SsavhpATk1p0KNmPGGQ0S2') {
+                 toast({ title: 'Login Successful', description: 'Redirecting...' });
+                 router.push('/admin/dashboard');
+             } else {
+                throw new Error("No user profile found in database.");
+             }
         } else {
-             // Fallback for teachers with no assigned class or other roles
-            router.push('/teacher/dashboard');
+            const userData = userDoc.data();
+            const role = userData.role;
+            const assignedClassroomId = userData.assignedClassroomId;
+
+            toast({ title: 'Login Successful', description: 'Redirecting...' });
+
+            // Redirect based on role
+            if (role === 'Admin') {
+                router.push('/admin/dashboard');
+            } else if (role === 'Teacher') {
+                if (assignedClassroomId) {
+                    router.push(`/teacher/class/${assignedClassroomId}`);
+                } else {
+                    router.push('/teacher/dashboard'); // Fallback for teachers with no assigned class
+                }
+            } else {
+                // Default redirect for any other roles or if role is undefined
+                 router.push('/');
+            }
         }
 
     } catch (error: any) {
