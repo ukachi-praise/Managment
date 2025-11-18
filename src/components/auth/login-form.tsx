@@ -59,28 +59,28 @@ export function LoginForm() {
 
         // Hardcoded Primary 4 teacher check
         if (user.uid === 'u3krP4g02DgPJ6Avv1XhVNvvb8R2') {
-            toast({ title: 'Login Successful', description: 'Redirecting to mG24k9p8T7y0r5B3s1A9' });
+            toast({ title: 'Login Successful', description: 'Redirecting to Primary 4' });
             router.push('/teacher/class/mG24k9p8T7y0r5B3s1A9');
             return; // Add return to stop execution
         }
         
         // Hardcoded Pre-nursery teacher check
         if (user.uid === 'YAemjwMFEAOnvp6RL6STw3GJK0I2') {
-            toast({ title: 'Login Successful', description: 'Redirecting to pre-nursery-id' });
+            toast({ title: 'Login Successful', description: 'Redirecting to Pre-nursery' });
             router.push('/teacher/class/pre-nursery-id');
             return; 
         }
 
         // Hardcoded Nursery 1b teacher check
         if (user.uid === 'VEjzC6td3HNfWBg4CjNnCtSlC7g1') {
-            toast({ title: 'Login Successful', description: 'Redirecting to nursery-1b-id' });
+            toast({ title: 'Login Successful', description: 'Redirecting to Nursery 1b' });
             router.push('/teacher/class/nursery-1b-id');
             return;
         }
 
         // Hardcoded Nursery 1a teacher check
         if (user.uid === 'vhyAkcnmE2OD9cheoDeXdsdUL1a2') {
-            toast({ title: 'Login Successful', description: 'Redirecting to nursery-1a-id' });
+            toast({ title: 'Login Successful', description: 'Redirecting to Nursery 1a' });
             router.push('/teacher/class/nursery-1a-id');
             return;
         }
