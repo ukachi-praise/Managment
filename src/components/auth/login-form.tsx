@@ -50,101 +50,27 @@ export function LoginForm() {
         const userCredential = await signInWithEmailAndPassword(auth, values.email, values.password);
         const user = userCredential.user;
 
-        // Hardcoded admin check
-        if (user.uid === 'GOpbb9SsavhpATk1p0KNmPGGQ0S2') {
-            toast({ title: 'Login Successful', description: 'Redirecting...' });
-            router.push('/admin/dashboard');
-            return; // Add return to stop execution
-        }
-
-        // Hardcoded Primary 4 teacher check
-        if (user.uid === 'u3krP4g02DgPJ6Avv1XhVNvvb8R2') {
-            toast({ title: 'Login Successful', description: 'Redirecting to Primary 4' });
-            router.push('/teacher/class/mG24k9p8T7y0r5B3s1A9');
-            return; // Add return to stop execution
-        }
-        
-        // Hardcoded Pre-nursery teacher check
-        if (user.uid === 'YAemjwMFEAOnvp6RL6STw3GJK0I2') {
-            toast({ title: 'Login Successful', description: 'Redirecting to Pre-nursery' });
-            router.push('/teacher/class/pre-nursery-id');
-            return; 
-        }
-
-        // Hardcoded Nursery 1b teacher check
-        if (user.uid === 'VEjzC6td3HNfWBg4CjNnCtSlC7g1') {
-            toast({ title: 'Login Successful', description: 'Redirecting to Nursery 1b' });
-            router.push('/teacher/class/nursery-1b-id');
-            return;
-        }
-
-        // Hardcoded Nursery 1a teacher check
-        if (user.uid === 'vhyAkcnmE2OD9cheoDeXdsdUL1a2') {
-            toast({ title: 'Login Successful', description: 'Redirecting to Nursery 1a' });
-            router.push('/teacher/class/nursery-1a-id');
-            return;
-        }
-        
-        // Hardcoded Primary 1a teacher check
-        if (user.uid === 'UJ71VwEZhhVclFS8FdeVEL1jH1C3') {
-            toast({ title: 'Login Successful', description: 'Redirecting to Primary 1a' });
-            router.push('/teacher/class/primary-1a-id');
-            return;
-        }
-
-        // Hardcoded Primary 1b teacher check
-        if (user.uid === 'lqMDWRYrbugIlhVBA083OVpJO3p1') {
-            toast({ title: 'Login Successful', description: 'Redirecting to Primary 1b' });
-            router.push('/teacher/class/primary-1b-id');
-            return;
-        }
-
-        // Hardcoded Nursery 2 teacher check
-        if (user.uid === 'Z1yDssDNRshnMOcnKlxK7wSmhpE3') {
-            toast({ title: 'Login Successful', description: 'Redirecting to Nursery 2' });
-            router.push('/teacher/class/nursery-2-id');
-            return;
-        }
-
-        // Hardcoded Primary 3 teacher check
-        if (user.uid === '0wYNrCqR0ZTJgEykZ9R1mqvDO5o2') {
-            toast({ title: 'Login Successful', description: 'Redirecting to Primary 3' });
-            router.push('/teacher/class/primary-3-id');
-            return;
-        }
-
-        // Hardcoded Creche teacher check
-        if (user.uid === 'vzT4PhW7g5SipKPScj89DGodBZF2') {
-            toast({ title: 'Login Successful', description: 'Redirecting to Creche' });
-            router.push('/teacher/class/creche-id');
-            return;
-        }
-
-        // Hardcoded Primary 2 teacher check
-        if (user.uid === '41N67kFTBqYVataTwg5UuIxAwHq2') {
-            toast({ title: 'Login Successful', description: 'Redirecting to Primary 2' });
-            router.push('/teacher/class/primary-2-id');
-            return;
-        }
-
         const userDoc = await getDoc(doc(firestore, 'users', user.uid));
         const role = userDoc.data()?.role;
 
-        toast({ title: 'Login Successful', description: 'Redirecting...' });
-        
-        if (role === 'Admin') {
+        // This handles the hardcoded admin user as well
+        if (user.uid === 'GOpbb9SsavhpATk1p0KNmPGGQ0S2' || role === 'Admin') {
+            toast({ title: 'Login Successful', description: 'Redirecting...' });
             router.push('/admin/dashboard');
-        } else if (role === 'Teacher') {
+            return;
+        }
+
+        // For all other users, fetch their role and redirect appropriately.
+        if (role === 'Teacher') {
+            toast({ title: 'Login Successful', description: 'Redirecting...' });
+            // The AuthGuard and dashboard will handle routing to the correct class
             router.push('/teacher/dashboard');
         } else {
             // Default redirect if role is not found or not specified
             await auth.signOut();
             toast({ variant: 'destructive', title: 'Login Failed', description: 'No role assigned to this user.' });
-            setIsLoading(false); // This is fine since we're not redirecting
+            setIsLoading(false);
         }
-
-        // DON'T set isLoading to false here for successful logins
-        // The component will unmount during navigation anyway
 
     } catch (error: any) {
         if (error.code === 'auth/invalid-credential' || error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
