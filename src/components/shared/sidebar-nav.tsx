@@ -43,6 +43,7 @@ const adminNavItems: NavItem[] = [
   { href: () => '/admin/staff', label: 'Staff', icon: Users2 },
   { href: () => '/admin/classrooms', label: 'Classrooms', icon: Presentation },
   { href: () => '/admin/subjects', label: 'Subjects', icon: BookCopy },
+  { href: () => '/admin/enrollments', label: 'Enrollments', icon: Users },
   { href: () => '/admin/info', label: 'Info', icon: Info },
   { href: () => '/admin/remarks', label: 'Remarks', icon: MessageSquareQuote },
   { href: () => '/admin/results', label: 'Results', icon: ClipboardList },

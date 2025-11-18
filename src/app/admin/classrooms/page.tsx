@@ -39,13 +39,14 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { PlusCircle, Edit, Trash2, Loader2, ArrowLeft } from 'lucide-react';
+import { PlusCircle, Edit, Trash2, Loader2, ArrowLeft, Users } from 'lucide-react';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { addDocumentNonBlocking, setDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { useFirestore, useMemoFirebase } from '@/firebase/provider';
 import { collection, query, doc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 
 
 type Classroom = {
@@ -236,7 +237,13 @@ export default function ClassroomsPage() {
                     <TableRow key={classroom.id}>
                       <TableCell className="font-medium">{classroom.name}</TableCell>
                       <TableCell>{classroom.teacherName || 'N/A'}</TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className="text-right space-x-1">
+                        <Button variant="outline" size="sm" asChild>
+                           <Link href={`/admin/enrollments/${classroom.id}`}>
+                                <Users className="mr-2 h-4 w-4" />
+                                View
+                           </Link>
+                        </Button>
                         <Button variant="ghost" size="icon" onClick={() => openEditDialog(classroom)}>
                           <Edit className="h-4 w-4" />
                         </Button>
