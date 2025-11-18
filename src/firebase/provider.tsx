@@ -55,26 +55,26 @@ export function FirebaseProvider({ children }: { children: ReactNode }) {
               profile = userDoc.data() as UserProfile;
             } else if (authUser.uid === 'GOpbb9SsavhpATk1p0KNmPGGQ0S2') {
               profile = { role: 'Admin', name: 'Admin User', email: authUser.email || 'admin@example.com' };
-            } else if (authUser.uid === 'u3krP4g02DgPJ6Avv1XhVNvvb8R2') {
-              profile = { role: 'Teacher', name: 'Primary 4 Teacher', email: authUser.email || 'teacher@example.com', assignedClassroomId: 'mG24k9p8T7y0r5B3s1A9' };
-            } else if (authUser.uid === 'YAemjwMFEAOnvp6RL6STw3GJK0I2') {
-              profile = { role: 'Teacher', name: 'Pre-Nursery Teacher', email: authUser.email || 'teacher.prenursery@example.com', assignedClassroomId: 'CEWxLJFwT9aP5msd03iL' };
-            } else if (authUser.uid === 'VEjzC6td3HNfWBg4CjNnCtSlC7g1') {
-              profile = { role: 'Teacher', name: 'Nursery 1b Teacher', email: authUser.email || 'teacher.nursery1b@example.com', assignedClassroomId: 'H4K1o2p7R6s5t9u2w8x3' };
-            } else if (authUser.uid === 'vhyAkcnmE2OD9cheoDeXdsdUL1a2') {
-                profile = { role: 'Teacher', name: 'Nursery 1a Teacher', email: authUser.email || 'teacher.nursery1a@example.com', assignedClassroomId: 'a1B2c3d4E5f6g7h8i9j0' };
-            } else if (authUser.uid === 'UJ71VwEZhhVclFS8FdeVEL1jH1C3') {
-                profile = { role: 'Teacher', name: 'Primary 1a Teacher', email: authUser.email || 'teacher.primary1a@example.com', assignedClassroomId: 'k1L2m3n4O5p6q7r8s9t0' };
-            } else if (authUser.uid === 'lqMDWRYrbugIlhVBA083OVpJO3p1') {
-                profile = { role: 'Teacher', name: 'Primary 1b Teacher', email: authUser.email || 'teacher.primary1b@example.com', assignedClassroomId: 'u1V2w3x4Y5z6a7b8c9d0' };
-            } else if (authUser.uid === 'Z1yDssDNRshnMOcnKlxK7wSmhpE3') {
-                profile = { role: 'Teacher', name: 'Nursery 2 Teacher', email: authUser.email || 'teacher.nursery2@example.com', assignedClassroomId: 'e1F2g3h4I5j6k7l8m9n0' };
-            } else if (authUser.uid === '0wYNrCqR0ZTJgEykZ9R1mqvDO5o2') {
+            } else if (authUser.uid === 'u3krP4g02DgPJ6Avv1XhVNvvb8R2') { // Primary 4
+              profile = { role: 'Teacher', name: 'Primary 4 Teacher', email: authUser.email || 'teacher@example.com', assignedClassroomId: '9C0VNAZOmArOqXUrK7M1' };
+            } else if (authUser.uid === 'YAemjwMFEAOnvp6RL6STw3GJK0I2') { // Pre-Nursery
+              profile = { role: 'Teacher', name: 'Pre-Nursery Teacher', email: authUser.email || 'teacher.prenursery@example.com', assignedClassroomId: 'VSR3ERyCrmmCxGrgBMjp' };
+            } else if (authUser.uid === 'VEjzC6td3HNfWBg4CjNnCtSlC7g1') { // Nursery 1b
+              profile = { role: 'Teacher', name: 'Nursery 1b Teacher', email: authUser.email || 'teacher.nursery1b@example.com', assignedClassroomId: '65H3TTmH4qnrASE28Vhr' };
+            } else if (authUser.uid === 'vhyAkcnmE2OD9cheoDeXdsdUL1a2') { // Nursery 1a
+                profile = { role: 'Teacher', name: 'Nursery 1a Teacher', email: authUser.email || 'teacher.nursery1a@example.com', assignedClassroomId: 'v96bogkVQBnAc8MRkQ03' };
+            } else if (authUser.uid === 'UJ71VwEZhhVclFS8FdeVEL1jH1C3') { // Primary 1a
+                profile = { role: 'Teacher', name: 'Primary 1a Teacher', email: authUser.email || 'teacher.primary1a@example.com', assignedClassroomId: 'zpSkbUkTvjLCKgqtq2ty' };
+            } else if (authUser.uid === 'lqMDWRYrbugIlhVBA083OVpJO3p1') { // Primary 1b
+                profile = { role: 'Teacher', name: 'Primary 1b Teacher', email: authUser.email || 'teacher.primary1b@example.com', assignedClassroomId: 'j10edcHHi18zdtbFLmPd' };
+            } else if (authUser.uid === 'Z1yDssDNRshnMOcnKlxK7wSmhpE3') { // Nursery 2
+                profile = { role: 'Teacher', name: 'Nursery 2 Teacher', email: authUser.email || 'teacher.nursery2@example.com', assignedClassroomId: 'eTjWpIGq67tOAQkf4ErA' };
+            } else if (authUser.uid === '0wYNrCqR0ZTJgEykZ9R1mqvDO5o2') { // Primary 3
                 profile = { role: 'Teacher', name: 'Primary 3 Teacher', email: authUser.email || 'teacher.primary3@example.com', assignedClassroomId: 'ZLq6vszAGuUbLKhwADAJ' };
-            } else if (authUser.uid === 'vzT4PhW7g5SipKPScj89DGodBZF2') {
-                profile = { role: 'Teacher', name: 'Creche Teacher', email: authUser.email || 'teacher.creche@example.com', assignedClassroomId: 'o1P2q3r4S5t6u7v8w9x0' };
-            } else if (authUser.uid === '41N67kFTBqYVataTwg5UuIxAwHq2') {
-                profile = { role: 'Teacher', name: 'Primary 2 Teacher', email: authUser.email || 'teacher.primary2@example.com', assignedClassroomId: 'y1Z2a3b4C5d6e7f8g9h0' };
+            } else if (authUser.uid === 'vzT4PhW7g5SipKPScj89DGodBZF2') { // Creche
+                profile = { role: 'Teacher', name: 'Creche Teacher', email: authUser.email || 'teacher.creche@example.com', assignedClassroomId: 'BNy5qe8cbkes4dfKRZLv' };
+            } else if (authUser.uid === '41N67kFTBqYVataTwg5UuIxAwHq2') { // Primary 2
+                profile = { role: 'Teacher', name: 'Primary 2 Teacher', email: authUser.email || 'teacher.primary2@example.com', assignedClassroomId: 'uljYiyQYSZa5acHFakRB' };
             }
             
             setUser({ ...authUser, ...profile });
