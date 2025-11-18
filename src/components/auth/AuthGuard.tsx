@@ -18,46 +18,52 @@ export default function AuthGuard({
   const { user, isLoading } = useUser();
 
   useEffect(() => {
-    // 1. Wait until authentication state is fully resolved.
     if (isLoading) {
-      return;
+      return; // Wait until authentication state is resolved.
     }
 
     const userRole = user?.role;
-    const isLoginPage = pathname.endsWith('/login');
+    const isAdminRoute = pathname.startsWith('/admin');
+    const isTeacherRoute = pathname.startsWith('/teacher');
 
-    // 2. If user is not logged in:
+    // 1. If user is not logged in, redirect to the correct login page.
     if (!user) {
-      const targetLogin = pathname.startsWith('/admin') ? '/admin/login' : '/login';
-      // If not already on the correct login page, redirect.
+      const targetLogin = isAdminRoute ? '/admin/login' : '/login';
       if (pathname !== targetLogin) {
         router.replace(targetLogin);
       }
       return;
     }
 
-    // 3. If user IS logged in:
+    // 2. If user IS logged in:
     const isAllowed = userRole && allow.includes(userRole);
 
-    // If they try to access a login page, redirect to their dashboard.
-    if (isLoginPage) {
+    // If they are on a login page, redirect them to their correct dashboard.
+    if (pathname.endsWith('/login')) {
       const dashboard = userRole === 'Admin' ? '/admin/dashboard' : '/teacher/dashboard';
       router.replace(dashboard);
       return;
     }
+
+    // If they are on a page for a different role (e.g., Teacher on /admin), redirect them.
+    if ((isAdminRoute && userRole === 'Teacher') || (isTeacherRoute && userRole === 'Admin')) {
+       const correctDashboard = userRole === 'Admin' ? '/admin/dashboard' : '/teacher/dashboard';
+       router.replace(correctDashboard);
+       return;
+    }
     
-    // If they are on a protected page but don't have the role, send to unauthorized.
+    // If they are on a protected page but don't have an allowed role, send to unauthorized.
     if (!isAllowed) {
       router.replace('/unauthorized');
       return;
     }
     
-    // If they are allowed, nothing happens, and the page renders.
+    // If all checks pass, they are allowed to see the page.
 
   }, [isLoading, user, pathname, router, allow]);
 
 
-  // While loading, show a full-screen loader to prevent content flashing
+  // While loading, show a full-screen loader.
   if (isLoading) {
     return (
       <div className="flex h-screen w-full items-center justify-center">
@@ -67,14 +73,13 @@ export default function AuthGuard({
     );
   }
 
-  // If user is loaded and has the correct role for the current section, render children.
+  // If user is loaded and has the correct role, render the children.
   // The useEffect handles all redirection logic.
   if (user && user.role && allow.includes(user.role)) {
     return <>{children}</>;
   }
   
-  // In the moments before a redirect, or if user state is indeterminate, show the loader.
-  // This prevents rendering a page the user shouldn't see.
+  // As a fallback, show the loader. This covers edge cases during redirects.
   return (
       <div className="flex h-screen w-full items-center justify-center">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
