@@ -19,8 +19,9 @@ import { toast } from '@/hooks/use-toast';
 import { useState } from 'react';
 import { Loader2, Eye, EyeOff } from 'lucide-react';
 import Link from 'next/link';
-import { useAuth } from '@/firebase/provider';
+import { useAuth, useFirestore } from '@/firebase/provider';
 import { signInWithEmailAndPassword } from 'firebase/auth';
+import { doc, getDoc } from 'firebase/firestore';
 
 const formSchema = z.object({
   email: z.string().email({ message: 'Please enter a valid email.' }),
@@ -32,6 +33,7 @@ export function LoginForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const auth = useAuth();
+  const firestore = useFirestore();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -46,9 +48,8 @@ export function LoginForm() {
     try {
         await signInWithEmailAndPassword(auth, values.email, values.password);
         toast({ title: 'Login Successful', description: 'Redirecting...' });
-        // The AuthGuard will now handle redirection based on the user's role.
-        router.push('/login'); 
-        router.refresh(); // Ensures the page re-evaluates the user's auth state.
+        // Redirect to a protected route to trigger the AuthGuard
+        router.push('/admin/dashboard'); 
     } catch (error: any) {
         if (error.code === 'auth/invalid-credential' || error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
             toast({
