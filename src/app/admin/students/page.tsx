@@ -149,6 +149,15 @@ export default function StudentsPage() {
             createdAt: serverTimestamp()
         });
 
+        // 3. (FIX) Create a reference document in the classrooms/{id}/students subcollection
+        const classStudentRef = doc(collection(firestore, 'classrooms', classroomId, 'students'), newStudentRef.id);
+        batch.set(classStudentRef, {
+            name: studentName,
+            studentId: newStudentRef.id,
+            createdAt: serverTimestamp()
+        });
+
+
         await batch.commit();
 
         toast({ title: 'Student Added', description: `${studentName} has been added to the class.` });
@@ -311,3 +320,5 @@ export default function StudentsPage() {
     </div>
   );
 }
+
+    
