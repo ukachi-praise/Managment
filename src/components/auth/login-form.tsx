@@ -48,8 +48,9 @@ export function LoginForm() {
     try {
         await signInWithEmailAndPassword(auth, values.email, values.password);
         toast({ title: 'Login Successful', description: 'Redirecting...' });
-        // Redirect to a protected route to trigger the AuthGuard
-        router.push('/admin/dashboard'); 
+        // Refresh the page. The AuthGuard will now have the user context
+        // and handle the redirect to the correct dashboard.
+        router.refresh();
     } catch (error: any) {
         if (error.code === 'auth/invalid-credential' || error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
             toast({
