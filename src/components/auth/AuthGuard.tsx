@@ -18,45 +18,41 @@ export default function AuthGuard({
   const { user, isLoading } = useUser();
 
   useEffect(() => {
-    // Don't do anything until the user's auth state is fully loaded
+    // 1. Wait until authentication state is fully resolved.
     if (isLoading) {
       return;
     }
 
     const userRole = user?.role;
-    const isAllowed = userRole && allow.includes(userRole);
-    
-    const isAdminRoute = pathname.startsWith('/admin');
-    const isTeacherRoute = pathname.startsWith('/teacher');
-    
-    // Determine target login page based on the route prefix
-    const targetLogin = isAdminRoute ? '/admin/login' : '/login';
+    const isLoginPage = pathname.endsWith('/login');
 
-    // If user is not logged in, redirect them to the correct login page.
+    // 2. If user is not logged in:
     if (!user) {
+      const targetLogin = pathname.startsWith('/admin') ? '/admin/login' : '/login';
+      // If not already on the correct login page, redirect.
       if (pathname !== targetLogin) {
-          router.replace(targetLogin);
+        router.replace(targetLogin);
       }
       return;
     }
 
-    // If user is logged in but does not have the required role, redirect to unauthorized.
-    if (!isAllowed) {
-        // Prevent redirect loop if already on an auth page or unauthorized page
-        if (pathname !== '/unauthorized' && !pathname.endsWith('/login')) {
-            router.replace('/unauthorized');
-        }
-        return;
-    }
+    // 3. If user IS logged in:
+    const isAllowed = userRole && allow.includes(userRole);
 
-    // If a logged-in and authorized user tries to access a login page,
-    // redirect them to their respective dashboard.
-    const isAuthPage = pathname === '/login' || pathname === '/admin/login';
-    if (isAuthPage && isAllowed) {
-        const dashboard = userRole === 'Admin' ? '/admin/dashboard' : '/teacher/dashboard';
-        router.replace(dashboard);
-        return;
+    // If they try to access a login page, redirect to their dashboard.
+    if (isLoginPage) {
+      const dashboard = userRole === 'Admin' ? '/admin/dashboard' : '/teacher/dashboard';
+      router.replace(dashboard);
+      return;
     }
+    
+    // If they are on a protected page but don't have the role, send to unauthorized.
+    if (!isAllowed) {
+      router.replace('/unauthorized');
+      return;
+    }
+    
+    // If they are allowed, nothing happens, and the page renders.
 
   }, [isLoading, user, pathname, router, allow]);
 
