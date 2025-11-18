@@ -57,16 +57,16 @@ import {
 } from '@/components/ui/select';
 
 
-type Enrollment = { id: string; classroomId: string; studentId: string; };
 type Student = { id: string; name: string; isDeleted?: boolean; admissionNumber: string; dob: string; gender: string; parentName: string; contact: string; };
 type Classroom = { id: string; name: string };
+type StudentInClass = { id: string; name: string; studentId: string; };
+
 
 export default function AdminStudentListPage() {
   const params = useParams();
   const router = useRouter();
   const classroomId = params.classroomId as string;
   const firestore = useFirestore();
-  const { user } = useUser();
   const { toast } = useToast();
 
   const [studentToDelete, setStudentToDelete] = useState<Student | null>(null);
@@ -81,21 +81,22 @@ export default function AdminStudentListPage() {
   );
   const { data: classroom, isLoading: classroomLoading } = useDoc<Classroom>(classroomRef);
 
-  const enrollmentsQuery = useMemoFirebase(
-    () => classroomId && firestore ? query(collection(firestore, 'enrollments'), where('classroomId', '==', classroomId)) : null,
-    [classroomId, firestore]
+  const studentsInClassQuery = useMemoFirebase(
+    () => (firestore && classroomId) ? query(collection(firestore, 'classrooms', classroomId, 'students')) : null,
+    [firestore, classroomId]
   );
-  const { data: enrollments, isLoading: enrollmentsLoading } = useCollection<Enrollment>(enrollmentsQuery);
+  const { data: studentsInClass, isLoading: studentsLoading } = useCollection<StudentInClass>(studentsInClassQuery);
+  
   
   useEffect(() => {
     const fetchStudentDetails = async () => {
-      if (!firestore || !enrollments) {
+      if (!firestore || !studentsInClass) {
         setStudentDetails([]);
         setDetailsLoading(false); // Stop loading if there's nothing to fetch
         return;
       }
       
-      if (enrollments.length === 0) {
+      if (studentsInClass.length === 0) {
         setStudentDetails([]);
         setDetailsLoading(false);
         return;
@@ -103,10 +104,10 @@ export default function AdminStudentListPage() {
 
       setDetailsLoading(true);
       try {
-        const studentIds = enrollments.map(e => e.studentId);
+        const studentIds = studentsInClass.map(e => e.studentId);
         
         const batches = [];
-        for (let i = 0; i < studentIds.length; i += 30) { // Increased batch size
+        for (let i = 0; i < studentIds.length; i += 30) {
           const batch = studentIds.slice(i, i + 30);
           if (batch.length > 0) {
             const q = query(collection(firestore, 'students'), where('__name__', 'in', batch));
@@ -137,14 +138,14 @@ export default function AdminStudentListPage() {
     };
 
     fetchStudentDetails();
-  }, [firestore, enrollments, toast]);
+  }, [firestore, studentsInClass, toast]);
   
   const combinedStudentData = useMemo(() => {
-    if (!enrollments || !studentDetails) return [];
+    if (!studentsInClass || !studentDetails) return [];
     
     const detailsMap = new Map(studentDetails.map(d => [d.id, d]));
     
-    return enrollments
+    return studentsInClass
       .map(e => {
         const details = detailsMap.get(e.studentId);
         if (!details || details.isDeleted) return null;
@@ -153,10 +154,10 @@ export default function AdminStudentListPage() {
       .filter((s): s is Student => s !== null)
       .sort((a,b) => a.name.localeCompare(b.name));
 
-  }, [enrollments, studentDetails]);
+  }, [studentsInClass, studentDetails]);
 
 
-  const isLoading = classroomLoading || enrollmentsLoading || detailsLoading;
+  const isLoading = classroomLoading || studentsLoading || detailsLoading;
 
   const handleEditStudent = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -343,3 +344,5 @@ export default function AdminStudentListPage() {
     </div>
   );
 }
+
+    
