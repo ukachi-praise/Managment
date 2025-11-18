@@ -22,7 +22,7 @@ import { useFirestore, useUser, useMemoFirebase } from '@/firebase/provider';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { useDoc } from '@/firebase/firestore/use-doc';
 import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
-import { collection, query, where, doc, getDoc } from 'firebase/firestore';
+import { collection, query, where, doc, getDoc, getDocs } from 'firebase/firestore';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
@@ -71,6 +71,8 @@ export default function TeacherClassPage() {
   const [studentToDelete, setStudentToDelete] = useState<Student | null>(null);
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
   const [classroomName, setClassroomName] = useState<string | null>(null);
+  const [studentDetails, setStudentDetails] = useState<Student[]>([]);
+  const [detailsLoading, setDetailsLoading] = useState(false);
 
   // --- Data Fetching ---
   const studentsInClassQuery = useMemoFirebase(
@@ -79,13 +81,50 @@ export default function TeacherClassPage() {
   );
   const { data: studentsInClass, isLoading: studentsLoading } = useCollection<ClassroomStudent>(studentsInClassQuery);
   
-  const studentDetailsQuery = useMemoFirebase(() => {
-    if (!firestore || !studentsInClass || studentsInClass.length === 0) return null;
-    const studentIds = studentsInClass.map(s => s.studentId);
-    return query(collection(firestore, 'students'), where('__name__', 'in', studentIds));
-  }, [firestore, studentsInClass]);
-  
-  const { data: studentDetails, isLoading: studentDetailsLoading } = useCollection<Student>(studentDetailsQuery);
+  // FIXED: Manually fetch student details to avoid 'in' query limit and race conditions
+  useEffect(() => {
+    const fetchStudentDetails = async () => {
+      if (!firestore || !studentsInClass || studentsInClass.length === 0) {
+        setStudentDetails([]);
+        return;
+      }
+
+      setDetailsLoading(true);
+      try {
+        const studentIds = studentsInClass.map(s => s.studentId);
+        
+        // Fetch in batches of 10 (Firestore 'in' limit)
+        const batches = [];
+        for (let i = 0; i < studentIds.length; i += 10) {
+          const batch = studentIds.slice(i, i + 10);
+          const q = query(collection(firestore, 'students'), where('__name__', 'in', batch));
+          batches.push(getDocs(q));
+        }
+
+        const results = await Promise.all(batches);
+        const allStudents: Student[] = [];
+        
+        results.forEach(snapshot => {
+          snapshot.docs.forEach(doc => {
+            allStudents.push({ id: doc.id, ...doc.data() } as Student);
+          });
+        });
+
+        setStudentDetails(allStudents);
+      } catch (error) {
+        console.error('Error fetching student details:', error);
+        toast({
+          variant: 'destructive',
+          title: 'Error',
+          description: 'Failed to load student details.'
+        });
+      } finally {
+        setDetailsLoading(false);
+      }
+    };
+
+    fetchStudentDetails();
+  }, [firestore, studentsInClass, toast]);
   
   const combinedStudentData = useMemo(() => {
     if (!studentsInClass || !studentDetails) return [];
@@ -96,7 +135,6 @@ export default function TeacherClassPage() {
       .map(s => {
         const details = detailsMap.get(s.studentId);
         if (!details || details.isDeleted) return null;
-        // The main student record (details) is the source of truth for name, ID, etc.
         return { ...details };
       })
       .filter((s): s is Student => s !== null)
@@ -119,7 +157,7 @@ export default function TeacherClassPage() {
   }, [firestore, classroomId]);
 
 
-  const isLoading = studentsLoading || studentDetailsLoading;
+  const isLoading = studentsLoading || detailsLoading;
   
   const handleEditStudent = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
