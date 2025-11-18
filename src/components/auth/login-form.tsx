@@ -45,13 +45,42 @@ export function LoginForm() {
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
+    if (!auth || !firestore) {
+        toast({ variant: 'destructive', title: 'Firebase not initialized.'});
+        setIsLoading(false);
+        return;
+    }
+
     try {
-        await signInWithEmailAndPassword(auth, values.email, values.password);
+        const userCredential = await signInWithEmailAndPassword(auth, values.email, values.password);
+        const user = userCredential.user;
+
+        // Fetch user document from Firestore to determine role
+        const userDocRef = doc(firestore, 'users', user.uid);
+        const userDoc = await getDoc(userDocRef);
+
+        let role, assignedClassroomId;
+        if (userDoc.exists()) {
+            role = userDoc.data().role;
+            assignedClassroomId = userDoc.data().assignedClassroomId;
+        } else if (user.uid === 'GOpbb9SsavhpATk1p0KNmPGGQ0S2') { // Hardcoded fallback for default admin
+            role = 'Admin';
+        }
+
         toast({ title: 'Login Successful', description: 'Redirecting...' });
-        // Refresh the page. The AuthGuard will now have the user context
-        // and handle the redirect to the correct dashboard.
-        router.refresh();
+
+        // Redirect based on role
+        if (role === 'Admin') {
+            router.push('/admin/dashboard');
+        } else if (role === 'Teacher' && assignedClassroomId) {
+            router.push(`/teacher/class/${assignedClassroomId}`);
+        } else {
+             // Fallback for teachers with no assigned class or other roles
+            router.push('/teacher/dashboard');
+        }
+
     } catch (error: any) {
+        setIsLoading(false);
         if (error.code === 'auth/invalid-credential' || error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
             toast({
                 variant: 'destructive',
@@ -65,7 +94,6 @@ export function LoginForm() {
                 description: error.message,
             });
         }
-        setIsLoading(false);
     }
   }
 
