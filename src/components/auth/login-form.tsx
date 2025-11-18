@@ -51,19 +51,19 @@ export function LoginForm() {
         const user = userCredential.user;
 
         const userDoc = await getDoc(doc(firestore, 'users', user.uid));
-        const role = userDoc.data()?.role;
+        
+        let role = userDoc.data()?.role;
 
-        // This handles the hardcoded admin user as well
-        if (user.uid === 'GOpbb9SsavhpATk1p0KNmPGGQ0S2' || role === 'Admin') {
-            toast({ title: 'Login Successful', description: 'Redirecting...' });
-            router.push('/admin/dashboard');
-            return;
+        // Handle hardcoded admin user
+        if (user.uid === 'GOpbb9SsavhpATk1p0KNmPGGQ0S2') {
+            role = 'Admin';
         }
 
-        // For all other users, fetch their role and redirect appropriately.
-        if (role === 'Teacher') {
-            toast({ title: 'Login Successful', description: 'Redirecting...' });
-            // The AuthGuard and dashboard will handle routing to the correct class
+        toast({ title: 'Login Successful', description: 'Redirecting...' });
+        
+        if (role === 'Admin') {
+            router.push('/admin/dashboard');
+        } else if (role === 'Teacher') {
             router.push('/teacher/dashboard');
         } else {
             // Default redirect if role is not found or not specified
