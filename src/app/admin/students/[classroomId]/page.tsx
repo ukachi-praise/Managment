@@ -2,7 +2,7 @@
 'use client';
 
 import { useParams, useRouter } from 'next/navigation';
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import {
   Card,
   CardContent,
@@ -22,7 +22,7 @@ import { useFirestore, useUser, useMemoFirebase } from '@/firebase/provider';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { useDoc } from '@/firebase/firestore/use-doc';
 import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
-import { collection, query, where, doc, deleteDoc } from 'firebase/firestore';
+import { collection, query, where, doc, getDocs } from 'firebase/firestore';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
@@ -57,7 +57,7 @@ import {
 } from '@/components/ui/select';
 
 
-type ClassroomStudent = { id: string; name: string; studentId: string; };
+type Enrollment = { id: string; classroomId: string; studentId: string; };
 type Student = { id: string; name: string; isDeleted?: boolean; admissionNumber: string; dob: string; gender: string; parentName: string; contact: string; };
 type Classroom = { id: string; name: string };
 
@@ -71,6 +71,8 @@ export default function AdminStudentListPage() {
 
   const [studentToDelete, setStudentToDelete] = useState<Student | null>(null);
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
+  const [studentDetails, setStudentDetails] = useState<Student[]>([]);
+  const [detailsLoading, setDetailsLoading] = useState(true);
 
   // --- Data Fetching ---
   const classroomRef = useMemoFirebase(
@@ -79,38 +81,83 @@ export default function AdminStudentListPage() {
   );
   const { data: classroom, isLoading: classroomLoading } = useDoc<Classroom>(classroomRef);
 
-  const studentsInClassQuery = useMemoFirebase(
-    () => classroomId && firestore ? query(collection(firestore, 'classrooms', classroomId, 'students')) : null,
+  const enrollmentsQuery = useMemoFirebase(
+    () => classroomId && firestore ? query(collection(firestore, 'enrollments'), where('classroomId', '==', classroomId)) : null,
     [classroomId, firestore]
   );
-  const { data: studentsInClass, isLoading: studentsLoading } = useCollection<ClassroomStudent>(studentsInClassQuery);
+  const { data: enrollments, isLoading: enrollmentsLoading } = useCollection<Enrollment>(enrollmentsQuery);
   
-  const studentDetailsQuery = useMemoFirebase(() => {
-    if (!firestore || !studentsInClass || studentsInClass.length === 0) return null;
-    const studentIds = studentsInClass.map(s => s.studentId);
-    return query(collection(firestore, 'students'), where('__name__', 'in', studentIds));
-  }, [firestore, studentsInClass]);
-  
-  const { data: studentDetails, isLoading: studentDetailsLoading } = useCollection<Student>(studentDetailsQuery);
+  useEffect(() => {
+    const fetchStudentDetails = async () => {
+      if (!firestore || !enrollments) {
+        setStudentDetails([]);
+        setDetailsLoading(false); // Stop loading if there's nothing to fetch
+        return;
+      }
+      
+      if (enrollments.length === 0) {
+        setStudentDetails([]);
+        setDetailsLoading(false);
+        return;
+      }
+
+      setDetailsLoading(true);
+      try {
+        const studentIds = enrollments.map(e => e.studentId);
+        
+        const batches = [];
+        for (let i = 0; i < studentIds.length; i += 10) {
+          const batch = studentIds.slice(i, i + 10);
+          if (batch.length > 0) {
+            const q = query(collection(firestore, 'students'), where('__name__', 'in', batch));
+            batches.push(getDocs(q));
+          }
+        }
+
+        const results = await Promise.all(batches);
+        const allStudents: Student[] = [];
+        
+        results.forEach(snapshot => {
+          snapshot.docs.forEach(doc => {
+            allStudents.push({ id: doc.id, ...doc.data() } as Student);
+          });
+        });
+
+        setStudentDetails(allStudents);
+      } catch (error) {
+        console.error('Error fetching student details:', error);
+        toast({
+          variant: 'destructive',
+          title: 'Error',
+          description: 'Failed to load student details.'
+        });
+      } finally {
+        setDetailsLoading(false);
+      }
+    };
+
+    fetchStudentDetails();
+  }, [firestore, enrollments, toast]);
   
   const combinedStudentData = useMemo(() => {
-    if (!studentsInClass || !studentDetails) return [];
+    if (!enrollments || !studentDetails) return [];
     
     const detailsMap = new Map(studentDetails.map(d => [d.id, d]));
     
-    return studentsInClass
-      .map(s => {
-        const details = detailsMap.get(s.studentId);
+    return enrollments
+      .map(e => {
+        const details = detailsMap.get(e.studentId);
         if (!details || details.isDeleted) return null;
-        return { ...s, ...details, id: s.studentId }; // Ensure the main student ID is used
+        // Use the enrollment ID for the subcollection doc, but the details from the main student doc
+        return { ...details, id: e.studentId }; 
       })
       .filter((s): s is Student => s !== null)
       .sort((a,b) => a.name.localeCompare(b.name));
 
-  }, [studentsInClass, studentDetails]);
+  }, [enrollments, studentDetails]);
 
 
-  const isLoading = classroomLoading || studentsLoading || studentDetailsLoading;
+  const isLoading = classroomLoading || enrollmentsLoading || detailsLoading;
 
   const handleEditStudent = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -130,12 +177,6 @@ export default function AdminStudentListPage() {
     const studentRef = doc(firestore, 'students', editingStudent.id);
     setDocumentNonBlocking(studentRef, updatedStudentData, { merge: true });
     
-    // Also update the name in the subcollection if it changed
-    if (updatedStudentData.name !== editingStudent.name) {
-      const classStudentRef = doc(firestore, 'classrooms', classroomId, 'students', editingStudent.id);
-      setDocumentNonBlocking(classStudentRef, { name: updatedStudentData.name }, { merge: true });
-    }
-
     toast({ title: "Student Updated", description: `${updatedStudentData.name}'s details have been updated.` });
     setEditingStudent(null);
   };
@@ -146,9 +187,6 @@ export default function AdminStudentListPage() {
     
     const studentRef = doc(firestore, 'students', studentToDelete.id);
     setDocumentNonBlocking(studentRef, { isDeleted: true }, { merge: true });
-    
-    // We don't delete from the subcollection, just mark as deleted.
-    // The list is filtered by `isDeleted` flag.
 
     toast({
         variant: 'destructive',
