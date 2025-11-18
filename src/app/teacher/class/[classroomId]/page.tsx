@@ -259,7 +259,7 @@ export default function TeacherClassPage() {
                 </div>
                  <div className="space-y-2">
                   <Label htmlFor="dob">Date of Birth</Label>
-                  <Input id="dob" name="dob" type="date" defaultValue={editingStudent?.dob} required />
+                  <Input id="dob" name="dob" type="date" defaultValue={editingStudent?.dob} />
                 </div>
                 <div className="space-y-2">
                    <Label htmlFor="gender">Gender</Label>
@@ -275,11 +275,11 @@ export default function TeacherClassPage() {
                  </div>
                  <div className="space-y-2">
                   <Label htmlFor="parentName">Parent / Guardian Name</Label>
-                  <Input id="parentName" name="parentName" defaultValue={editingStudent?.parentName} required />
+                  <Input id="parentName" name="parentName" defaultValue={editingStudent?.parentName} />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="contact">Contact Number</Label>
-                  <Input id="contact" name="contact" defaultValue={editingStudent?.contact} required />
+                  <Input id="contact" name="contact" defaultValue={editingStudent?.contact} />
                 </div>
                </div>
               <DialogFooter className="mt-4">
