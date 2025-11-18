@@ -136,19 +136,9 @@
           "studentId": { "type": "string" },
           "termId": { "type": "string" },
           "skillName": { "type": "string" },
-          "score": { "type": "number" },
-          "remark": { "type": "string" }
+          "score": { "type": "number" }
       },
-      "required": ["studentId", "termId", "skillName", "score", "remark"]
-    },
-    "SoftSkillGrade": {
-      "title": "SoftSkillGrade",
-      "type": "object",
-      "description": "Represents the AI-generated grade for a soft skill.",
-      "properties": {
-          "remark": { "type": "string" }
-      },
-      "required": ["remark"]
+      "required": ["studentId", "termId", "skillName", "score"]
     },
     "HeadTeacherRemark": {
         "title": "HeadTeacherRemark",
