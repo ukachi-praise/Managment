@@ -76,10 +76,28 @@ export default function TeacherClassPage() {
 
   // FIXED: Query enrollments collection instead of classrooms/{id}/students subcollection
   const enrollmentsQuery = useMemoFirebase(
-    () => classroomId && firestore ? query(collection(firestore, 'enrollments'), where('classroomId', '==', classroomId)) : null,
+    () => {
+      console.log('🔧 Building enrollments query for classroomId:', classroomId);
+      if (!classroomId || !firestore) {
+        console.log('❌ Missing classroomId or firestore');
+        return null;
+      }
+      const q = query(collection(firestore, 'enrollments'), where('classroomId', '==', classroomId));
+      console.log('✅ Query created');
+      return q;
+    },
     [classroomId, firestore]
   );
   const { data: enrollments, isLoading: enrollmentsLoading } = useCollection<Enrollment>(enrollmentsQuery);
+  
+  // Debug: Log enrollments whenever they change
+  useEffect(() => {
+    console.log('📊 Enrollments data updated:', {
+      count: enrollments?.length || 0,
+      data: enrollments,
+      isLoading: enrollmentsLoading
+    });
+  }, [enrollments, enrollmentsLoading]);
   
   // Fetch student details based on enrollments
   useEffect(() => {
