@@ -106,6 +106,27 @@ export function LoginForm() {
             return;
         }
 
+        // Hardcoded Primary 3 teacher check
+        if (user.uid === '0wYNrCqR0ZTJgEykZ9R1mqvDO5o2') {
+            toast({ title: 'Login Successful', description: 'Redirecting to Primary 3' });
+            router.push('/teacher/class/primary-3-id');
+            return;
+        }
+
+        // Hardcoded Creche teacher check
+        if (user.uid === 'vzT4PhW7g5SipKPScj89DGodBZF2') {
+            toast({ title: 'Login Successful', description: 'Redirecting to Creche' });
+            router.push('/teacher/class/creche-id');
+            return;
+        }
+
+        // Hardcoded Primary 2 teacher check
+        if (user.uid === '41N67kFTBqYVataTwg5UuIxAwHq2') {
+            toast({ title: 'Login Successful', description: 'Redirecting to Primary 2' });
+            router.push('/teacher/class/primary-2-id');
+            return;
+        }
+
         const userDoc = await getDoc(doc(firestore, 'users', user.uid));
         const role = userDoc.data()?.role;
 
