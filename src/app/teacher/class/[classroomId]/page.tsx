@@ -214,10 +214,12 @@ export default function TeacherClassPage() {
 
       <div className="flex items-center justify-between">
         <div>
-            {classroomLoading ? <h1 className="text-3xl font-bold tracking-tight">Loading...</h1> : <h1 className="text-3xl font-bold tracking-tight">{classroom?.name}</h1>}
-            <p className="text-muted-foreground">
-                Your assigned class dashboard. View students and manage results.
-            </p>
+          <h1 className="text-3xl font-bold tracking-tight">
+            {classroomLoading ? 'Loading...' : classroom?.name || 'Class'}
+          </h1>
+          <p className="text-muted-foreground">
+              Your assigned class dashboard. View students and manage results.
+          </p>
         </div>
         <Button onClick={() => router.back()} variant="outline">
           <ArrowLeft className="mr-2 h-4 w-4" />
