@@ -34,16 +34,18 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
-import { CalendarIcon, Loader2, ArrowLeft } from 'lucide-react';
+import { CalendarIcon, Loader2, ArrowLeft, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { useFirestore, useMemoFirebase } from '@/firebase/provider';
 import { useDoc } from '@/firebase/firestore/use-doc';
-import { doc, Timestamp } from 'firebase/firestore';
-import { useEffect } from 'react';
+import { doc, Timestamp, writeBatch, collection, getDocs, collectionGroup } from 'firebase/firestore';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { setDocumentNonBlocking as setDocNB } from '@/firebase/non-blocking-updates';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+
 
 const formSchema = z.object({
   currentSession: z.string().min(1, 'Please enter a session name.'),
@@ -65,6 +67,7 @@ export default function InfoPage() {
   const { toast } = useToast();
   const firestore = useFirestore();
   const router = useRouter();
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // --- Data Fetching ---
   const settingsRef = useMemoFirebase(
@@ -118,6 +121,60 @@ export default function InfoPage() {
       description: 'The school settings have been updated successfully.',
     });
   };
+
+  const handleDeleteAllStudents = async () => {
+    if (!firestore) {
+      toast({ variant: 'destructive', title: 'Error', description: 'Firestore not available.' });
+      return;
+    }
+
+    setIsDeleting(true);
+    toast({ title: 'Processing...', description: 'Deleting all student data. This may take a moment.' });
+
+    try {
+      const batch = writeBatch(firestore);
+      
+      // 1. Get all classrooms to find all student subcollections
+      const classroomsSnapshot = await getDocs(collection(firestore, 'classrooms'));
+      for (const classroomDoc of classroomsSnapshot.docs) {
+        const studentsInClassRef = collection(firestore, 'classrooms', classroomDoc.id, 'students');
+        const studentsInClassSnapshot = await getDocs(studentsInClassRef);
+        studentsInClassSnapshot.forEach(doc => batch.delete(doc.ref));
+      }
+      
+      // 2. Get all students to delete their root doc and results subcollection
+      const studentsSnapshot = await getDocs(collection(firestore, 'students'));
+      for (const studentDoc of studentsSnapshot.docs) {
+          batch.delete(studentDoc.ref); // Delete the student from /students
+          
+          const resultsRef = collection(firestore, 'students', studentDoc.id, 'results');
+          const resultsSnapshot = await getDocs(resultsRef);
+          resultsSnapshot.forEach(doc => batch.delete(doc.ref));
+      }
+      
+      // 3. Delete all from /enrollments
+      const enrollmentsSnapshot = await getDocs(collection(firestore, 'enrollments'));
+      enrollmentsSnapshot.forEach(doc => batch.delete(doc.ref));
+      
+      await batch.commit();
+
+      toast({
+        title: 'Success!',
+        description: 'All student data, enrollments, and results have been permanently deleted.',
+      });
+
+    } catch (error: any) {
+      toast({
+        variant: 'destructive',
+        title: 'Deletion Failed',
+        description: error.message || 'An unexpected error occurred.',
+      });
+      console.error("Error deleting all students:", error);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
 
   const isLoading = form.formState.isSubmitting || settingsLoading;
 
@@ -315,6 +372,46 @@ export default function InfoPage() {
           </Form>
         </CardContent>
       </Card>
+      
+      <Card className="border-destructive">
+        <CardHeader>
+          <CardTitle className="text-destructive">Danger Zone</CardTitle>
+          <CardDescription>
+            These actions are permanent and cannot be undone.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+            <div className="flex items-center justify-between rounded-lg border border-destructive/30 bg-destructive/5 p-4">
+                <div>
+                    <h3 className="font-semibold text-destructive">Delete All Students</h3>
+                    <p className="text-sm text-destructive/80">This will permanently delete all students, enrollments, and their results. This is useful for clearing test data.</p>
+                </div>
+                <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                        <Button variant="destructive" disabled={isDeleting}>
+                            {isDeleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <AlertTriangle className="mr-2 h-4 w-4" />}
+                            Delete All Student Data
+                        </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                                This action is irreversible. It will permanently delete ALL student data across the entire application, including their personal details, class enrollments, and all past results. Do you wish to proceed?
+                            </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction onClick={handleDeleteAllStudents} className="bg-destructive hover:bg-destructive/90">
+                                Yes, delete everything
+                            </AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
+            </div>
+        </CardContent>
+      </Card>
+
     </div>
   );
 }
