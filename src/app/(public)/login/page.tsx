@@ -5,10 +5,38 @@ import Image from 'next/image';
 import { LoginForm } from '@/components/auth/login-form';
 import { Logo } from '@/components/shared/logo';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { useUser } from '@/firebase/provider';
+import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
+import { Loader2 } from 'lucide-react';
 
 export default function LoginPage() {
-  // This page should be simple. Its only job is to show the login form.
-  // The AuthGuard will handle redirecting logged-in users away from this page.
+  const { user, isLoggedIn, isLoading } = useUser();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (isLoading) {
+      return; // Wait for the auth state to be determined
+    }
+
+    if (isLoggedIn && user) {
+      // If the user is logged in, redirect them to the appropriate dashboard
+      const dashboard = user.role === 'Admin' ? '/admin/dashboard' : '/teacher/dashboard';
+      router.replace(dashboard);
+    }
+  }, [isLoading, isLoggedIn, user, router]);
+
+  // While checking auth state or redirecting, show a loader
+  if (isLoading || isLoggedIn) {
+    return (
+      <div className="flex h-screen w-full items-center justify-center">
+        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+        <span className="sr-only">Loading...</span>
+      </div>
+    );
+  }
+
+  // If not logged in, show the login form
   return (
     <div className="relative min-h-screen w-full">
       <Image
