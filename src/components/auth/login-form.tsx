@@ -19,10 +19,8 @@ import { toast } from '@/hooks/use-toast';
 import { useState } from 'react';
 import { Loader2, Eye, EyeOff } from 'lucide-react';
 import Link from 'next/link';
-import { useAuth, useFirestore } from '@/firebase/provider';
+import { useAuth } from '@/firebase/provider';
 import { signInWithEmailAndPassword } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
-import type { UserProfile } from '@/firebase/provider';
 
 const formSchema = z.object({
   email: z.string().email({ message: 'Please enter a valid email.' }),
@@ -34,7 +32,6 @@ export function LoginForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const auth = useAuth();
-  const firestore = useFirestore();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -46,68 +43,19 @@ export function LoginForm() {
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
-    if (!auth || !firestore) {
+    if (!auth) {
         toast({ variant: 'destructive', title: 'Firebase not initialized.'});
         setIsLoading(false);
         return;
     }
 
     try {
-        const userCredential = await signInWithEmailAndPassword(auth, values.email, values.password);
-        const user = userCredential.user;
-
-        // Check for user role in Firestore
-        const userDocRef = doc(firestore, 'users', user.uid);
-        const userDoc = await getDoc(userDocRef);
-        
-        let userRole: UserProfile['role'] | undefined;
-        let profile: UserProfile = {};
-
-        if (userDoc.exists()) {
-            profile = userDoc.data() as UserProfile;
-            userRole = profile.role;
-        }
-
-        // --- Start of Hardcoded User Role Check ---
-        // If no role is found in Firestore, check against hardcoded demo accounts.
-        if (!userRole) {
-            if (user.uid === 'GOpbb9SsavhpATk1p0KNmPGGQ0S2') { // Admin
-              userRole = 'Admin';
-            } else if (
-                user.uid === 'u3krP4g02DgPJ6Avv1XhVNvvb8R2' || // Primary 4
-                user.uid === 'YAemjwMFEAOnvp6RL6STw3GJK0I2' || // Pre-Nursery
-                user.uid === 'VEjzC6td3HNfWBg4CjNnCtSlC7g1' || // Nursery 1b
-                user.uid === 'vhyAkcnmE2OD9cheoDeXdsdUL1a2' || // Nursery 1a
-                user.uid === 'UJ71VwEZhhVclFS8FdeVEL1jH1C3' || // Primary 1a
-                user.uid === 'lqMDWRYrbugIlhVBA083OVpJO3p1' || // Primary 1b
-                user.uid === 'Z1yDssDNRshnMOcnKlxK7wSmhpE3' || // Nursery 2
-                user.uid === '0wYNrCqR0ZTJgEykZ9R1mqvDO5o2' || // Primary 3
-                user.uid === 'vzT4PhW7g5SipKPScj89DGodBZF2' || // Creche
-                user.uid === '41N67kFTBqYVataTwg5UuIxAwHq2' || // Primary 2
-                user.uid === 'xM6L5fJj7vUMbT3p4qN2rWcZ8yG2'    // Primary 5
-            ) {
-              userRole = 'Teacher';
-            }
-        }
-        // --- End of Hardcoded User Role Check ---
-
+        await signInWithEmailAndPassword(auth, values.email, values.password);
         toast({ title: 'Login Successful', description: 'Redirecting...' });
-
-        // Redirect based on the determined role
-        if (userRole === 'Admin') {
-            router.push('/admin/dashboard');
-        } else if (userRole === 'Teacher') {
-            router.push('/teacher/dashboard');
-        } else {
-            // Fallback if role is not found
-            await auth.signOut();
-            toast({
-                variant: 'destructive',
-                title: 'Login Failed',
-                description: 'User role not found. Please contact an administrator.',
-            });
-            setIsLoading(false);
-        }
+        
+        // IMPORTANT: The AuthGuard will now handle redirection based on the user's role.
+        // A full page refresh ensures the FirebaseProvider re-evaluates the user state correctly.
+        router.refresh(); 
 
     } catch (error: any) {
         setIsLoading(false);

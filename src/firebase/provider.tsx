@@ -17,6 +17,7 @@ export type UserProfile = {
   name?: string;
   email?: string;
   assignedClassroomId?: string;
+  phoneNumber?: string;
 };
 export type AppUser = User & UserProfile;
 
@@ -47,39 +48,47 @@ export function FirebaseProvider({ children }: { children: ReactNode }) {
       async (authUser) => {
         if (authUser) {
           try {
-            const userDocRef = doc(firestore, 'users', authUser.uid);
-            const userDoc = await getDoc(userDocRef);
-
-            let profile: UserProfile = {};
-            if (userDoc.exists()) {
-              profile = userDoc.data() as UserProfile;
-            } else if (authUser.uid === 'GOpbb9SsavhpATk1p0KNmPGGQ0S2') { // Admin
-              profile = { role: 'Admin', name: 'Admin User', email: authUser.email || 'admin@example.com' };
-            } else if (authUser.uid === 'u3krP4g02DgPJ6Avv1XhVNvvb8R2') { // Primary 4
-              profile = { role: 'Teacher', name: 'Primary 4 Teacher', email: authUser.email || 'teacher.primary4@example.com', assignedClassroomId: '9C0VNAZOmArOqXUrK7M1' };
-            } else if (authUser.uid === 'YAemjwMFEAOnvp6RL6STw3GJK0I2') { // Pre-Nursery
-              profile = { role: 'Teacher', name: 'Pre-Nursery Teacher', email: authUser.email || 'teacher.prenursery@example.com', assignedClassroomId: 'VSR3ERyCrmmCxGrgBMjp' };
-            } else if (authUser.uid === 'VEjzC6td3HNfWBg4CjNnCtSlC7g1') { // Nursery 1b
-              profile = { role: 'Teacher', name: 'Nursery 1b Teacher', email: authUser.email || 'teacher.nursery1b@example.com', assignedClassroomId: '65H3TTmH4qnrASE28Vhr' };
-            } else if (authUser.uid === 'vhyAkcnmE2OD9cheoDeXdsdUL1a2') { // Nursery 1a
-                profile = { role: 'Teacher', name: 'Nursery 1a Teacher', email: authUser.email || 'teacher.nursery1a@example.com', assignedClassroomId: 'v96bogkVQBnAc8MRkQ03' };
-            } else if (authUser.uid === 'UJ71VwEZhhVclFS8FdeVEL1jH1C3') { // Primary 1a
-                profile = { role: 'Teacher', name: 'Primary 1a Teacher', email: authUser.email || 'teacher.primary1a@example.com', assignedClassroomId: 'zpSkbUkTvjLCKgqtq2ty' };
-            } else if (authUser.uid === 'lqMDWRYrbugIlhVBA083OVpJO3p1') { // Primary 1b
-                profile = { role: 'Teacher', name: 'Primary 1b Teacher', email: authUser.email || 'teacher.primary1b@example.com', assignedClassroomId: 'j10edcHHi18zdtbFLmPd' };
-            } else if (authUser.uid === 'Z1yDssDNRshnMOcnKlxK7wSmhpE3') { // Nursery 2
-                profile = { role: 'Teacher', name: 'Nursery 2 Teacher', email: authUser.email || 'teacher.nursery2@example.com', assignedClassroomId: 'eTjWpIGq67tOAQkf4ErA' };
-            } else if (authUser.uid === '0wYNrCqR0ZTJgEykZ9R1mqvDO5o2') { // Primary 3
-                profile = { role: 'Teacher', name: 'Primary 3 Teacher', email: authUser.email || 'teacher.primary3@example.com', assignedClassroomId: 'ZLq6vszAGuUbLKhwADAJ' };
-            } else if (authUser.uid === 'vzT4PhW7g5SipKPScj89DGodBZF2') { // Creche
-                profile = { role: 'Teacher', name: 'Creche Teacher', email: authUser.email || 'teacher.creche@example.com', assignedClassroomId: 'BNy5qe8cbkes4dfKRZLv' };
-            } else if (authUser.uid === '41N67kFTBqYVataTwg5UuIxAwHq2') { // Primary 2
-                profile = { role: 'Teacher', name: 'Primary 2 Teacher', email: authUser.email || 'teacher.primary2@example.com', assignedClassroomId: 'uljYiyQYSZa5acHFakRB' };
-            } else if (authUser.uid === 'xM6L5fJj7vUMbT3p4qN2rWcZ8yG2') { // Primary 5 - Assuming this ID based on previous context, might need correction
-                profile = { role: 'Teacher', name: 'Primary 5 Teacher', email: authUser.email || 'teacher.primary5@example.com', assignedClassroomId: 'nrmeHRqY7TtrkDxLAGnB' };
+            // This is the base profile from hardcoded values, containing the essential role.
+            let baseProfile: UserProfile = {};
+            if (authUser.uid === 'GOpbb9SsavhpATk1p0KNmPGGQ0S2') {
+                baseProfile = { role: 'Admin', name: 'Admin User', email: authUser.email || 'admin@example.com' };
+            } else if (authUser.uid === 'u3krP4g02DgPJ6Avv1XhVNvvb8R2') {
+                baseProfile = { role: 'Teacher', name: 'Primary 4 Teacher', email: authUser.email, assignedClassroomId: '9C0VNAZOmArOqXUrK7M1' };
+            } else if (authUser.uid === 'YAemjwMFEAOnvp6RL6STw3GJK0I2') {
+                baseProfile = { role: 'Teacher', name: 'Pre-Nursery Teacher', email: authUser.email, assignedClassroomId: 'VSR3ERyCrmmCxGrgBMjp' };
+            } else if (authUser.uid === 'VEjzC6td3HNfWBg4CjNnCtSlC7g1') {
+                baseProfile = { role: 'Teacher', name: 'Nursery 1b Teacher', email: authUser.email, assignedClassroomId: '65H3TTmH4qnrASE28Vhr' };
+            } else if (authUser.uid === 'vhyAkcnmE2OD9cheoDeXdsdUL1a2') {
+                baseProfile = { role: 'Teacher', name: 'Nursery 1a Teacher', email: authUser.email, assignedClassroomId: 'v96bogkVQBnAc8MRkQ03' };
+            } else if (authUser.uid === 'UJ71VwEZhhVclFS8FdeVEL1jH1C3') {
+                baseProfile = { role: 'Teacher', name: 'Primary 1a Teacher', email: authUser.email, assignedClassroomId: 'zpSkbUkTvjLCKgqtq2ty' };
+            } else if (authUser.uid === 'lqMDWRYrbugIlhVBA083OVpJO3p1') {
+                baseProfile = { role: 'Teacher', name: 'Primary 1b Teacher', email: authUser.email, assignedClassroomId: 'j10edcHHi18zdtbFLmPd' };
+            } else if (authUser.uid === 'Z1yDssDNRshnMOcnKlxK7wSmhpE3') {
+                baseProfile = { role: 'Teacher', name: 'Nursery 2 Teacher', email: authUser.email, assignedClassroomId: 'eTjWpIGq67tOAQkf4ErA' };
+            } else if (authUser.uid === '0wYNrCqR0ZTJgEykZ9R1mqvDO5o2') {
+                baseProfile = { role: 'Teacher', name: 'Primary 3 Teacher', email: authUser.email, assignedClassroomId: 'ZLq6vszAGuUbLKhwADAJ' };
+            } else if (authUser.uid === 'vzT4PhW7g5SipKPScj89DGodBZF2') {
+                baseProfile = { role: 'Teacher', name: 'Creche Teacher', email: authUser.email, assignedClassroomId: 'BNy5qe8cbkes4dfKRZLv' };
+            } else if (authUser.uid === '41N67kFTBqYVataTwg5UuIxAwHq2') {
+                baseProfile = { role: 'Teacher', name: 'Primary 2 Teacher', email: authUser.email, assignedClassroomId: 'uljYiyQYSZa5acHFakRB' };
+            } else if (authUser.uid === 'xM6L5fJj7vUMbT3p4qN2rWcZ8yG2') {
+                baseProfile = { role: 'Teacher', name: 'Primary 5 Teacher', email: authUser.email, assignedClassroomId: 'nrmeHRqY7TtrkDxLAGnB' };
             }
             
-            setUser({ ...authUser, ...profile });
+            // Now, fetch the user's document from Firestore to get any updates.
+            const userDocRef = doc(firestore, 'users', authUser.uid);
+            const userDoc = await getDoc(userDocRef);
+            let firestoreProfile: UserProfile = {};
+            if (userDoc.exists()) {
+              firestoreProfile = userDoc.data() as UserProfile;
+            }
+
+            // Merge the profiles: Firestore updates overwrite hardcoded defaults, but the role from hardcoded data is preserved if not in Firestore.
+            const finalProfile = { ...baseProfile, ...firestoreProfile };
+            
+            setUser({ ...authUser, ...finalProfile });
+
           } catch (e) {
             console.error("Error fetching user profile:", e);
             setUser(authUser as AppUser); // Fallback to authUser without profile
