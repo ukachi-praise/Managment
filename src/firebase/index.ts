@@ -1,3 +1,4 @@
+
 // src/firebase/index.ts
 
 import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
@@ -15,6 +16,13 @@ const firebaseConfig = {
 
 // This function ensures Firebase is initialized only once.
 function initializeFirebase() {
+  // Check for missing credentials and throw a clear error.
+  if (!firebaseConfig.apiKey || !firebaseConfig.projectId) {
+    throw new Error(
+      'Firebase config is missing. Please add your Firebase credentials to your .env file.'
+    );
+  }
+
   const apps = getApps();
   if (apps.length > 0) {
     return {
