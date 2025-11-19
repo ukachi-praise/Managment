@@ -271,7 +271,7 @@ export function ResultSheet({
 
   // --- RENDER ---
   return (
-    <div className="relative w-[794px] min-h-[1123px] bg-white text-black print:shadow-none print:m-0 print:p-0 print:w-full print:h-auto flex flex-col p-6">
+    <div className="relative w-[794px] min-h-[1123px] bg-white text-black print:shadow-none print:m-0 print:p-0 print:w-full print:h-auto flex flex-col p-6 border-4 border-black">
         <div className="absolute inset-0 z-0 flex items-center justify-center pointer-events-none">
             <Image src="/Logo.jpg" alt="School Watermark" width={400} height={400} className="opacity-10" />
         </div>
@@ -400,7 +400,7 @@ export function ResultSheet({
                                     <TableBody>
                                         <TableRow><TableCell className="p-0.5 h-auto text-[8px] border border-black">80 – 100</TableCell><TableCell className="p-0.5 h-auto text-[8px] border border-black">A</TableCell><TableCell className="p-0.5 h-auto text-[8px] border border-black">Excellent</TableCell></TableRow>
                                         <TableRow><TableCell className="p-0.5 h-auto text-[8px] border border-black">70 – 79</TableCell><TableCell className="p-0.5 h-auto text-[8px] border border-black">B</TableCell><TableCell className="p-0.5 h-auto text-[8px] border border-black">Very Good</TableCell></TableRow>
-                                        <TableRow><TableCell className="p-0.5 h-auto text-[8px] border border-black">60 – 69</TableCell><TableCell className="p-0.5 h-auto text-[8px] border border-black">C</TableCell><TableCell className="p-0.5 h-auto text-[8px] border border-black">Good</TableCell></TableRow>
+                                        <TableRow><TableCell className="p-0.5 h-auto text-[8px] border border-black">60 – 69</TableCell><TableCell className="p-0.5 h-auto text-[8px] border-black">C</TableCell><TableCell className="p-0.5 h-auto text-[8px] border border-black">Good</TableCell></TableRow>
                                         <TableRow><TableCell className="p-0.5 h-auto text-[8px] border border-black">50 – 59</TableCell><TableCell className="p-0.5 h-auto text-[8px] border border-black">D</TableCell><TableCell className="p-0.5 h-auto text-[8px] border border-black">Fair</TableCell></TableRow>
                                         <TableRow><TableCell className="p-0.5 h-auto text-[8px] border border-black">0 – 49</TableCell><TableCell className="p-0.5 h-auto text-[8px] border border-black">F</TableCell><TableCell className="p-0.5 h-auto text-[8px] border border-black">Fail</TableCell></TableRow>
                                     </TableBody>
