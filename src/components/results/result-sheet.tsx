@@ -135,23 +135,26 @@ export function ResultSheet({
         return;
       }
       
-      const enrollmentsQuery = query(collection(firestore, 'enrollments'), where('classroomId', '==', classroom.id));
-      const enrollmentsSnapshot = await getDocs(enrollmentsQuery);
+      const studentsInClassRef = collection(firestore, 'classrooms', classroom.id, 'students');
+      const studentsInClassSnapshot = await getDocs(studentsInClassRef);
       
-      if (enrollmentsSnapshot.empty) {
+      if (studentsInClassSnapshot.empty) {
         setClassPopulation(0);
         return;
       }
-
-      const studentIds = enrollmentsSnapshot.docs.map(d => d.data().studentId);
       
-      // Since student documents might not exist for all enrollments, query the students collection
-      const studentsQuerySnapshot = await getDocs(collection(firestore, 'students'));
-      const allStudentDocs = studentsQuerySnapshot.docs.map(d => ({id: d.id, ...d.data()}));
+      const studentIds = studentsInClassSnapshot.docs.map(d => d.data().studentId);
+      
+      if (studentIds.length === 0) {
+        setClassPopulation(0);
+        return;
+      }
+      
+      // Now query the root students collection to check the `isDeleted` flag
+      const q = query(collection(firestore, 'students'), where('__name__', 'in', studentIds), where('isDeleted', '!=', true));
+      const activeStudentsSnapshot = await getDocs(q);
 
-      // Filter for active students in the class
-      const activeStudentsInClass = allStudentDocs.filter(s => studentIds.includes(s.id) && !s.isDeleted);
-      setClassPopulation(activeStudentsInClass.length);
+      setClassPopulation(activeStudentsSnapshot.size);
     };
 
     fetchClassPopulation();
