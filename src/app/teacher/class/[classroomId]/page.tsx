@@ -297,16 +297,16 @@ export default function TeacherClassPage() {
         </Dialog>
 
 
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">
-            {isLoading ? 'Loading...' : classroom?.name}
+           <h1 className="text-3xl font-bold tracking-tight">
+            Welcome back, {user?.name || 'Teacher'}!
           </h1>
-          <p className="text-muted-foreground">
-              Your assigned class dashboard. View students and manage results.
+          <p className="text-lg text-muted-foreground">
+              You are managing {isLoading ? '...' : classroom?.name}.
           </p>
         </div>
-        <Button onClick={() => router.back()} variant="outline">
+        <Button onClick={() => router.back()} variant="outline" className="w-full sm:w-auto">
           <ArrowLeft className="mr-2 h-4 w-4" />
           Go Back
         </Button>
@@ -380,3 +380,5 @@ export default function TeacherClassPage() {
     </div>
   );
 }
+
+    
