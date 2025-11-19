@@ -39,7 +39,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { PlusCircle, Edit, Trash2, Loader2, KeyRound, ArrowLeft } from 'lucide-react';
+import { PlusCircle, Edit, Trash2, Loader2, KeyRound, ArrowLeft, MoreVertical } from 'lucide-react';
 import {
   useCollection,
 } from '@/firebase/firestore/use-collection';
@@ -57,6 +57,7 @@ import {
 } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
 type User = {
   id: string;
@@ -258,7 +259,7 @@ export default function StaffPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
             <Button onClick={() => router.back()} variant="outline" size="icon">
                 <ArrowLeft className="h-4 w-4" />
@@ -267,7 +268,7 @@ export default function StaffPage() {
         </div>
         <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
             <DialogTrigger asChild>
-                <Button>
+                <Button className="w-full sm:w-auto">
                     <PlusCircle className="mr-2 h-4 w-4" />
                     Add Staff
                 </Button>
@@ -433,9 +434,9 @@ export default function StaffPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Name</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Role</TableHead>
-                  <TableHead>Assigned Class</TableHead>
+                  <TableHead className="hidden sm:table-cell">Email</TableHead>
+                  <TableHead className="hidden md:table-cell">Role</TableHead>
+                  <TableHead className="hidden lg:table-cell">Assigned Class</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -444,19 +445,31 @@ export default function StaffPage() {
                   users.map((user) => (
                     <TableRow key={user.id}>
                       <TableCell className="font-medium">{user.name}</TableCell>
-                      <TableCell>{user.email}</TableCell>
-                      <TableCell><Badge variant={user.role === 'Admin' ? 'default' : 'secondary'}>{user.role}</Badge></TableCell>
-                      <TableCell>{user.role === 'Teacher' && user.assignedClassroomId ? classroomMap[user.assignedClassroomId] || 'N/A' : 'N/A'}</TableCell>
+                      <TableCell className="hidden sm:table-cell">{user.email}</TableCell>
+                      <TableCell className="hidden md:table-cell"><Badge variant={user.role === 'Admin' ? 'default' : 'secondary'}>{user.role}</Badge></TableCell>
+                      <TableCell className="hidden lg:table-cell">{user.role === 'Teacher' && user.assignedClassroomId ? classroomMap[user.assignedClassroomId] || 'N/A' : 'N/A'}</TableCell>
                       <TableCell className="text-right">
-                        <Button variant="ghost" size="icon" onClick={() => handleOpenResetDialog(user)}>
-                          <KeyRound className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="icon" onClick={() => handleOpenEditDialog(user)}>
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => handleOpenDeleteDialog(user)}>
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon">
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => handleOpenEditDialog(user)} className="cursor-pointer">
+                              <Edit className="mr-2 h-4 w-4" />
+                              Edit
+                            </DropdownMenuItem>
+                             <DropdownMenuItem onClick={() => handleOpenResetDialog(user)} className="cursor-pointer">
+                              <KeyRound className="mr-2 h-4 w-4" />
+                              Send Password Reset
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleOpenDeleteDialog(user)} className="text-destructive cursor-pointer">
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </TableCell>
                     </TableRow>
                   ))

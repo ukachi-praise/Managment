@@ -150,18 +150,18 @@ export default function ResultSheetPage() {
 
 
   return (
-    <div className="bg-muted min-h-screen py-8 px-4 no-print">
+    <div className="bg-muted min-h-screen py-4 sm:py-8 px-2 sm:px-4 no-print">
       <div className="max-w-4xl mx-auto mb-4 flex justify-between items-center">
         <Button onClick={() => router.back()} variant="outline">
           <ArrowLeft className="mr-2 h-4 w-4" />
-          Back to Student List
+          Back
         </Button>
         <Button onClick={exportA4PDF} disabled={isLoading || isExporting}>
           {isExporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Printer className="mr-2 h-4 w-4" />}
-          Export as PDF
+          Export PDF
         </Button>
       </div>
-      <div className="max-w-4xl mx-auto space-y-4" ref={resultSheetRef}>
+      <div className="max-w-4xl mx-auto space-y-4">
          <ResultSheet student={student} classroom={classroom} />
       </div>
     </div>

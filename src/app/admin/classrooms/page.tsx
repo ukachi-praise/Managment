@@ -39,7 +39,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { PlusCircle, Edit, Trash2, Loader2, ArrowLeft, Users } from 'lucide-react';
+import { PlusCircle, Edit, Trash2, Loader2, ArrowLeft, Users, MoreVertical } from 'lucide-react';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { addDocumentNonBlocking, setDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { useFirestore, useMemoFirebase } from '@/firebase/provider';
@@ -47,6 +47,7 @@ import { collection, query, doc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
 
 type Classroom = {
@@ -122,7 +123,7 @@ export default function ClassroomsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
             <Button onClick={() => router.back()} variant="outline" size="icon">
                 <ArrowLeft className="h-4 w-4" />
@@ -131,7 +132,7 @@ export default function ClassroomsPage() {
         </div>
         <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
           <DialogTrigger asChild>
-            <Button>
+            <Button className="w-full sm:w-auto">
               <PlusCircle className="mr-2 h-4 w-4" />
               Add Classroom
             </Button>
@@ -237,19 +238,30 @@ export default function ClassroomsPage() {
                     <TableRow key={classroom.id}>
                       <TableCell className="font-medium">{classroom.name}</TableCell>
                       <TableCell>{classroom.teacherName || 'N/A'}</TableCell>
-                      <TableCell className="text-right space-x-1">
-                        <Button variant="outline" size="sm" asChild>
-                           <Link href={`/admin/enrollments/${classroom.id}`}>
-                                <Users className="mr-2 h-4 w-4" />
-                                View
-                           </Link>
-                        </Button>
-                        <Button variant="ghost" size="icon" onClick={() => openEditDialog(classroom)}>
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => openDeleteDialog(classroom)}>
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                      <TableCell className="text-right">
+                         <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon">
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem asChild>
+                               <Link href={`/admin/enrollments/${classroom.id}`} className="cursor-pointer">
+                                    <Users className="mr-2 h-4 w-4" />
+                                    View Enrollments
+                               </Link>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => openEditDialog(classroom)} className="cursor-pointer">
+                              <Edit className="mr-2 h-4 w-4" />
+                              Edit
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => openDeleteDialog(classroom)} className="text-destructive cursor-pointer">
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </TableCell>
                     </TableRow>
                   ))

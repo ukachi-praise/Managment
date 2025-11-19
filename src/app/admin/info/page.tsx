@@ -196,8 +196,8 @@ export default function InfoPage() {
         </CardHeader>
         <CardContent>
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                 <FormField
                   control={form.control}
                   name="currentSession"
@@ -381,14 +381,14 @@ export default function InfoPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-            <div className="flex items-center justify-between rounded-lg border border-destructive/30 bg-destructive/5 p-4">
-                <div>
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between rounded-lg border border-destructive/30 bg-destructive/5 p-4 gap-4">
+                <div className="w-full sm:w-auto">
                     <h3 className="font-semibold text-destructive">Delete All Students</h3>
                     <p className="text-sm text-destructive/80">This will permanently delete all students, enrollments, and their results. This is useful for clearing test data.</p>
                 </div>
                 <AlertDialog>
                     <AlertDialogTrigger asChild>
-                        <Button variant="destructive" disabled={isDeleting}>
+                        <Button variant="destructive" disabled={isDeleting} className="w-full sm:w-auto flex-shrink-0">
                             {isDeleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <AlertTriangle className="mr-2 h-4 w-4" />}
                             Delete All Student Data
                         </Button>

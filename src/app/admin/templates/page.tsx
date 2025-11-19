@@ -141,15 +141,12 @@ export default function TemplatesPage() {
     <div className="flex h-screen flex-col bg-muted print:bg-white no-print">
       <header className="flex-shrink-0 border-b bg-background z-10 no-print">
         <div className="flex flex-wrap items-center justify-between gap-4 p-4">
-          <div className="flex items-center gap-2">
-            <Button onClick={() => router.back()} variant="outline" size="icon" className="md:hidden">
-                <ArrowLeft className="h-4 w-4" />
-            </Button>
-             <Button onClick={() => router.back()} variant="outline" className="hidden md:flex">
+          <div className="flex items-center gap-4">
+            <Button onClick={() => router.back()} variant="outline" className="flex">
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 Back
             </Button>
-            <div>
+            <div className="hidden sm:block">
               <h1 className="text-2xl font-bold tracking-tight">
                 Result Template Builder
               </h1>
@@ -158,23 +155,22 @@ export default function TemplatesPage() {
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-4">
-            <Input placeholder="Template Name" className="w-48" value={templateName} onChange={(e) => setTemplateName(e.target.value)} />
-            <Input placeholder="School Name" className="w-64" value={schoolName} onChange={(e) => setSchoolName(e.target.value)} />
-
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
+            <Input placeholder="Template Name" className="w-full sm:w-48" value={templateName} onChange={(e) => setTemplateName(e.target.value)} />
+            <Input placeholder="School Name" className="w-full sm:w-64" value={schoolName} onChange={(e) => setSchoolName(e.target.value)} />
           </div>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={loadSavedTemplate} disabled={templateLoading}>
+          <div className="flex gap-2 w-full sm:w-auto">
+            <Button variant="outline" onClick={loadSavedTemplate} disabled={templateLoading} className="flex-1 sm:flex-none">
               {templateLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Database className="mr-2 h-4 w-4" />}
               Load Saved
             </Button>
-            <Button variant="outline" onClick={() => window.print()}>
+            <Button variant="outline" onClick={() => window.print()} className="flex-1 sm:flex-none">
               <Eye className="mr-2 h-4 w-4" />
-              Preview PDF
+              Preview
             </Button>
-            <Button onClick={handleSaveTemplate} disabled={isSaving}>
+            <Button onClick={handleSaveTemplate} disabled={isSaving} className="flex-1 sm:flex-none">
               {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-              {isSaving ? 'Saving...' : 'Save Template'}
+              {isSaving ? 'Saving...' : 'Save'}
             </Button>
           </div>
         </div>

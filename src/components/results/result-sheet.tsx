@@ -135,15 +135,15 @@ export function ResultSheet({
         return;
       }
       
-      const studentsInClassRef = collection(firestore, 'classrooms', classroom.id, 'students');
-      const studentsInClassSnapshot = await getDocs(studentsInClassRef);
+      const enrollmentsQuery = query(collection(firestore, 'enrollments'), where('classroomId', '==', classroom.id));
+      const enrollmentsSnapshot = await getDocs(enrollmentsQuery);
       
-      if (studentsInClassSnapshot.empty) {
+      if (enrollmentsSnapshot.empty) {
         setClassPopulation(0);
         return;
       }
       
-      const studentIds = studentsInClassSnapshot.docs.map(d => d.data().studentId);
+      const studentIds = enrollmentsSnapshot.docs.map(d => d.data().studentId);
       
       if (studentIds.length === 0) {
         setClassPopulation(0);
@@ -256,7 +256,7 @@ export function ResultSheet({
 
 
   if (isLoading) {
-    return <div className="relative mx-auto w-full aspect-[210/297] bg-white p-6 shadow-lg"><Skeleton className="h-full w-full" /></div>;
+    return <div className="relative mx-auto w-full max-w-[794px] aspect-[210/297] bg-white p-6 shadow-lg"><Skeleton className="h-full w-full" /></div>;
   }
   
   if (!isForTemplateBuilder && !student) {
@@ -274,7 +274,7 @@ export function ResultSheet({
 
   // --- RENDER ---
   return (
-    <div className="relative w-[794px] min-h-[1250px] bg-white text-black print:shadow-none print:m-0 print:p-0 print:w-full print:h-auto flex flex-col p-6 border-4 border-black">
+    <div className="relative w-full max-w-[794px] mx-auto min-h-[1250px] scale-[0.3] sm:scale-[0.5] md:scale-[0.7] lg:scale-100 origin-top-left sm:origin-top bg-white text-black print:shadow-none print:m-0 print:p-0 print:w-full print:h-auto print:scale-100 flex flex-col p-6 border-4 border-black">
         <div className="absolute inset-0 z-0 flex items-center justify-center pointer-events-none">
             <Image src="/Logo.jpg" alt="School Watermark" width={400} height={400} className="opacity-10" />
         </div>
@@ -390,7 +390,7 @@ export function ResultSheet({
                  <div className="flex-grow min-h-0"></div>
                 
                  {/* This footer now acts as the second page content */}
-                <footer className="text-sm print:break-before-page" style={{ pageBreakBefore: 'always' }}>
+                <footer className="text-base print:break-before-page" style={{ pageBreakBefore: 'always' }}>
                     <section className='border border-black p-1 flex flex-col gap-1'>
                         <div className="grid grid-cols-[1fr_1fr_2fr] gap-x-2 pt-1">
                             {settings.gradingKey.visible && (
@@ -460,8 +460,8 @@ export function ResultSheet({
 
                         {settings.remarks.visible && (
                             <div className="pt-2 space-y-1">
-                                <div><h3 className="font-bold text-black text-sm">Teacher's Remarks:</h3><p className="min-h-[20px] rounded-md border-b border-black p-1 text-xs">{termResult?.teacherRemark || ' '}</p></div>
-                                <div><h3 className="font-bold text-black text-sm">Head Teacher's Remarks:</h3><p className="min-h-[20px] rounded-md border-b border-black p-1 text-xs">{termResult?.headTeacherRemark || ' '}</p></div>
+                                <div><h3 className="font-bold text-black text-sm">Teacher's Remarks:</h3><p className="min-h-[20px] rounded-md border-b border-black p-1 text-sm">{termResult?.teacherRemark || ' '}</p></div>
+                                <div><h3 className="font-bold text-black text-sm">Head Teacher's Remarks:</h3><p className="min-h-[20px] rounded-md border-b border-black p-1 text-sm">{termResult?.headTeacherRemark || ' '}</p></div>
                             </div>
                         )}
                         {settings.signatures.visible && (
