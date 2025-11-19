@@ -84,15 +84,11 @@ export default function ProfilePage() {
 
   // --- Form Submission ---
   const onSubmit = async (values: FormValues) => {
-    if (!userRef) return;
-    
-    // For hardcoded users without a firestore doc, we can't save.
-    // In a real app, you might want to create the doc on first save.
-    if (!userDataFromFirestore && user) {
+    if (!userRef) {
         toast({
             variant: 'destructive',
-            title: 'Update Not Supported',
-            description: "This user's profile cannot be updated from this page.",
+            title: 'Error',
+            description: 'Could not save profile. User reference not found.',
         });
         return;
     }
