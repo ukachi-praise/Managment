@@ -15,19 +15,20 @@ export default function LoginPage() {
   const router = useRouter();
 
   useEffect(() => {
+    // If the auth state is still loading, do nothing.
     if (isLoading) {
-      return; // Wait for the auth state to be determined
+      return;
     }
 
+    // Once loading is complete, if the user is logged in, redirect them.
     if (isLoggedIn && user) {
-      // If the user is logged in, redirect them to the appropriate dashboard
       const dashboard = user.role === 'Admin' ? '/admin/dashboard' : '/teacher/dashboard';
       router.replace(dashboard);
     }
   }, [isLoading, isLoggedIn, user, router]);
 
-  // While checking auth state or redirecting, show a loader
-  if (isLoading || isLoggedIn) {
+  // Show a loader while the auth state is being determined or if a redirect is in progress.
+  if (isLoading || (isLoggedIn && user)) {
     return (
       <div className="flex h-screen w-full items-center justify-center">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
@@ -36,7 +37,7 @@ export default function LoginPage() {
     );
   }
 
-  // If not logged in, show the login form
+  // Only render the login form if not loading and not logged in.
   return (
     <div className="relative min-h-screen w-full">
       <Image
