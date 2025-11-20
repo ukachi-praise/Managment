@@ -31,7 +31,6 @@ import Image from 'next/image';
 import { format } from 'date-fns';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Separator } from '@/components/ui/separator';
-import { gradeSoftSkills, GradeSoftSkillsOutput } from '@/ai/flows/grade-soft-skills-flow';
 
 // --- TYPE DEFINITIONS ---
 export type StudentData = { id: string; name: string; admissionNumber: string; isDeleted?: boolean; };
@@ -59,6 +58,11 @@ export type TermResult = {
   daysAttended?: number;
   teacherRemark?: string;
   headTeacherRemark?: string;
+};
+
+type SoftSkillScore = {
+    skillName: string;
+    score: number;
 };
 
 
@@ -99,7 +103,7 @@ export const ResultSheet = forwardRef<HTMLDivElement, ResultSheetProps>(({
   
   const [termResult, setTermResult] = useState<TermResult | null>(null);
   const [classPopulation, setClassPopulation] = useState<number | null>(null);
-  const [softSkillScores, setSoftSkillScores] = useState<GradeSoftSkillsOutput['softSkills']>([]);
+  const [softSkillScores, setSoftSkillScores] = useState<SoftSkillScore[]>([]);
 
 
   // --- DATA FETCHING ---
@@ -220,24 +224,26 @@ export const ResultSheet = forwardRef<HTMLDivElement, ResultSheetProps>(({
   }, [resultEntries]);
 
   useEffect(() => {
+    // This effect now runs only on the client-side after hydration.
+    const allSoftSkills = [
+        "Punctuality", "Neatness", "Creativity", "Honesty", 
+        "Communication", "Teamwork", "Attentiveness", 
+        "Self Control", "Leadership", "Initiative"
+    ];
+
     if (isForTemplateBuilder) {
-      const dummySkills = [
-          "Punctuality", "Neatness", "Creativity", "Honesty", 
-          "Communication", "Teamwork", "Attentiveness", 
-          "Self Control", "Leadership", "Initiative"
-      ].map(skill => ({ skillName: skill, score: 5 }));
+      const dummySkills = allSoftSkills.map(skill => ({ skillName: skill, score: 5 }));
       setSoftSkillScores(dummySkills);
       return;
     }
 
-    if (overall.average && parseFloat(overall.average) > 0) {
-      gradeSoftSkills({ overallAverage: parseFloat(overall.average) })
-        .then(result => {
-          setSoftSkillScores(result.softSkills);
-        })
-        .catch(console.error);
-    }
-  }, [overall.average, isForTemplateBuilder]);
+    const scores = [3, 4, 5];
+    const generatedScores = allSoftSkills.map(skill => ({
+      skillName: skill,
+      score: scores[Math.floor(Math.random() * scores.length)]
+    }));
+    setSoftSkillScores(generatedScores);
+  }, [isForTemplateBuilder, student.id]); // Depends on student ID to re-randomize for different students
   
   const scoreTotals = useMemo(() => {
     if (!resultEntries || resultEntries.length === 0) {
@@ -298,7 +304,7 @@ export const ResultSheet = forwardRef<HTMLDivElement, ResultSheetProps>(({
       return <div className="rounded-lg border bg-card p-8">Student data could not be loaded.</div>
   }
   
-  const allSoftSkills = [
+  const allSoftSkillsList = [
     "Punctuality", "Neatness", "Creativity",
     "Honesty", "Communication", "Teamwork",
     "Attentiveness", "Self Control", "Leadership", "Initiative"
@@ -306,8 +312,8 @@ export const ResultSheet = forwardRef<HTMLDivElement, ResultSheetProps>(({
 
   const softSkillsMap = new Map(softSkillScores.map(s => [s.skillName, s.score]));
   
-  const softSkillsCol1 = allSoftSkills.slice(0, 6);
-  const softSkillsCol2 = allSoftSkills.slice(6);
+  const softSkillsCol1 = allSoftSkillsList.slice(0, 6);
+  const softSkillsCol2 = allSoftSkillsList.slice(6);
 
 
   // --- RENDER ---
