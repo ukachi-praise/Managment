@@ -73,7 +73,7 @@ const initialSettings: TemplateSettings = { studentInfo: { fontSize: 12, visible
 
 // --- HELPER COMPONENTS ---
 const StudentInfoDetail = ({ label, value, isLoading = false }: { label: string, value?: string | React.ReactNode, isLoading?: boolean }) => (
-    <div className="flex text-xs">
+    <div className="flex text-sm">
         <span className="font-semibold w-[90px] shrink-0">{label}:</span>
         <span className="flex-1 border-b border-dotted border-black">
             {isLoading ? <Skeleton className="h-4 w-24" /> : value}
