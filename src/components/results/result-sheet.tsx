@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useMemo, useEffect, forwardRef } from 'react';
@@ -388,7 +389,7 @@ export const ResultSheet = forwardRef<HTMLDivElement, ResultSheetProps>(({
                                             <TableCell className="border-b border-r border-black p-1 text-lg font-semibold">
                                                 <div className="font-semibold">{entry.subjectName}</div>
                                                 {entry.subSubjects && entry.subSubjects.length > 0 && (
-                                                    <div className="pl-2 text-xs text-muted-foreground">
+                                                    <div className="pl-2 text-xs text-zinc-600">
                                                         {entry.subSubjects.map((sub, i) => (
                                                             <div key={i}>{sub}</div>
                                                         ))}
@@ -504,6 +505,7 @@ export const ResultSheet = forwardRef<HTMLDivElement, ResultSheetProps>(({
 
                         {settings.remarks.visible && (
                             <div className="pt-2 space-y-1">
+                                <div><h3 className="font-bold text-black text-sm">Class Teacher's Name:</h3><p className="min-h-[20px] rounded-md border-b border-black p-1 text-sm">{classroom.teacherName || ' '}</p></div>
                                 <div><h3 className="font-bold text-black text-sm">Teacher's Remarks:</h3><p className="min-h-[20px] rounded-md border-b border-black p-1 text-sm">{termResult?.teacherRemark || ' '}</p></div>
                                 <div><h3 className="font-bold text-black text-sm">Head Teacher's Remarks:</h3><p className="min-h-[20px] rounded-md border-b border-black p-1 text-sm">{termResult?.headTeacherRemark || ' '}</p></div>
                             </div>
@@ -523,3 +525,5 @@ export const ResultSheet = forwardRef<HTMLDivElement, ResultSheetProps>(({
 });
 
 ResultSheet.displayName = 'ResultSheet';
+
+    
