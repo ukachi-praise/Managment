@@ -84,6 +84,7 @@ const StudentInfoDetail = ({ label, value, isLoading = false }: { label: string,
 interface ResultSheetProps {
   student: StudentData;
   classroom: Classroom;
+  classPopulation: number | null;
   templateData?: SavedTemplateData; // Optional, for template builder
   isForTemplateBuilder?: boolean; // Flag to indicate context
   resultEntries?: ResultEntry[]; // Optional, for template builder
@@ -93,7 +94,8 @@ interface ResultSheetProps {
 // --- MAIN COMPONENT ---
 export const ResultSheet = forwardRef<HTMLDivElement, ResultSheetProps>(({ 
   student, 
-  classroom, 
+  classroom,
+  classPopulation,
   templateData,
   isForTemplateBuilder = false,
   resultEntries: templateResultEntries, // Renamed to avoid conflict
@@ -103,7 +105,6 @@ export const ResultSheet = forwardRef<HTMLDivElement, ResultSheetProps>(({
   const studentId = student.id;
   
   const [termResult, setTermResult] = useState<TermResult | null>(null);
-  const [classPopulation, setClassPopulation] = useState<number | null>(null);
   const [softSkillScores, setSoftSkillScores] = useState<SoftSkillScore[]>([]);
 
 
@@ -134,53 +135,6 @@ export const ResultSheet = forwardRef<HTMLDivElement, ResultSheetProps>(({
     });
     return () => unsubscribe();
   }, [termResultRef, isForTemplateBuilder]);
-
-  useEffect(() => {
-    const fetchClassPopulation = async () => {
-      if (isForTemplateBuilder || !firestore || !classroom?.id) {
-        setClassPopulation(isForTemplateBuilder ? 25 : null);
-        return;
-      }
-      
-      const enrollmentsQuery = query(collection(firestore, 'enrollments'), where('classroomId', '==', classroom.id));
-      const enrollmentsSnapshot = await getDocs(enrollmentsQuery);
-      
-      if (enrollmentsSnapshot.empty) {
-        setClassPopulation(0);
-        return;
-      }
-      
-      const studentIds = enrollmentsSnapshot.docs.map(d => d.data().studentId);
-      
-      if (studentIds.length === 0) {
-        setClassPopulation(0);
-        return;
-      }
-      
-      let activeStudentsCount = 0;
-      const studentBatches = [];
-      for (let i = 0; i < studentIds.length; i += 30) {
-        const batch = studentIds.slice(i, i + 30);
-         if (batch.length > 0) {
-            const q = query(collection(firestore, 'students'), where('__name__', 'in', batch));
-            studentBatches.push(getDocs(q));
-        }
-      }
-
-      const snapshots = await Promise.all(studentBatches);
-      snapshots.forEach(studentsSnapshot => {
-        studentsSnapshot.forEach(doc => {
-            if (!doc.data().isDeleted) {
-                activeStudentsCount++;
-            }
-        });
-      });
-
-      setClassPopulation(activeStudentsCount);
-    };
-
-    fetchClassPopulation();
-  }, [firestore, classroom?.id, isForTemplateBuilder]);
 
 
   // --- DATA PROCESSING & MEMOIZATION ---
@@ -348,23 +302,17 @@ export const ResultSheet = forwardRef<HTMLDivElement, ResultSheetProps>(({
 
             <div className="flex-grow overflow-hidden flex flex-col">
                 {settings.studentInfo.visible && (
-                    <div className="mb-4 p-2 border border-black" style={{ fontSize: `${settings.studentInfo.fontSize}px` }}>
-                        <div className="flex flex-col gap-1">
-                            <div className="flex gap-4">
-                                <div className="w-1/3"><StudentInfoDetail label="Student Name" value={student.name} /></div>
-                                <div className="w-1/3"><StudentInfoDetail label="Admission No" value={student.admissionNumber} /></div>
-                                <div className="w-1/3"><StudentInfoDetail label="Class" value={classroom?.name} /></div>
-                            </div>
-                            <div className="flex gap-4">
-                                <div className="w-1/3"><StudentInfoDetail label="No. in class" value={classPopulation?.toString() ?? '...'} /></div>
-                                <div className="w-1/3"><StudentInfoDetail label="Days Absent" value={daysAbsent} /></div>
-                                <div className="w-1/3"><StudentInfoDetail label="Days Attended" value={isForTemplateBuilder ? '--' : termResult?.daysAttended?.toString() || '--'} /></div>
-                            </div>
-                            <div className="flex gap-4">
-                                <div className="w-1/3"><StudentInfoDetail label="School Open" value={isForTemplateBuilder ? '65' : schoolSettings?.daysSchoolOpened?.toString()} /></div>
-                                <div className="w-1/3"><StudentInfoDetail label="Term Ending" value={formattedTermEndingDate} /></div>
-                                <div className="w-1/3"><StudentInfoDetail label="Resumption" value={formattedResumptionDate} /></div>
-                            </div>
+                    <div className="mb-4 p-2 border border-black" style={{ fontSize: `14px` }}>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-y-1 gap-x-4">
+                            <StudentInfoDetail label="Student Name" value={student.name} />
+                            <StudentInfoDetail label="Admission No" value={student.admissionNumber} />
+                            <StudentInfoDetail label="Class" value={classroom?.name} />
+                            <StudentInfoDetail label="No. in class" value={classPopulation?.toString() ?? '...'} />
+                            <StudentInfoDetail label="Days Absent" value={daysAbsent} />
+                            <StudentInfoDetail label="Days Attended" value={isForTemplateBuilder ? '--' : termResult?.daysAttended?.toString() || '--'} />
+                            <StudentInfoDetail label="School Open" value={isForTemplateBuilder ? '65' : schoolSettings?.daysSchoolOpened?.toString()} />
+                            <StudentInfoDetail label="Term Ending" value={formattedTermEndingDate} />
+                            <StudentInfoDetail label="Resumption" value={formattedResumptionDate} />
                         </div>
                     </div>
                 )}
@@ -504,7 +452,7 @@ export const ResultSheet = forwardRef<HTMLDivElement, ResultSheetProps>(({
                         </div>
 
                         {settings.remarks.visible && (
-                            <div className="pt-2 space-y-1">
+                             <div className="pt-2 space-y-1">
                                 <div><h3 className="font-bold text-black text-sm">Class Teacher's Name:</h3><p className="min-h-[20px] rounded-md border-b border-black p-1 text-sm">{classroom.teacherName || ' '}</p></div>
                                 <div><h3 className="font-bold text-black text-sm">Teacher's Remarks:</h3><p className="min-h-[20px] rounded-md border-b border-black p-1 text-sm">{termResult?.teacherRemark || ' '}</p></div>
                                 <div><h3 className="font-bold text-black text-sm">Head Teacher's Remarks:</h3><p className="min-h-[20px] rounded-md border-b border-black p-1 text-sm">{termResult?.headTeacherRemark || ' '}</p></div>

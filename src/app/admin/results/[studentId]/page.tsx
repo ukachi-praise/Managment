@@ -2,14 +2,14 @@
 'use client';
 
 import { useParams, useRouter } from 'next/navigation';
-import { useMemo, useRef, useState } from 'react';
+import { useMemo, useRef, useState, useEffect } from 'react';
 import {
   useFirestore,
 } from '@/firebase/provider';
 import { useDoc } from '@/firebase/firestore/use-doc';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { useMemoFirebase } from '@/firebase/provider';
-import { collection, query, where, doc } from 'firebase/firestore';
+import { collection, query, where, doc, getDocs } from 'firebase/firestore';
 import { ResultSheet } from '@/components/results/result-sheet';
 import { Loader2, ArrowLeft, Printer } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -20,9 +20,10 @@ import { useToast } from '@/hooks/use-toast';
 
 
 // --- TYPE DEFINITIONS ---
-type Student = { id: string; name: string; admissionNumber: string; };
+type Student = { id: string; name: string; admissionNumber: string; isDeleted?: boolean; };
 type Classroom = { id: string; name: string; teacherId?: string; };
 type User = { id: string; name: string; };
+type Enrollment = { id: string; studentId: string; classroomId: string };
 
 
 export default function ResultSheetPage() {
@@ -33,6 +34,7 @@ export default function ResultSheetPage() {
   const resultSheetRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   const [isExporting, setIsExporting] = useState(false);
+  const [classPopulation, setClassPopulation] = useState<number | null>(null);
 
 
   // --- DATA FETCHING ---
@@ -46,7 +48,7 @@ export default function ResultSheetPage() {
     () => (firestore ? query(collection(firestore, 'enrollments'), where('studentId', '==', studentId)) : null),
     [firestore, studentId]
   );
-  const { data: enrollments, isLoading: enrollmentsLoading } = useCollection(enrollmentsQuery);
+  const { data: enrollments, isLoading: enrollmentsLoading } = useCollection<Enrollment>(enrollmentsQuery);
 
   const classroomId = useMemo(() => enrollments?.[0]?.classroomId, [enrollments]);
 
@@ -63,8 +65,55 @@ export default function ResultSheetPage() {
     [firestore, teacherId]
   );
   const { data: teacher, isLoading: teacherLoading } = useDoc<User>(teacherRef);
+  
+  useEffect(() => {
+    const fetchClassPopulation = async () => {
+      if (!firestore || !classroomId) {
+        return;
+      }
+      
+      const enrollmentsInClassQuery = query(collection(firestore, 'enrollments'), where('classroomId', '==', classroomId));
+      const enrollmentsSnapshot = await getDocs(enrollmentsInClassQuery);
+      
+      if (enrollmentsSnapshot.empty) {
+        setClassPopulation(0);
+        return;
+      }
+      
+      const studentIds = enrollmentsSnapshot.docs.map(d => d.data().studentId);
+      
+      if (studentIds.length === 0) {
+        setClassPopulation(0);
+        return;
+      }
+      
+      let activeStudentsCount = 0;
+      const studentBatches = [];
+      for (let i = 0; i < studentIds.length; i += 30) {
+        const batch = studentIds.slice(i, i + 30);
+         if (batch.length > 0) {
+            const q = query(collection(firestore, 'students'), where('__name__', 'in', batch));
+            studentBatches.push(getDocs(q));
+        }
+      }
 
-  const isLoading = studentLoading || classroomLoading || enrollmentsLoading || teacherLoading;
+      const snapshots = await Promise.all(studentBatches);
+      snapshots.forEach(studentsSnapshot => {
+        studentsSnapshot.forEach(doc => {
+            if (!doc.data().isDeleted) {
+                activeStudentsCount++;
+            }
+        });
+      });
+
+      setClassPopulation(activeStudentsCount);
+    };
+
+    fetchClassPopulation();
+  }, [firestore, classroomId]);
+
+
+  const isLoading = studentLoading || classroomLoading || enrollmentsLoading || teacherLoading || classPopulation === null;
   
   const exportA4PDF = async () => {
     const node = resultSheetRef.current;
@@ -177,7 +226,7 @@ export default function ResultSheetPage() {
         </Button>
       </div>
       <div className="max-w-4xl mx-auto space-y-4">
-         <ResultSheet ref={resultSheetRef} student={student} classroom={finalClassroomData} />
+         <ResultSheet ref={resultSheetRef} student={student} classroom={finalClassroomData} classPopulation={classPopulation} />
       </div>
     </div>
   );
