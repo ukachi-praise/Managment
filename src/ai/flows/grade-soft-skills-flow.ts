@@ -42,9 +42,6 @@ const prompt = ai.definePrompt({
   name: 'gradeSoftSkillsPrompt',
   input: {schema: GradeSoftSkillsInputSchema},
   output: {schema: GradeSoftSkillsOutputSchema},
-  config: {
-    retries: 3,
-  },
   prompt: `You are an expert educator who needs to assess a student's soft skills based on their academic performance.
   
   Student's Overall Average: {{{overallAverage}}}%
@@ -65,6 +62,9 @@ const gradeSoftSkillsFlow = ai.defineFlow(
     name: 'gradeSoftSkillsFlow',
     inputSchema: GradeSoftSkillsInputSchema,
     outputSchema: GradeSoftSkillsOutputSchema,
+    config: {
+      retries: 3,
+    },
   },
   async input => {
     const {output} = await prompt(input);
