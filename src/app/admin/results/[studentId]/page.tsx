@@ -34,8 +34,7 @@ export default function ResultSheetPage() {
   const resultSheetRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   const [isExporting, setIsExporting] = useState(false);
-  const [classPopulation, setClassPopulation] = useState<number | null>(null);
-
+  
 
   // --- DATA FETCHING ---
   const studentRef = useMemoFirebase(
@@ -66,54 +65,8 @@ export default function ResultSheetPage() {
   );
   const { data: teacher, isLoading: teacherLoading } = useDoc<User>(teacherRef);
   
-  useEffect(() => {
-    const fetchClassPopulation = async () => {
-      if (!firestore || !classroomId) {
-        return;
-      }
-      
-      const enrollmentsInClassQuery = query(collection(firestore, 'enrollments'), where('classroomId', '==', classroomId));
-      const enrollmentsSnapshot = await getDocs(enrollmentsInClassQuery);
-      
-      if (enrollmentsSnapshot.empty) {
-        setClassPopulation(0);
-        return;
-      }
-      
-      const studentIds = enrollmentsSnapshot.docs.map(d => d.data().studentId);
-      
-      if (studentIds.length === 0) {
-        setClassPopulation(0);
-        return;
-      }
-      
-      let activeStudentsCount = 0;
-      const studentBatches = [];
-      for (let i = 0; i < studentIds.length; i += 30) {
-        const batch = studentIds.slice(i, i + 30);
-         if (batch.length > 0) {
-            const q = query(collection(firestore, 'students'), where('__name__', 'in', batch));
-            studentBatches.push(getDocs(q));
-        }
-      }
-
-      const snapshots = await Promise.all(studentBatches);
-      snapshots.forEach(studentsSnapshot => {
-        studentsSnapshot.forEach(doc => {
-            if (!doc.data().isDeleted) {
-                activeStudentsCount++;
-            }
-        });
-      });
-
-      setClassPopulation(activeStudentsCount);
-    };
-
-    fetchClassPopulation();
-  }, [firestore, classroomId]);
-
-
-  const isLoading = studentLoading || classroomLoading || enrollmentsLoading || teacherLoading || classPopulation === null;
+  
+  const isLoading = studentLoading || classroomLoading || enrollmentsLoading || teacherLoading;
   
   const exportA4PDF = async () => {
     const node = resultSheetRef.current;
@@ -226,7 +179,7 @@ export default function ResultSheetPage() {
         </Button>
       </div>
       <div className="max-w-4xl mx-auto space-y-4">
-         <ResultSheet ref={resultSheetRef} student={student} classroom={finalClassroomData} classPopulation={classPopulation} />
+         <ResultSheet ref={resultSheetRef} student={student} classroom={finalClassroomData} classPopulation={null} />
       </div>
     </div>
   );
