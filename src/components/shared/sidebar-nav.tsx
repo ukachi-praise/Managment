@@ -24,6 +24,7 @@ import {
   SidebarHeader,
   SidebarMenu,
   SidebarMenuItem,
+  useSidebar,
 } from '@/components/ui/sidebar';
 import { Logo } from './logo';
 import { Button } from '../ui/button';
@@ -59,6 +60,7 @@ export function SidebarNav({ role }: { role: 'admin' | 'teacher' }) {
   const { user } = useUser();
   const firestore = useFirestore();
   const [teacherClassroomId, setTeacherClassroomId] = useState<string | null>(null);
+  const { setOpenMobile } = useSidebar();
 
 
   useEffect(() => {
@@ -98,6 +100,10 @@ export function SidebarNav({ role }: { role: 'admin' | 'teacher' }) {
     return exact ? pathname === href : pathname.startsWith(href);
   }
 
+  const handleLinkClick = () => {
+    setOpenMobile(false);
+  }
+
   return (
     <Sidebar>
       <SidebarHeader>
@@ -113,6 +119,7 @@ export function SidebarNav({ role }: { role: 'admin' | 'teacher' }) {
                     asChild
                     variant={isActive(href, item.exact) ? 'secondary' : 'ghost'}
                     className="w-full justify-start"
+                    onClick={handleLinkClick}
                 >
                     <Link href={href}>
                     <item.icon className="mr-2 h-4 w-4" />
