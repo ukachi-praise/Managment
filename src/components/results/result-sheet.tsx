@@ -31,6 +31,7 @@ import Image from 'next/image';
 import { format } from 'date-fns';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Separator } from '@/components/ui/separator';
+import { gradeSoftSkills, GradeSoftSkillsOutput } from '@/ai/flows/grade-soft-skills-flow';
 
 // --- TYPE DEFINITIONS ---
 export type StudentData = { id: string; name: string; admissionNumber: string; isDeleted?: boolean; };
@@ -98,6 +99,7 @@ export function ResultSheet({
   
   const [termResult, setTermResult] = useState<TermResult | null>(null);
   const [classPopulation, setClassPopulation] = useState<number | null>(null);
+  const [softSkillScores, setSoftSkillScores] = useState<GradeSoftSkillsOutput['softSkills']>([]);
 
 
   // --- DATA FETCHING ---
@@ -135,7 +137,6 @@ export function ResultSheet({
         return;
       }
       
-      // Fetch all enrollments for the class
       const enrollmentsQuery = query(collection(firestore, 'enrollments'), where('classroomId', '==', classroom.id));
       const enrollmentsSnapshot = await getDocs(enrollmentsQuery);
       
@@ -151,22 +152,24 @@ export function ResultSheet({
         return;
       }
       
-      // Fetch all student documents in batches to check their `isDeleted` flag
       let activeStudentsCount = 0;
       const studentBatches = [];
       for (let i = 0; i < studentIds.length; i += 30) {
-        studentBatches.push(studentIds.slice(i, i + 30));
+        const batch = studentIds.slice(i, i + 30);
+         if (batch.length > 0) {
+            const q = query(collection(firestore, 'students'), where('__name__', 'in', batch));
+            studentBatches.push(getDocs(q));
+        }
       }
 
-      for (const batch of studentBatches) {
-        const q = query(collection(firestore, 'students'), where('__name__', 'in', batch));
-        const studentsSnapshot = await getDocs(q);
+      const snapshots = await Promise.all(studentBatches);
+      snapshots.forEach(studentsSnapshot => {
         studentsSnapshot.forEach(doc => {
-          if (!doc.data().isDeleted) {
-            activeStudentsCount++;
-          }
+            if (!doc.data().isDeleted) {
+                activeStudentsCount++;
+            }
         });
-      }
+      });
 
       setClassPopulation(activeStudentsCount);
     };
@@ -215,6 +218,26 @@ export function ResultSheet({
     const { grade } = calculateGrade(average);
     return { average: average.toFixed(2), grade };
   }, [resultEntries]);
+
+  useEffect(() => {
+    if (isForTemplateBuilder) {
+      const dummySkills = [
+          "Punctuality", "Neatness", "Creativity", "Honesty", 
+          "Communication", "Teamwork", "Attentiveness", 
+          "Self Control", "Leadership", "Initiative"
+      ].map(skill => ({ skillName: skill, score: 5 }));
+      setSoftSkillScores(dummySkills);
+      return;
+    }
+
+    if (overall.average && parseFloat(overall.average) > 0) {
+      gradeSoftSkills({ overallAverage: parseFloat(overall.average) })
+        .then(result => {
+          setSoftSkillScores(result.softSkills);
+        })
+        .catch(console.error);
+    }
+  }, [overall.average, isForTemplateBuilder]);
   
   const scoreTotals = useMemo(() => {
     if (!resultEntries || resultEntries.length === 0) {
@@ -280,6 +303,9 @@ export function ResultSheet({
     "Honesty", "Communication", "Teamwork",
     "Attentiveness", "Self Control", "Leadership", "Initiative"
   ];
+
+  const softSkillsMap = new Map(softSkillScores.map(s => [s.skillName, s.score]));
+  
   const softSkillsCol1 = allSoftSkills.slice(0, 6);
   const softSkillsCol2 = allSoftSkills.slice(6);
 
@@ -450,7 +476,7 @@ export function ResultSheet({
                                                 {softSkillsCol1.map((skill, skillIndex) => (
                                                     <TableRow key={skillIndex}>
                                                         <TableCell className="font-medium p-0.5 h-auto text-xs border border-black text-black">{skill}</TableCell>
-                                                        <TableCell className="text-right p-0.5 h-auto text-xs border border-black w-[20px]">5</TableCell>
+                                                        <TableCell className="text-right p-0.5 h-auto text-xs border border-black w-[20px]">{softSkillsMap.get(skill) || '--'}</TableCell>
                                                     </TableRow>
                                                 ))}
                                             </TableBody>
@@ -460,7 +486,7 @@ export function ResultSheet({
                                                 {softSkillsCol2.map((skill, skillIndex) => (
                                                     <TableRow key={skillIndex}>
                                                         <TableCell className="font-medium p-0.5 h-auto text-xs border border-black text-black">{skill}</TableCell>
-                                                        <TableCell className="text-right p-0.5 h-auto text-xs border border-black w-[20px]">5</TableCell>
+                                                        <TableCell className="text-right p-0.5 h-auto text-xs border border-black w-[20px]">{softSkillsMap.get(skill) || '--'}</TableCell>
                                                     </TableRow>
                                                 ))}
                                             </TableBody>
