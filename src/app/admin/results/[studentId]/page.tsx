@@ -21,8 +21,9 @@ import { useToast } from '@/hooks/use-toast';
 
 // --- TYPE DEFINITIONS ---
 type Student = { id: string; name: string; admissionNumber: string; isDeleted?: boolean; };
-type Classroom = { id: string; name: string; teacherId?: string; teacherName?: string; };
+type Classroom = { id: string; name: string; teacherId?: string; };
 type Enrollment = { id: string; studentId: string; classroomId: string };
+type User = { id: string; name: string; };
 
 
 export default function ResultSheetPage() {
@@ -33,10 +34,8 @@ export default function ResultSheetPage() {
   const resultSheetRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   const [isExporting, setIsExporting] = useState(false);
-  const [classPopulation, setClassPopulation] = useState<number | null>(null);
   
-
-  // --- DATA FETCHING ---
+  // --- Data Fetching ---
   const studentRef = useMemoFirebase(
     () => (firestore && studentId ? doc(firestore, 'students', studentId) : null),
     [firestore, studentId]
@@ -44,7 +43,7 @@ export default function ResultSheetPage() {
   const { data: student, isLoading: studentLoading } = useDoc<Student>(studentRef);
   
   const enrollmentsQuery = useMemoFirebase(
-    () => (firestore ? query(collection(firestore, 'enrollments'), where('studentId', '==', studentId)) : null),
+    () => (firestore && studentId ? query(collection(firestore, 'enrollments'), where('studentId', '==', studentId)) : null),
     [firestore, studentId]
   );
   const { data: enrollments, isLoading: enrollmentsLoading } = useCollection<Enrollment>(enrollmentsQuery);
@@ -57,14 +56,13 @@ export default function ResultSheetPage() {
   );
   const { data: classroom, isLoading: classroomLoading } = useDoc<Classroom>(classroomRef);
 
-  // Fetch class population once classroomId is known
-  useEffect(() => {
-    if (!firestore || !classroomId) return;
-    const classEnrollmentsQuery = query(collection(firestore, 'enrollments'), where('classroomId', '==', classroomId));
-    getDocs(classEnrollmentsQuery).then(snapshot => {
-      setClassPopulation(snapshot.size);
-    });
-  }, [firestore, classroomId]);
+  const teacherId = useMemo(() => classroom?.teacherId, [classroom]);
+
+  const teacherRef = useMemoFirebase(
+    () => (firestore && teacherId ? doc(firestore, 'users', teacherId) : null),
+    [firestore, teacherId]
+  );
+  const { data: teacher } = useDoc<User>(teacherRef);
   
   
   const isLoading = studentLoading || classroomLoading || enrollmentsLoading;
@@ -174,7 +172,7 @@ export default function ResultSheetPage() {
         </Button>
       </div>
       <div className="max-w-4xl mx-auto space-y-4">
-         <ResultSheet ref={resultSheetRef} student={student} classroom={classroom} classPopulation={classPopulation} />
+         <ResultSheet ref={resultSheetRef} student={student} classroom={{ ...classroom, teacherName: teacher?.name }} />
       </div>
     </div>
   );

@@ -73,7 +73,7 @@ const initialSettings: TemplateSettings = { studentInfo: { fontSize: 12, visible
 
 // --- HELPER COMPONENTS ---
 const StudentInfoDetail = ({ label, value, isLoading = false }: { label: string, value?: string | React.ReactNode, isLoading?: boolean }) => (
-    <div className="flex text-sm">
+    <div className="flex text-xs">
         <span className="font-semibold w-[90px] shrink-0">{label}:</span>
         <span className="flex-1 border-b border-dotted border-black">
             {isLoading ? <Skeleton className="h-4 w-24" /> : value}
@@ -84,7 +84,6 @@ const StudentInfoDetail = ({ label, value, isLoading = false }: { label: string,
 interface ResultSheetProps {
   student: StudentData;
   classroom: Classroom;
-  classPopulation: number | null;
   templateData?: SavedTemplateData; // Optional, for template builder
   isForTemplateBuilder?: boolean; // Flag to indicate context
   resultEntries?: ResultEntry[]; // Optional, for template builder
@@ -95,7 +94,6 @@ interface ResultSheetProps {
 export const ResultSheet = forwardRef<HTMLDivElement, ResultSheetProps>(({ 
   student, 
   classroom,
-  classPopulation,
   templateData,
   isForTemplateBuilder = false,
   resultEntries: templateResultEntries, // Renamed to avoid conflict
@@ -106,6 +104,7 @@ export const ResultSheet = forwardRef<HTMLDivElement, ResultSheetProps>(({
   
   const [termResult, setTermResult] = useState<TermResult | null>(null);
   const [softSkillScores, setSoftSkillScores] = useState<SoftSkillScore[]>([]);
+  const [classPopulation, setClassPopulation] = useState<number | null>(null);
 
 
   // --- DATA FETCHING ---
@@ -135,6 +134,17 @@ export const ResultSheet = forwardRef<HTMLDivElement, ResultSheetProps>(({
     });
     return () => unsubscribe();
   }, [termResultRef, isForTemplateBuilder]);
+
+  useEffect(() => {
+    if (isForTemplateBuilder || !firestore || !termResult?.classroomId) return;
+    const fetchPopulation = async () => {
+        const enrollmentsRef = collection(firestore, 'enrollments');
+        const q = query(enrollmentsRef, where('classroomId', '==', termResult.classroomId));
+        const snapshot = await getDocs(q);
+        setClassPopulation(snapshot.size);
+    }
+    fetchPopulation();
+  }, [firestore, termResult?.classroomId, isForTemplateBuilder]);
 
 
   // --- DATA PROCESSING & MEMOIZATION ---
@@ -251,7 +261,7 @@ export const ResultSheet = forwardRef<HTMLDivElement, ResultSheetProps>(({
   }, [isForTemplateBuilder, termResult, schoolSettings]);
 
 
-  if (isLoading) {
+  if (isLoading && !isForTemplateBuilder) {
     return <div className="relative mx-auto w-full max-w-[794px] aspect-[210/297] bg-white p-6 shadow-lg"><Skeleton className="h-full w-full" /></div>;
   }
   
@@ -302,7 +312,7 @@ export const ResultSheet = forwardRef<HTMLDivElement, ResultSheetProps>(({
 
             <div className="flex-grow overflow-hidden flex flex-col">
                 {settings.studentInfo.visible && (
-                    <div className="mb-4 p-2 border border-black" style={{ fontSize: `14px` }}>
+                    <div className="mb-4 p-2 border border-black" style={{ fontSize: `12px` }}>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-y-1 gap-x-4">
                             <StudentInfoDetail label="Student Name" value={student.name} />
                             <StudentInfoDetail label="Admission No" value={student.admissionNumber} />
