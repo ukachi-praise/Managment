@@ -34,6 +34,8 @@ export default function ResultSheetPage() {
   const resultSheetRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   const [isExporting, setIsExporting] = useState(false);
+  const [teacher, setTeacher] = useState<User | null>(null);
+  const [classPopulation, setClassPopulation] = useState<number | null>(null);
   
   // --- Data Fetching ---
   const studentRef = useMemoFirebase(
@@ -56,16 +58,29 @@ export default function ResultSheetPage() {
   );
   const { data: classroom, isLoading: classroomLoading } = useDoc<Classroom>(classroomRef);
 
-  const teacherId = useMemo(() => classroom?.teacherId, [classroom]);
+  // --- Non-blocking fetch for teacher and class population ---
+  useEffect(() => {
+    async function fetchExtraData() {
+      if (!firestore || !classroom) return;
 
-  const teacherRef = useMemoFirebase(
-    () => (firestore && teacherId ? doc(firestore, 'users', teacherId) : null),
-    [firestore, teacherId]
-  );
-  // Fetch teacher separately to not block main loading state
-  const { data: teacher } = useDoc<User>(teacherRef);
-  
-  
+      // Fetch teacher name
+      if (classroom.teacherId) {
+        const teacherDocRef = doc(firestore, 'users', classroom.teacherId);
+        const teacherSnap = await getDocs(query(collection(firestore, 'users'), where('__name__', '==', classroom.teacherId)));
+        if (!teacherSnap.empty) {
+            setTeacher(teacherSnap.docs[0].data() as User);
+        }
+      }
+
+      // Fetch class population
+      const classEnrollmentsQuery = query(collection(firestore, 'enrollments'), where('classroomId', '==', classroom.id));
+      const classEnrollmentsSnap = await getDocs(classEnrollmentsQuery);
+      setClassPopulation(classEnrollmentsSnap.size);
+    }
+    fetchExtraData();
+  }, [firestore, classroom]);
+
+
   const isLoading = studentLoading || classroomLoading || enrollmentsLoading;
   
   const exportA4PDF = async () => {
@@ -173,7 +188,7 @@ export default function ResultSheetPage() {
         </Button>
       </div>
       <div className="max-w-4xl mx-auto space-y-4">
-         <ResultSheet ref={resultSheetRef} student={student} classroom={classroom} teacherName={teacher?.name} />
+         <ResultSheet ref={resultSheetRef} student={student} classroom={classroom} teacherName={teacher?.name} classPopulation={classPopulation} />
       </div>
     </div>
   );
