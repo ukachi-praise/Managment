@@ -35,7 +35,7 @@ import { Separator } from '@/components/ui/separator';
 
 // --- TYPE DEFINITIONS ---
 export type StudentData = { id: string; name: string; admissionNumber: string; isDeleted?: boolean; };
-export type Classroom = { id: string; name: string; teacherName?: string; };
+export type Classroom = { id: string; name: string; };
 export type SchoolSettingsData = { currentSession: string; currentTermId: string; daysSchoolOpened: number; nextTermResumptionDate: Timestamp | Date | string; termEndingDate?: Timestamp | Date | string; };
 export type TemplateSettings = { studentInfo: { fontSize: number; visible: boolean; }; header: { visible: boolean; }; subjectsTable: { visible: boolean; }; summary: { visible: boolean; }; softSkills: { visible: boolean; }; gradingKey: { visible: boolean; }; remarks: { visible: boolean; }; signatures: { visible: boolean; }; };
 export type SavedTemplateData = { name: string; schoolName: string; settings: TemplateSettings; };
@@ -84,27 +84,30 @@ const StudentInfoDetail = ({ label, value, isLoading = false }: { label: string,
 interface ResultSheetProps {
   student: StudentData;
   classroom: Classroom;
+  teacherName?: string; // Teacher's name is now a separate prop
   templateData?: SavedTemplateData; // Optional, for template builder
   isForTemplateBuilder?: boolean; // Flag to indicate context
   resultEntries?: ResultEntry[]; // Optional, for template builder
   overall?: { average: string, grade: string }; // Optional, for template builder
+  classPopulation?: number | null;
 }
 
 // --- MAIN COMPONENT ---
 export const ResultSheet = forwardRef<HTMLDivElement, ResultSheetProps>(({ 
   student, 
   classroom,
+  teacherName,
   templateData,
   isForTemplateBuilder = false,
   resultEntries: templateResultEntries, // Renamed to avoid conflict
-  overall: templateOverall // Renamed to avoid conflict
+  overall: templateOverall, // Renamed to avoid conflict
+  classPopulation
 }, ref) => {
   const firestore = useFirestore();
   const studentId = student.id;
   
   const [termResult, setTermResult] = useState<TermResult | null>(null);
   const [softSkillScores, setSoftSkillScores] = useState<SoftSkillScore[]>([]);
-  const [classPopulation, setClassPopulation] = useState<number | null>(null);
 
 
   // --- DATA FETCHING ---
@@ -134,17 +137,6 @@ export const ResultSheet = forwardRef<HTMLDivElement, ResultSheetProps>(({
     });
     return () => unsubscribe();
   }, [termResultRef, isForTemplateBuilder]);
-
-  useEffect(() => {
-    if (isForTemplateBuilder || !firestore || !termResult?.classroomId) return;
-    const fetchPopulation = async () => {
-        const enrollmentsRef = collection(firestore, 'enrollments');
-        const q = query(enrollmentsRef, where('classroomId', '==', termResult.classroomId));
-        const snapshot = await getDocs(q);
-        setClassPopulation(snapshot.size);
-    }
-    fetchPopulation();
-  }, [firestore, termResult?.classroomId, isForTemplateBuilder]);
 
 
   // --- DATA PROCESSING & MEMOIZATION ---
@@ -247,7 +239,7 @@ export const ResultSheet = forwardRef<HTMLDivElement, ResultSheetProps>(({
   const reportSession = isForTemplateBuilder ? '2023/2024' : (termResult?.sessionId || schoolSettings?.currentSession);
   const reportTermName = isForTemplateBuilder ? '1st Term' : (schoolSettings?.currentTermId ? termNames[schoolSettings.currentTermId] : 'N/A');
 
-  const isLoading = !isForTemplateBuilder && (settingsLoading || templateLoading || subjectsLoading || !termResultRef || classPopulation === null);
+  const isLoading = !isForTemplateBuilder && (settingsLoading || templateLoading || subjectsLoading || !termResultRef);
   
   const daysAbsent = useMemo(() => {
     if (isForTemplateBuilder) return '--';
@@ -317,7 +309,7 @@ export const ResultSheet = forwardRef<HTMLDivElement, ResultSheetProps>(({
                             <StudentInfoDetail label="Student Name" value={student.name} />
                             <StudentInfoDetail label="Admission No" value={student.admissionNumber} />
                             <StudentInfoDetail label="Class" value={classroom?.name} />
-                            <StudentInfoDetail label="No. in class" value={classPopulation?.toString() ?? '...'} />
+                            <StudentInfoDetail label="No. in class" value={classPopulation ? classPopulation.toString() : 'N/A'} />
                             <StudentInfoDetail label="Days Absent" value={daysAbsent} />
                             <StudentInfoDetail label="Days Attended" value={isForTemplateBuilder ? '--' : termResult?.daysAttended?.toString() || '--'} />
                             <StudentInfoDetail label="School Open" value={isForTemplateBuilder ? '65' : schoolSettings?.daysSchoolOpened?.toString()} />
@@ -407,7 +399,7 @@ export const ResultSheet = forwardRef<HTMLDivElement, ResultSheetProps>(({
                                         <TableRow><TableCell className="p-0.5 h-auto text-xs border border-black">80 – 100</TableCell><TableCell className="p-0.5 h-auto text-xs border border-black">A</TableCell><TableCell className="p-0.5 h-auto text-xs border border-black">Excellent</TableCell></TableRow>
                                         <TableRow><TableCell className="p-0.5 h-auto text-xs border border-black">70 – 79</TableCell><TableCell className="p-0.5 h-auto text-xs border border-black">B</TableCell><TableCell className="p-0.5 h-auto text-xs border border-black">Very Good</TableCell></TableRow>
                                         <TableRow><TableCell className="p-0.5 h-auto text-xs border border-black">60 – 69</TableCell><TableCell className="p-0.5 h-auto text-xs border border-black">C</TableCell><TableCell className="p-0.5 h-auto text-xs border border-black">Good</TableCell></TableRow>
-                                        <TableRow><TableCell className="p-0.5 h-auto text-xs border border-black">50 – 59</TableCell><TableCell className="p-0.5 h-auto text-xs border border-black">D</TableCell><TableCell className="p-0.5 h-auto text-xs border border-black">Fair</TableCell></TableRow>
+                                        <TableRow><TableCell className="p-0.5 h-auto text-xs border border-black">50 – 59</TableCell><TableCell className="p-0.5 h-auto text-xs border border-black">D</TableCell><TableCell className="p-0.5 h-auto text-xs border-black">Fair</TableCell></TableRow>
                                         <TableRow><TableCell className="p-0.5 h-auto text-xs border border-black">0 – 49</TableCell><TableCell className="p-0.5 h-auto text-xs border border-black">F</TableCell><TableCell className="p-0.5 h-auto text-xs border border-black">Fail</TableCell></TableRow>
                                     </TableBody>
                                 </Table>
@@ -463,7 +455,7 @@ export const ResultSheet = forwardRef<HTMLDivElement, ResultSheetProps>(({
 
                         {settings.remarks.visible && (
                              <div className="pt-2 space-y-1">
-                                <div><h3 className="font-bold text-black text-sm">Class Teacher's Name:</h3><p className="min-h-[20px] rounded-md border-b border-black p-1 text-sm">{classroom.teacherName || ' '}</p></div>
+                                <div><h3 className="font-bold text-black text-sm">Class Teacher's Name:</h3><p className="min-h-[20px] rounded-md border-b border-black p-1 text-sm">{teacherName || ' '}</p></div>
                                 <div><h3 className="font-bold text-black text-sm">Teacher's Remarks:</h3><p className="min-h-[20px] rounded-md border-b border-black p-1 text-sm">{termResult?.teacherRemark || ' '}</p></div>
                                 <div><h3 className="font-bold text-black text-sm">Head Teacher's Remarks:</h3><p className="min-h-[20px] rounded-md border-b border-black p-1 text-sm">{termResult?.headTeacherRemark || ' '}</p></div>
                             </div>

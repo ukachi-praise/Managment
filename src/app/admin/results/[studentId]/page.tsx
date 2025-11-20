@@ -62,6 +62,7 @@ export default function ResultSheetPage() {
     () => (firestore && teacherId ? doc(firestore, 'users', teacherId) : null),
     [firestore, teacherId]
   );
+  // Fetch teacher separately to not block main loading state
   const { data: teacher } = useDoc<User>(teacherRef);
   
   
@@ -172,7 +173,7 @@ export default function ResultSheetPage() {
         </Button>
       </div>
       <div className="max-w-4xl mx-auto space-y-4">
-         <ResultSheet ref={resultSheetRef} student={student} classroom={{ ...classroom, teacherName: teacher?.name }} />
+         <ResultSheet ref={resultSheetRef} student={student} classroom={classroom} teacherName={teacher?.name} />
       </div>
     </div>
   );
