@@ -135,6 +135,7 @@ export function ResultSheet({
         return;
       }
       
+      // Fetch all enrollments for the class
       const enrollmentsQuery = query(collection(firestore, 'enrollments'), where('classroomId', '==', classroom.id));
       const enrollmentsSnapshot = await getDocs(enrollmentsQuery);
       
@@ -150,11 +151,24 @@ export function ResultSheet({
         return;
       }
       
-      // Now query the root students collection to check the `isDeleted` flag
-      const q = query(collection(firestore, 'students'), where('__name__', 'in', studentIds), where('isDeleted', '!=', true));
-      const activeStudentsSnapshot = await getDocs(q);
+      // Fetch all student documents in batches to check their `isDeleted` flag
+      let activeStudentsCount = 0;
+      const studentBatches = [];
+      for (let i = 0; i < studentIds.length; i += 30) {
+        studentBatches.push(studentIds.slice(i, i + 30));
+      }
 
-      setClassPopulation(activeStudentsSnapshot.size);
+      for (const batch of studentBatches) {
+        const q = query(collection(firestore, 'students'), where('__name__', 'in', batch));
+        const studentsSnapshot = await getDocs(q);
+        studentsSnapshot.forEach(doc => {
+          if (!doc.data().isDeleted) {
+            activeStudentsCount++;
+          }
+        });
+      }
+
+      setClassPopulation(activeStudentsCount);
     };
 
     fetchClassPopulation();
