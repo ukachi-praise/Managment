@@ -21,8 +21,7 @@ import { useToast } from '@/hooks/use-toast';
 
 // --- TYPE DEFINITIONS ---
 type Student = { id: string; name: string; admissionNumber: string; isDeleted?: boolean; };
-type Classroom = { id: string; name: string; teacherId?: string; };
-type User = { id: string; name: string; };
+type Classroom = { id: string; name: string; teacherId?: string; teacherName?: string; };
 type Enrollment = { id: string; studentId: string; classroomId: string };
 
 
@@ -34,6 +33,7 @@ export default function ResultSheetPage() {
   const resultSheetRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   const [isExporting, setIsExporting] = useState(false);
+  const [classPopulation, setClassPopulation] = useState<number | null>(null);
   
 
   // --- DATA FETCHING ---
@@ -57,16 +57,17 @@ export default function ResultSheetPage() {
   );
   const { data: classroom, isLoading: classroomLoading } = useDoc<Classroom>(classroomRef);
 
-  const teacherId = useMemo(() => classroom?.teacherId, [classroom]);
-
-  const teacherRef = useMemoFirebase(
-    () => (firestore && teacherId ? doc(firestore, 'users', teacherId) : null),
-    [firestore, teacherId]
-  );
-  const { data: teacher, isLoading: teacherLoading } = useDoc<User>(teacherRef);
+  // Fetch class population once classroomId is known
+  useEffect(() => {
+    if (!firestore || !classroomId) return;
+    const classEnrollmentsQuery = query(collection(firestore, 'enrollments'), where('classroomId', '==', classroomId));
+    getDocs(classEnrollmentsQuery).then(snapshot => {
+      setClassPopulation(snapshot.size);
+    });
+  }, [firestore, classroomId]);
   
   
-  const isLoading = studentLoading || classroomLoading || enrollmentsLoading || teacherLoading;
+  const isLoading = studentLoading || classroomLoading || enrollmentsLoading;
   
   const exportA4PDF = async () => {
     const node = resultSheetRef.current;
@@ -160,12 +161,6 @@ export default function ResultSheetPage() {
     );
   }
 
-  const finalClassroomData = {
-    ...classroom,
-    teacherName: teacher?.name,
-  };
-
-
   return (
     <div className="bg-muted min-h-screen py-4 sm:py-8 px-2 sm:px-4 no-print">
       <div className="max-w-4xl mx-auto mb-4 flex justify-between items-center">
@@ -179,7 +174,7 @@ export default function ResultSheetPage() {
         </Button>
       </div>
       <div className="max-w-4xl mx-auto space-y-4">
-         <ResultSheet ref={resultSheetRef} student={student} classroom={finalClassroomData} classPopulation={null} />
+         <ResultSheet ref={resultSheetRef} student={student} classroom={classroom} classPopulation={classPopulation} />
       </div>
     </div>
   );
