@@ -191,21 +191,22 @@ export function ResultSheet({
         return a.subjectName.localeCompare(b.subjectName);
       });
   }, [termResult, allSubjectsMap, isForTemplateBuilder]);
-
-  const liveOverall = useMemo(() => {
-    if (isForTemplateBuilder || liveResultEntries.length === 0) return { average: '0.00', grade: 'N/A' };
-    const totalSum = liveResultEntries.reduce((sum, entry) => sum + entry.total, 0);
-    const average = totalSum / liveResultEntries.length;
+  
+  const resultEntries = isForTemplateBuilder ? templateResultEntries : liveResultEntries;
+  
+  const overall = useMemo(() => {
+    if (!resultEntries || resultEntries.length === 0) return { average: '0.00', grade: 'N/A' };
+    const totalSum = resultEntries.reduce((sum, entry) => sum + entry.total, 0);
+    const average = totalSum / resultEntries.length;
     const { grade } = calculateGrade(average);
     return { average: average.toFixed(2), grade };
-  }, [liveResultEntries, isForTemplateBuilder]);
+  }, [resultEntries]);
   
   const scoreTotals = useMemo(() => {
-    const entries = isForTemplateBuilder ? templateResultEntries : liveResultEntries;
-    if (!entries || entries.length === 0) {
+    if (!resultEntries || resultEntries.length === 0) {
       return { ca1: 0, ca2: 0, exam: 0, total: 0 };
     }
-    return entries.reduce(
+    return resultEntries.reduce(
       (acc, entry) => {
         acc.ca1 += entry.ca1 || 0;
         acc.ca2 += entry.ca2 || 0;
@@ -215,11 +216,8 @@ export function ResultSheet({
       },
       { ca1: 0, ca2: 0, exam: 0, total: 0 }
     );
-  }, [isForTemplateBuilder, templateResultEntries, liveResultEntries]);
+  }, [resultEntries]);
 
-
-  const resultEntries = isForTemplateBuilder ? templateResultEntries : liveResultEntries;
-  const overall = isForTemplateBuilder ? templateOverall : liveOverall;
 
   const parseAndFormatDate = (dateValue: any) => {
     if (!dateValue) return 'N/A';
