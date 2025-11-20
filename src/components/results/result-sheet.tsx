@@ -321,7 +321,7 @@ export const ResultSheet = forwardRef<HTMLDivElement, ResultSheetProps>(({
   return (
     <div ref={ref} className="relative w-full max-w-[794px] mx-auto min-h-[1250px] scale-[0.3] sm:scale-[0.5] md:scale-[0.7] lg:scale-100 origin-top-left sm:origin-top bg-white text-black print:shadow-none print:m-0 print:p-0 print:w-full print:h-auto print:scale-100 flex flex-col p-6 border-4 border-black">
         <div className="absolute inset-0 z-0 flex items-center justify-center pointer-events-none">
-            <Image src="/Logo.jpg" alt="School Watermark" width={400} height={400} className="opacity-10" />
+            <Image src="/Logo.jpg" alt="School Watermark" width={400} height={400} className="opacity-15" />
         </div>
         <div className="relative z-10 flex flex-col h-full">
             {settings.header.visible && (
@@ -389,7 +389,7 @@ export const ResultSheet = forwardRef<HTMLDivElement, ResultSheetProps>(({
                                             <TableCell className="border-b border-r border-black p-1 text-lg font-semibold">
                                                 <div className="font-semibold">{entry.subjectName}</div>
                                                 {entry.subSubjects && entry.subSubjects.length > 0 && (
-                                                    <div className="pl-2 text-xs text-zinc-600">
+                                                    <div className="pl-2 text-xs text-gray-800">
                                                         {entry.subSubjects.map((sub, i) => (
                                                             <div key={i}>{sub}</div>
                                                         ))}
@@ -434,7 +434,7 @@ export const ResultSheet = forwardRef<HTMLDivElement, ResultSheetProps>(({
                 )}
                  <div className="flex-grow min-h-0"></div>
                 
-                 {/* This footer now acts as the second page content */}
+                 {/* This footer acts as the second page content */}
                 <footer className="text-base print:break-before-page" style={{ pageBreakBefore: 'always' }}>
                     <section className='border border-black p-1 flex flex-col gap-1'>
                         <div className="grid grid-cols-[1fr_1fr_2fr] gap-x-2 pt-1">
@@ -525,5 +525,3 @@ export const ResultSheet = forwardRef<HTMLDivElement, ResultSheetProps>(({
 });
 
 ResultSheet.displayName = 'ResultSheet';
-
-    
