@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, forwardRef } from 'react';
 import {
   Table,
   TableBody,
@@ -86,14 +86,14 @@ interface ResultSheetProps {
 }
 
 // --- MAIN COMPONENT ---
-export function ResultSheet({ 
+export const ResultSheet = forwardRef<HTMLDivElement, ResultSheetProps>(({ 
   student, 
   classroom, 
   templateData,
   isForTemplateBuilder = false,
   resultEntries: templateResultEntries, // Renamed to avoid conflict
   overall: templateOverall // Renamed to avoid conflict
-}: ResultSheetProps) {
+}, ref) => {
   const firestore = useFirestore();
   const studentId = student.id;
   
@@ -312,7 +312,7 @@ export function ResultSheet({
 
   // --- RENDER ---
   return (
-    <div className="relative w-full max-w-[794px] mx-auto min-h-[1250px] scale-[0.3] sm:scale-[0.5] md:scale-[0.7] lg:scale-100 origin-top-left sm:origin-top bg-white text-black print:shadow-none print:m-0 print:p-0 print:w-full print:h-auto print:scale-100 flex flex-col p-6 border-4 border-black">
+    <div ref={ref} className="relative w-full max-w-[794px] mx-auto min-h-[1250px] scale-[0.3] sm:scale-[0.5] md:scale-[0.7] lg:scale-100 origin-top-left sm:origin-top bg-white text-black print:shadow-none print:m-0 print:p-0 print:w-full print:h-auto print:scale-100 flex flex-col p-6 border-4 border-black">
         <div className="absolute inset-0 z-0 flex items-center justify-center pointer-events-none">
             <Image src="/Logo.jpg" alt="School Watermark" width={400} height={400} className="opacity-10" />
         </div>
@@ -514,4 +514,6 @@ export function ResultSheet({
         </div>
     </div>
   );
-}
+});
+
+ResultSheet.displayName = 'ResultSheet';
