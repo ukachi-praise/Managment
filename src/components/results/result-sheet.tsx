@@ -427,8 +427,8 @@ export const ResultSheet = forwardRef<HTMLDivElement, ResultSheetProps>(({
                 {settings.summary.visible && (
                     <div className="mt-1 flex justify-end">
                         <div className="w-1/2 rounded-md border border-black p-1 text-sm space-y-1">
-                            <div className="flex justify-between"><span className="font-semibold text-black">Overall Average:</span><span className="text-black">{overall?.average}%</span></div>
-                            <div className="flex justify-between"><span className="font-semibold text-black">Overall Grade:</span><span className="text-black">{overall?.grade}</span></div>
+                            <div className="flex justify-between"><span className="font-semibold text-black">Overall Average:</span><span className="text-black">{(templateOverall || overall)?.average}%</span></div>
+                            <div className="flex justify-between"><span className="font-semibold text-black">Overall Grade:</span><span className="text-black">{(templateOverall || overall)?.grade}</span></div>
                         </div>
                     </div>
                 )}

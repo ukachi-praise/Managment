@@ -21,7 +21,9 @@ import { useToast } from '@/hooks/use-toast';
 
 // --- TYPE DEFINITIONS ---
 type Student = { id: string; name: string; admissionNumber: string; };
-type Classroom = { id: string; name: string; teacherName?: string; };
+type Classroom = { id: string; name: string; teacherId?: string; };
+type User = { id: string; name: string; };
+
 
 export default function ResultSheetPage() {
   const params = useParams();
@@ -54,7 +56,15 @@ export default function ResultSheetPage() {
   );
   const { data: classroom, isLoading: classroomLoading } = useDoc<Classroom>(classroomRef);
 
-  const isLoading = studentLoading || classroomLoading || enrollmentsLoading;
+  const teacherId = useMemo(() => classroom?.teacherId, [classroom]);
+
+  const teacherRef = useMemoFirebase(
+    () => (firestore && teacherId ? doc(firestore, 'users', teacherId) : null),
+    [firestore, teacherId]
+  );
+  const { data: teacher, isLoading: teacherLoading } = useDoc<User>(teacherRef);
+
+  const isLoading = studentLoading || classroomLoading || enrollmentsLoading || teacherLoading;
   
   const exportA4PDF = async () => {
     const node = resultSheetRef.current;
@@ -148,6 +158,11 @@ export default function ResultSheetPage() {
     );
   }
 
+  const finalClassroomData = {
+    ...classroom,
+    teacherName: teacher?.name,
+  };
+
 
   return (
     <div className="bg-muted min-h-screen py-4 sm:py-8 px-2 sm:px-4 no-print">
@@ -162,7 +177,7 @@ export default function ResultSheetPage() {
         </Button>
       </div>
       <div className="max-w-4xl mx-auto space-y-4">
-         <ResultSheet ref={resultSheetRef} student={student} classroom={classroom} />
+         <ResultSheet ref={resultSheetRef} student={student} classroom={finalClassroomData} />
       </div>
     </div>
   );
