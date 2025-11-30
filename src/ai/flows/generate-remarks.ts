@@ -1,3 +1,4 @@
+
 // src/ai/flows/generate-remarks.ts
 'use server';
 
@@ -48,6 +49,18 @@ const prompt = ai.definePrompt({
   input: {schema: GenerateRemarksInputSchema},
   output: {schema: GenerateRemarksOutputSchema},
   tools: [getHeadTeacherRemarks],
+  config: {
+    safetySettings: [
+      {
+        category: 'HARM_CATEGORY_DANGEROUS_CONTENT',
+        threshold: 'BLOCK_NONE',
+      },
+       {
+        category: 'HARM_CATEGORY_HARASSMENT',
+        threshold: 'BLOCK_NONE',
+      },
+    ]
+  },
   prompt: `You are an experienced educator tasked with writing report card remarks.
   
   Student Name: {{{studentName}}}
