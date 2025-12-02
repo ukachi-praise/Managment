@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview Generates a remark for a soft skill based on a score.
@@ -30,7 +31,6 @@ export async function gradeSoftSkill(input: GradeSoftSkillInput): Promise<GradeS
 
 const prompt = ai.definePrompt({
   name: 'gradeSoftSkillPrompt',
-  model: 'gemini-1.5-flash-latest',
   input: {schema: GradeSoftSkillInputSchema},
   output: {schema: GradeSoftSkillOutputSchema},
   prompt: `You are an experienced educator providing a brief remark for a student's report card.

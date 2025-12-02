@@ -1,3 +1,4 @@
+
 // src/ai/flows/generate-soft-skills.ts
 'use server';
 
@@ -32,7 +33,6 @@ export async function generateSoftSkills(input: GenerateSoftSkillsInput): Promis
 
 const prompt = ai.definePrompt({
   name: 'generateSoftSkillsPrompt',
-  model: 'gemini-1.5-flash-latest',
   input: {schema: GenerateSoftSkillsInputSchema},
   output: {schema: GenerateSoftSkillsOutputSchema},
   prompt: `You are an API that generates student assessments. Based on the data provided, return a JSON object with two keys: "softSkillsAssessment" and "remarks".
