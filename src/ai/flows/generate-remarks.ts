@@ -11,6 +11,7 @@
  */
 
 import {ai} from '@/ai/genkit';
+import {googleAI} from '@genkit-ai/google-genai';
 import {z} from 'genkit';
 import { headTeacherRemarks } from '@/lib/data';
 
@@ -49,6 +50,7 @@ const prompt = ai.definePrompt({
   input: {schema: GenerateRemarksInputSchema},
   output: {schema: GenerateRemarksOutputSchema},
   tools: [getHeadTeacherRemarks],
+  model: googleAI('gemini-1.5-flash-preview-0514'),
   config: {
     safetySettings: [
       {
