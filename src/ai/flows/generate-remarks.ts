@@ -50,7 +50,7 @@ const prompt = ai.definePrompt({
   input: {schema: GenerateRemarksInputSchema},
   output: {schema: GenerateRemarksOutputSchema},
   tools: [getHeadTeacherRemarks],
-  model: googleAI('gemini-1.5-flash-preview-0514'),
+  model: 'gemini-1.5-flash-preview-0514',
   config: {
     safetySettings: [
       {

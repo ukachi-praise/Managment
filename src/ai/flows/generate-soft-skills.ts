@@ -36,7 +36,7 @@ const prompt = ai.definePrompt({
   name: 'generateSoftSkillsPrompt',
   input: {schema: GenerateSoftSkillsInputSchema},
   output: {schema: GenerateSoftSkillsOutputSchema},
-  model: googleAI('gemini-1.5-flash-preview-0514'),
+  model: 'gemini-1.5-flash-preview-0514',
   prompt: `You are an API that generates student assessments. Based on the data provided, return a JSON object with two keys: "softSkillsAssessment" and "remarks".
 
   Student Information:
