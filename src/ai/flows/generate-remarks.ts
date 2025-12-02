@@ -46,6 +46,7 @@ export async function generateRemarks(input: GenerateRemarksInput): Promise<Gene
 
 const prompt = ai.definePrompt({
   name: 'generateRemarksPrompt',
+  model: 'gemini-1.5-flash-latest',
   input: {schema: GenerateRemarksInputSchema},
   output: {schema: GenerateRemarksOutputSchema},
   tools: [getHeadTeacherRemarks],
