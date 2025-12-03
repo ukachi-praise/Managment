@@ -34,7 +34,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 
 
-type Pupil = {
+type Student = {
   id: string;
   name: string;
   admissionNumber: string;
@@ -42,55 +42,55 @@ type Pupil = {
 };
 
 
-export default function DeletedPupilsPage() {
-  const [pupilToRestore, setPupilToRestore] = useState<Pupil | null>(null);
-  const [pupilToDelete, setPupilToDelete] = useState<Pupil | null>(null);
+export default function DeletedStudentsPage() {
+  const [studentToRestore, setStudentToRestore] = useState<Student | null>(null);
+  const [studentToDelete, setStudentToDelete] = useState<Student | null>(null);
   const [isRestoring, setIsRestoring] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const firestore = useFirestore();
   const router = useRouter();
   const { toast } = useToast();
 
-  const deletedPupilsQuery = useMemoFirebase(
-    () => (firestore ? query(collection(firestore, 'pupils'), where('isDeleted', '==', true)) : null),
+  const deletedStudentsQuery = useMemoFirebase(
+    () => (firestore ? query(collection(firestore, 'students'), where('isDeleted', '==', true)) : null),
     [firestore]
   );
-  const { data: deletedPupils, isLoading } = useCollection<Pupil>(deletedPupilsQuery);
+  const { data: deletedStudents, isLoading } = useCollection<Student>(deletedStudentsQuery);
 
-  const handleRestorePupil = () => {
-    if (!firestore || !pupilToRestore) return;
+  const handleRestoreStudent = () => {
+    if (!firestore || !studentToRestore) return;
     
     setIsRestoring(true);
-    const pupilRef = doc(firestore, 'pupils', pupilToRestore.id);
+    const studentRef = doc(firestore, 'students', studentToRestore.id);
     
-    setDocumentNonBlocking(pupilRef, { isDeleted: false }, { merge: true });
+    setDocumentNonBlocking(studentRef, { isDeleted: false }, { merge: true });
 
     toast({
-        title: 'Pupil Restored',
-        description: `${pupilToRestore.name} has been restored. You will need to re-enroll them into a class.`,
+        title: 'Student Restored',
+        description: `${studentToRestore.name} has been restored. You will need to re-enroll them into a class.`,
     });
-    setPupilToRestore(null);
+    setStudentToRestore(null);
     setIsRestoring(false);
   }
   
   const handlePermanentDelete = async () => {
-    if (!firestore || !pupilToDelete) return;
+    if (!firestore || !studentToDelete) return;
     setIsDeleting(true);
     
     try {
         const batch = writeBatch(firestore);
 
-        // 1. Delete main pupil doc
-        const pupilRef = doc(firestore, 'pupils', pupilToDelete.id);
-        batch.delete(pupilRef);
+        // 1. Delete main student doc
+        const studentRef = doc(firestore, 'students', studentToDelete.id);
+        batch.delete(studentRef);
 
         // 2. Delete from enrollments
-        const enrollmentsQuery = query(collection(firestore, 'enrollments'), where('pupilId', '==', pupilToDelete.id));
+        const enrollmentsQuery = query(collection(firestore, 'enrollments'), where('studentId', '==', studentToDelete.id));
         const enrollmentsSnapshot = await getDocs(enrollmentsQuery);
         enrollmentsSnapshot.forEach(doc => batch.delete(doc.ref));
         
         // 3. Delete all their results
-        const resultsRef = collection(firestore, 'pupils', pupilToDelete.id, 'results');
+        const resultsRef = collection(firestore, 'students', studentToDelete.id, 'results');
         const resultsSnapshot = await getDocs(resultsRef);
         resultsSnapshot.forEach(doc => batch.delete(doc.ref));
 
@@ -98,61 +98,61 @@ export default function DeletedPupilsPage() {
 
         toast({
             variant: 'destructive',
-            title: 'Pupil Permanently Deleted',
-            description: `${pupilToDelete.name} and all their associated data have been erased.`,
+            title: 'Student Permanently Deleted',
+            description: `${studentToDelete.name} and all their associated data have been erased.`,
         });
     } catch(error: any) {
         toast({
             variant: 'destructive',
-            title: 'Error Deleting Pupil',
-            description: error.message || 'Could not permanently delete the pupil.',
+            title: 'Error Deleting Student',
+            description: error.message || 'Could not permanently delete the student.',
         });
     } finally {
-        setPupilToDelete(null);
+        setStudentToDelete(null);
         setIsDeleting(false);
     }
   }
 
-  const openRestoreDialog = (pupil: Pupil) => {
-    setPupilToRestore(pupil);
+  const openRestoreDialog = (student: Student) => {
+    setStudentToRestore(student);
   }
   
-  const openDeleteDialog = (pupil: Pupil) => {
-    setPupilToDelete(pupil);
+  const openDeleteDialog = (student: Student) => {
+    setStudentToDelete(student);
   }
 
-  const sortedPupils = useMemo(() => {
-    if (!deletedPupils) return [];
-    return [...deletedPupils].sort((a, b) => a.name.localeCompare(b.name));
-  }, [deletedPupils]);
+  const sortedStudents = useMemo(() => {
+    if (!deletedStudents) return [];
+    return [...deletedStudents].sort((a, b) => a.name.localeCompare(b.name));
+  }, [deletedStudents]);
 
 
   return (
     <div className="space-y-6">
-      <AlertDialog open={!!pupilToRestore} onOpenChange={(open) => !open && setPupilToRestore(null)}>
+      <AlertDialog open={!!studentToRestore} onOpenChange={(open) => !open && setStudentToRestore(null)}>
         <AlertDialogContent>
             <AlertDialogHeader>
-                <AlertDialogTitle>Restore Pupil?</AlertDialogTitle>
+                <AlertDialogTitle>Restore Student?</AlertDialogTitle>
                 <AlertDialogDescription>
-                    This will restore <span className="font-semibold">{pupilToRestore?.name}</span>. They will be marked as active, but you will need to manually enroll them back into a class.
+                    This will restore <span className="font-semibold">{studentToRestore?.name}</span>. They will be marked as active, but you will need to manually enroll them back into a class.
                 </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
                 <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction onClick={handleRestorePupil} disabled={isRestoring}>
+                <AlertDialogAction onClick={handleRestoreStudent} disabled={isRestoring}>
                   {isRestoring ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <RotateCcw className="mr-2 h-4 w-4" />}
-                  Restore Pupil
+                  Restore Student
                 </AlertDialogAction>
             </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
       
-      <AlertDialog open={!!pupilToDelete} onOpenChange={(open) => !open && setPupilToDelete(null)}>
+      <AlertDialog open={!!studentToDelete} onOpenChange={(open) => !open && setStudentToDelete(null)}>
         <AlertDialogContent>
             <AlertDialogHeader>
                 <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                 <AlertDialogDescription>
-                    This action is irreversible. This will permanently delete <span className="font-semibold">{pupilToDelete?.name}</span> and all of their associated data, including results and enrollment history.
+                    This action is irreversible. This will permanently delete <span className="font-semibold">{studentToDelete?.name}</span> and all of their associated data, including results and enrollment history.
                 </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
@@ -177,9 +177,9 @@ export default function DeletedPupilsPage() {
 
         <Card>
             <CardHeader>
-            <CardTitle>Deleted Pupils</CardTitle>
+            <CardTitle>Deleted Students</CardTitle>
             <CardDescription>
-                This is a list of all pupils who have been removed from classes. You can restore them or permanently delete their records.
+                This is a list of all students who have been removed from classes. You can restore them or permanently delete their records.
             </CardDescription>
             </CardHeader>
             <CardContent>
@@ -191,29 +191,29 @@ export default function DeletedPupilsPage() {
                     <Table>
                         <TableHeader>
                             <TableRow>
-                                <TableHead>Pupil</TableHead>
+                                <TableHead>Student</TableHead>
                                 <TableHead>Admission Number</TableHead>
                                 <TableHead className="text-right">Actions</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {sortedPupils.length > 0 ? sortedPupils.map((pupil) => (
-                                <TableRow key={pupil.id}>
+                            {sortedStudents.length > 0 ? sortedStudents.map((student) => (
+                                <TableRow key={student.id}>
                                     <TableCell className="font-medium">
                                         <div className="flex items-center gap-3">
                                             <Avatar>
-                                                <AvatarFallback>{pupil.name.charAt(0).toUpperCase()}</AvatarFallback>
+                                                <AvatarFallback>{student.name.charAt(0).toUpperCase()}</AvatarFallback>
                                             </Avatar>
-                                            <span>{pupil.name}</span>
+                                            <span>{student.name}</span>
                                         </div>
                                     </TableCell>
-                                    <TableCell>{pupil.admissionNumber}</TableCell>
+                                    <TableCell>{student.admissionNumber}</TableCell>
                                     <TableCell className="text-right space-x-2">
-                                        <Button onClick={() => openRestoreDialog(pupil)} variant="outline" size="sm">
+                                        <Button onClick={() => openRestoreDialog(student)} variant="outline" size="sm">
                                             <RotateCcw className="mr-2 h-4 w-4" />
                                             Restore
                                         </Button>
-                                        <Button onClick={() => openDeleteDialog(pupil)} variant="destructive" size="sm">
+                                        <Button onClick={() => openDeleteDialog(student)} variant="destructive" size="sm">
                                             <Trash2 className="mr-2 h-4 w-4" />
                                             Delete Permanently
                                         </Button>

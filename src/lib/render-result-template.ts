@@ -5,7 +5,7 @@ import fs from 'fs/promises';
 
 // Define types to match the expected data structure from the client
 type ScoreData = { subjectName: string; ca1: number | null; ca2: number | null; exam: number | null; total: number; grade: string; remark: string; subSubjects?: string[] };
-type PupilData = { id: string; name: string; admissionNumber: string; };
+type StudentData = { id: string; name: string; admissionNumber: string; };
 type ClassroomData = { name: string; teacherName?: string; };
 type TermResultData = { daysAttended?: number; };
 type SchoolSettingsData = { currentSession: string; currentTermId: string; daysSchoolOpened: number; nextTermResumptionDate: any; };
@@ -14,7 +14,7 @@ type TemplateSettings = { studentInfo: { fontSize: number; visible: boolean; }; 
 type SavedTemplateData = { name: string; schoolName: string; settings: TemplateSettings; };
 
 interface ReportCardPayload {
-    pupil: PupilData;
+    student: StudentData;
     classroom: ClassroomData;
     termResult: TermResultData;
     schoolSettings: SchoolSettingsData;
@@ -38,7 +38,7 @@ async function getLogoBase64(): Promise<string> {
 
 export async function generateReportCardHtml(payload: ReportCardPayload): Promise<string> {
     const { 
-        pupil, classroom, termResult, schoolSettings, scores, overall, templateData 
+        student, classroom, termResult, schoolSettings, scores, overall, templateData 
     } = payload;
 
     const settings = templateData?.settings;
@@ -99,7 +99,7 @@ export async function generateReportCardHtml(payload: ReportCardPayload): Promis
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Pupil Report Card</title>
+        <title>Student Report Card</title>
         <script src="https://cdn.tailwindcss.com"></script>
         <style>
             @import url('https://fonts.googleapis.com/css2?family=PT+Sans:ital,wght@0,400;0,700;1,400;1,700&display=swap');
@@ -135,7 +135,7 @@ export async function generateReportCardHtml(payload: ReportCardPayload): Promis
                                 </div>
                             </div>
                             <div class="text-right">
-                                <h2 class="font-bold text-lg">Pupil Report Card</h2>
+                                <h2 class="font-bold text-lg">Student Report Card</h2>
                                 <p class="text-base text-zinc-600">${termNames[schoolSettings.currentTermId] || 'N/A'}, ${schoolSettings.currentSession || 'N/A'}</p>
                             </div>
                         </div>
@@ -145,8 +145,8 @@ export async function generateReportCardHtml(payload: ReportCardPayload): Promis
                     ${settings?.studentInfo.visible ? `
                     <div id="student-info-section" class="mb-4 p-2 border border-black text-xs student-info-table">
                         <div class="grid grid-cols-3 gap-y-1 gap-x-4">
-                            <div><span class="font-semibold w-[90px] inline-block">Pupil Name:</span><span class="flex-1 border-b border-dotted border-black">${pupil.name || 'N/A'}</span></div>
-                            <div><span class="font-semibold w-[90px] inline-block">Admission No:</span><span class="flex-1 border-b border-dotted border-black">${pupil.admissionNumber || 'N/A'}</span></div>
+                            <div><span class="font-semibold w-[90px] inline-block">Student Name:</span><span class="flex-1 border-b border-dotted border-black">${student.name || 'N/A'}</span></div>
+                            <div><span class="font-semibold w-[90px] inline-block">Admission No:</span><span class="flex-1 border-b border-dotted border-black">${student.admissionNumber || 'N/A'}</span></div>
                             <div><span class="font-semibold w-[90px] inline-block">Class:</span><span class="flex-1 border-b border-dotted border-black">${classroom.name || 'N/A'}</span></div>
                             <div><span class="font-semibold w-[90px] inline-block">Term:</span><span class="flex-1 border-b border-dotted border-black">${termNames[schoolSettings.currentTermId] || 'N/A'}</span></div>
                             <div><span class="font-semibold w-[90px] inline-block">Session:</span><span class="flex-1 border-b border-dotted border-black">${schoolSettings.currentSession || 'N/A'}</span></div>
@@ -234,7 +234,7 @@ export async function generateReportCardHtml(payload: ReportCardPayload): Promis
 
                             ${settings?.remarks.visible ? `
                             <div id="remarks-section" class="pt-2 space-y-2 text-sm">
-                                <div><h3 class="font-bold">Teacher's Remarks:</h3><p class="min-h-[25px] border-b border-black p-1">A brilliant pupil...</p></div>
+                                <div><h3 class="font-bold">Teacher's Remarks:</h3><p class="min-h-[25px] border-b border-black p-1">A brilliant student...</p></div>
                                 <div><h3 class="font-bold">Head Teacher's Remarks:</h3><p class="min-h-[25px] border-b border-black p-1">Excellent performance...</p></div>
                             </div>` : ''}
 

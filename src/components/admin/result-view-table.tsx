@@ -42,15 +42,15 @@ import { saveAs } from 'file-saver';
 
 
 // --- TYPE DEFINITIONS ---
-type Pupil = { id: string; name: string; admissionNumber: string; isDeleted?: boolean; };
+type Student = { id: string; name: string; admissionNumber: string; isDeleted?: boolean; };
 type Classroom = { id: string; name: string; teacherName?: string; };
-type Enrollment = { id: string; pupilId: string; classroomId: string };
+type Enrollment = { id: string; studentId: string; classroomId: string };
 type Subject = { id: string; name: string; subSubjects?: string[] };
 type SchoolSettingsData = { currentSession: string; currentTermId: string; daysSchoolOpened: number; nextTermResumptionDate: Timestamp | Date | string; };
 type TemplateSettings = { studentInfo: { fontSize: number; visible: boolean; }; header: { visible: boolean; }; subjectsTable: { visible: boolean; }; summary: { visible: boolean; }; softSkills: { visible: boolean; }; gradingKey: { visible: boolean; }; remarks: { visible: boolean; }; signatures: { visible: boolean; }; };
 type SavedTemplateData = { name: string; schoolName: string; settings: TemplateSettings; };
 type SubjectScore = { ca1: number | null; ca2: number | null; exam: number | null; };
-type TermResult = { scores: Record<string, SubjectScore>; pupilId: string; termId: string; sessionId: string; classroomId: string; daysAttended?: number; };
+type TermResult = { scores: Record<string, SubjectScore>; studentId: string; termId: string; sessionId: string; classroomId: string; daysAttended?: number; };
 const termNames: Record<string, string> = { term1: '1st Term', term2: '2nd Term', term3: '3rd Term' };
 
 
@@ -82,11 +82,11 @@ export function ResultViewTable() {
   );
   const { data: enrollments, isLoading: enrollmentsLoading } = useCollection<Enrollment>(enrollmentsQuery);
 
-  const allPupilsQuery = useMemoFirebase(
-    () => (firestore ? query(collection(firestore, 'pupils')) : null),
+  const allStudentsQuery = useMemoFirebase(
+    () => (firestore ? query(collection(firestore, 'students')) : null),
     [firestore]
   );
-  const { data: allPupils, isLoading: allPupilsLoading } = useCollection<Pupil>(allPupilsQuery);
+  const { data: allStudents, isLoading: allStudentsLoading } = useCollection<Student>(allStudentsQuery);
 
   const settingsRef = useMemoFirebase(() => (firestore ? doc(firestore, 'schoolSettings', 'current') : null), [firestore]);
   const { data: schoolSettings } = useDoc<SchoolSettingsData>(settingsRef);
@@ -97,11 +97,11 @@ export function ResultViewTable() {
   const subjectsQuery = useMemoFirebase(() => (firestore ? collection(firestore, 'subjects') : null), [firestore]);
   const { data: allSubjects } = useCollection<Subject>(subjectsQuery);
   
-  const pupilsInClass = useMemo(() => {
-      if (!enrollments || !allPupils) return [];
-      const pupilIds = new Set(enrollments.map(e => e.pupilId));
-      return allPupils.filter(s => pupilIds.has(s.id) && !s.isDeleted).sort((a,b) => a.name.localeCompare(b.name));
-  }, [enrollments, allPupils]);
+  const studentsInClass = useMemo(() => {
+      if (!enrollments || !allStudents) return [];
+      const studentIds = new Set(enrollments.map(e => e.studentId));
+      return allStudents.filter(s => studentIds.has(s.id) && !s.isDeleted).sort((a,b) => a.name.localeCompare(b.name));
+  }, [enrollments, allStudents]);
 
 
   const handleClassChange = (classId: string) => {
@@ -109,38 +109,38 @@ export function ResultViewTable() {
   }
 
   const handleBulkDownload = async () => {
-    if (!pupilsInClass || pupilsInClass.length === 0) return;
+    if (!studentsInClass || studentsInClass.length === 0) return;
 
     setIsDownloading(true);
     toast({
         title: "Pop-ups Required",
-        description: `Your browser may block pop-ups. Please allow pop-ups for this site to download all ${pupilsInClass.length} reports.`,
+        description: `Your browser may block pop-ups. Please allow pop-ups for this site to download all ${studentsInClass.length} reports.`,
         duration: 10000,
     });
     
     // Stagger the window opening to reduce the chance of browser blocking
-    for (let i = 0; i < pupilsInClass.length; i++) {
+    for (let i = 0; i < studentsInClass.length; i++) {
       await new Promise(resolve => setTimeout(resolve, 300)); // 300ms delay between opening each tab
-      window.open(`/admin/results/${pupilsInClass[i].id}`, '_blank');
+      window.open(`/admin/results/${studentsInClass[i].id}`, '_blank');
     }
     
     setIsDownloading(false);
   };
   
     const handleBulkZip = async () => {
-    if (!pupilsInClass || pupilsInClass.length === 0 || !firestore || !schoolSettings || !allSubjects) return;
+    if (!studentsInClass || studentsInClass.length === 0 || !firestore || !schoolSettings || !allSubjects) return;
     setIsZipping(true);
     toast({
       title: 'Initiating ZIP Export...',
-      description: `Preparing to export reports for ${pupilsInClass.length} pupil(s). This may take a moment.`,
+      description: `Preparing to export reports for ${studentsInClass.length} student(s). This may take a moment.`,
     });
 
     try {
         const classroom = classrooms?.find(c => c.id === selectedClass);
         if(!classroom) throw new Error("Classroom not found");
 
-        const pupilDataForApi = await Promise.all(pupilsInClass.map(async (pupil) => {
-            const resultDocSnap = await getDocs(query(collection(firestore, 'pupils', pupil.id, 'results'), where('termId', '==', schoolSettings.currentTermId), where('sessionId', '==', schoolSettings.currentSession)));
+        const studentDataForApi = await Promise.all(studentsInClass.map(async (student) => {
+            const resultDocSnap = await getDocs(query(collection(firestore, 'students', student.id, 'results'), where('termId', '==', schoolSettings.currentTermId), where('sessionId', '==', schoolSettings.currentSession)));
             
             if (resultDocSnap.empty) return null;
 
@@ -157,19 +157,19 @@ export function ResultViewTable() {
             const average = scores.length > 0 ? (totalSum / scores.length) : 0;
             const overall = { average: average.toFixed(2), grade: calculateGrade(average).grade };
 
-            return { pupil, termResult, scores, overall };
+            return { student, termResult, scores, overall };
         }));
 
-        const validPupilData = pupilDataForApi.filter(data => data !== null);
+        const validStudentData = studentDataForApi.filter(data => data !== null);
 
-        if (validPupilData.length === 0) {
-            toast({ variant: "destructive", title: "No Data", description: "No result data found for any pupil in this class for the current term." });
+        if (validStudentData.length === 0) {
+            toast({ variant: "destructive", title: "No Data", description: "No result data found for any student in this class for the current term." });
             setIsZipping(false);
             return;
         }
 
         const payload = {
-            pupils: validPupilData,
+            students: validStudentData,
             classroom,
             schoolSettings,
             templateData: savedTemplateData, // Pass the template data
@@ -201,14 +201,14 @@ export function ResultViewTable() {
 
 
   const isLoading = classroomsLoading;
-  const isFetchingPupils = enrollmentsLoading || allPupilsLoading;
+  const isFetchingStudents = enrollmentsLoading || allStudentsLoading;
 
   return (
     <Card>
       <CardHeader>
         <CardTitle>View & Export Results</CardTitle>
         <CardDescription>
-            Select a class to view the pupil list and export their report cards.
+            Select a class to view the student list and export their report cards.
         </CardDescription>
         <div className="mt-4 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <Select onValueChange={handleClassChange} value={selectedClass || ''}>
@@ -225,11 +225,11 @@ export function ResultViewTable() {
           </Select>
            {selectedClass && (
             <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
-                <Button onClick={handleBulkDownload} disabled={isDownloading || isZipping || isFetchingPupils || pupilsInClass.length === 0} className="w-full">
+                <Button onClick={handleBulkDownload} disabled={isDownloading || isZipping || isFetchingStudents || studentsInClass.length === 0} className="w-full">
                     {isDownloading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
                     Export PDFs (Multi-Tab)
                 </Button>
-                <Button onClick={handleBulkZip} disabled={isDownloading || isZipping || isFetchingPupils || pupilsInClass.length === 0} className="w-full">
+                <Button onClick={handleBulkZip} disabled={isDownloading || isZipping || isFetchingStudents || studentsInClass.length === 0} className="w-full">
                     {isZipping ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileArchive className="mr-2 h-4 w-4" />}
                     Export All as ZIP
                 </Button>
@@ -247,22 +247,22 @@ export function ResultViewTable() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Pupil Name</TableHead>
+                    <TableHead>Student Name</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {isFetchingPupils ? (
-                     <TableRow><TableCell colSpan={2} className="text-center"><Loader2 className="inline-block animate-spin mr-2" /> Loading pupils...</TableCell></TableRow>
-                  ) : pupilsInClass.length > 0 ? (
-                    pupilsInClass.map((pupil) => (
-                        <TableRow key={pupil.id}>
+                  {isFetchingStudents ? (
+                     <TableRow><TableCell colSpan={2} className="text-center"><Loader2 className="inline-block animate-spin mr-2" /> Loading students...</TableCell></TableRow>
+                  ) : studentsInClass.length > 0 ? (
+                    studentsInClass.map((student) => (
+                        <TableRow key={student.id}>
                           <TableCell className="font-medium">
-                              {pupil.name}
+                              {student.name}
                           </TableCell>
                            <TableCell className="text-right">
                             <Button asChild variant="outline" size="sm">
-                              <Link href={`/admin/results/${pupil.id}`}>
+                              <Link href={`/admin/results/${student.id}`}>
                                 View Report
                               </Link>
                             </Button>
@@ -272,7 +272,7 @@ export function ResultViewTable() {
                   ) : (
                     <TableRow>
                         <TableCell colSpan={2} className="text-center h-24">
-                           No pupils found for this class.
+                           No students found for this class.
                         </TableCell>
                     </TableRow>
                   )}
@@ -282,14 +282,12 @@ export function ResultViewTable() {
           </>
         ) : (
           <div className="text-center text-muted-foreground py-12">
-            Please select a class to view the list of pupils.
+            Please select a class to view the list of students.
           </div>
         )}
       </CardContent>
     </Card>
   );
 }
-
-    
 
     

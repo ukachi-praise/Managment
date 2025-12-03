@@ -58,22 +58,22 @@ type Classroom = {
 
 type SchoolSettings = {
     admissionNumberPrefix?: string;
-    totalPupilCapacity?: number;
+    totalStudentCapacity?: number;
 }
 
 type Enrollment = {
     id: string;
     classroomId: string;
-    pupilId: string;
+    studentId: string;
 }
 
-type Pupil = {
+type Student = {
     id: string;
     isDeleted?: boolean;
 }
 
 
-export default function PupilsPage() {
+export default function StudentsPage() {
   const [open, setOpen] = useState(false);
   const firestore = useFirestore();
   const router = useRouter();
@@ -92,67 +92,67 @@ export default function PupilsPage() {
   );
   const { data: enrollments, isLoading: enrollmentsLoading } = useCollection<Enrollment>(enrollmentsQuery);
   
-  const allPupilsQuery = useMemoFirebase(
-    () => (firestore ? query(collection(firestore, 'pupils')) : null),
+  const allStudentsQuery = useMemoFirebase(
+    () => (firestore ? query(collection(firestore, 'students')) : null),
     [firestore]
   );
-  const { data: allPupils, isLoading: pupilsLoading } = useCollection<Pupil>(allPupilsQuery);
+  const { data: allStudents, isLoading: studentsLoading } = useCollection<Student>(allStudentsQuery);
   
   const settingsRef = useMemoFirebase(() => (firestore ? doc(firestore, 'schoolSettings', 'current') : null), [firestore]);
   const { data: settings, isLoading: settingsLoading } = useDoc<SchoolSettings>(settingsRef);
 
-  const pupilCounts = useMemo(() => {
-    if (!enrollments || !allPupils) return {};
+  const studentCounts = useMemo(() => {
+    if (!enrollments || !allStudents) return {};
     
-    // Create a set of active pupil IDs for quick lookup
-    const activePupilIds = new Set(
-      allPupils.filter(pupil => !pupil.isDeleted).map(pupil => pupil.id)
+    // Create a set of active student IDs for quick lookup
+    const activeStudentIds = new Set(
+      allStudents.filter(student => !student.isDeleted).map(student => student.id)
     );
 
-    // Count enrollments only if the pupil is active
+    // Count enrollments only if the student is active
     return enrollments.reduce((acc, enrollment) => {
-      if (activePupilIds.has(enrollment.pupilId)) {
+      if (activeStudentIds.has(enrollment.studentId)) {
         acc[enrollment.classroomId] = (acc[enrollment.classroomId] || 0) + 1;
       }
       return acc;
     }, {} as Record<string, number>);
-  }, [enrollments, allPupils]);
+  }, [enrollments, allStudents]);
 
   // --- Event Handlers ---
-  const handleAddPupil = async (event: React.FormEvent<HTMLFormElement>) => {
+  const handleAddStudent = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!firestore) return;
     
     const form = event.currentTarget;
     const formData = new FormData(form);
     
-    const pupilName = formData.get('name') as string;
+    const studentName = formData.get('name') as string;
     const classroomId = formData.get('classroomId') as string;
     const gender = formData.get('gender') as string;
     const dob = formData.get('dob') as string;
     const parentName = formData.get('parentName') as string;
     const contact = formData.get('contact') as string;
 
-    if (!pupilName || !classroomId || !gender) {
+    if (!studentName || !classroomId || !gender) {
         toast({variant: 'destructive', title: 'Missing fields', description: 'Please fill out all fields.'});
         return;
     };
 
     // Auto-generate admission number
-    const allPupilsSnapshot = await getDocs(collection(firestore, 'pupils'));
+    const allStudentsSnapshot = await getDocs(collection(firestore, 'students'));
     const prefix = settings?.admissionNumberPrefix || 'JKS';
-    const capacity = settings?.totalPupilCapacity || 500;
+    const capacity = settings?.totalStudentCapacity || 500;
     const padding = String(capacity).length;
-    const nextPupilNumber = allPupilsSnapshot.size + 1;
-    const admissionNumber = `${prefix}-${String(nextPupilNumber).padStart(padding, '0')}`;
+    const nextStudentNumber = allStudentsSnapshot.size + 1;
+    const admissionNumber = `${prefix}-${String(nextStudentNumber).padStart(padding, '0')}`;
 
     try {
         const batch = writeBatch(firestore);
 
-        // 1. Create the pupil in the root /pupils collection
-        const newPupilRef = doc(collection(firestore, 'pupils'));
-        batch.set(newPupilRef, {
-            name: pupilName,
+        // 1. Create the student in the root /students collection
+        const newStudentRef = doc(collection(firestore, 'students'));
+        batch.set(newStudentRef, {
+            name: studentName,
             admissionNumber: admissionNumber,
             gender: gender,
             dob: dob,
@@ -164,29 +164,29 @@ export default function PupilsPage() {
         // 2. Create an enrollment document in the root /enrollments collection
         const enrollmentRef = doc(collection(firestore, 'enrollments'));
         batch.set(enrollmentRef, {
-            pupilId: newPupilRef.id,
+            studentId: newStudentRef.id,
             classroomId: classroomId,
             createdAt: serverTimestamp()
         });
 
-        // 3. (FIX) Create a reference document in the classrooms/{id}/pupils subcollection
-        const classPupilRef = doc(collection(firestore, 'classrooms', classroomId, 'pupils'), newPupilRef.id);
-        batch.set(classPupilRef, {
-            name: pupilName,
-            pupilId: newPupilRef.id,
+        // 3. (FIX) Create a reference document in the classrooms/{id}/students subcollection
+        const classStudentRef = doc(collection(firestore, 'classrooms', classroomId, 'students'), newStudentRef.id);
+        batch.set(classStudentRef, {
+            name: studentName,
+            studentId: newStudentRef.id,
             createdAt: serverTimestamp()
         });
 
 
         await batch.commit();
 
-        toast({ title: 'Pupil Added', description: `${pupilName} has been added to the class.` });
+        toast({ title: 'Student Added', description: `${studentName} has been added to the class.` });
         form.reset();
         setOpen(false);
 
     } catch (error) {
-        console.error("Error adding pupil:", error);
-        toast({variant: 'destructive', title: 'Error', description: 'Could not add the pupil.'});
+        console.error("Error adding student:", error);
+        toast({variant: 'destructive', title: 'Error', description: 'Could not add the student.'});
     }
 
   };
@@ -196,7 +196,7 @@ export default function PupilsPage() {
         return [...classrooms].sort((a, b) => a.name.localeCompare(b.name));
     }, [classrooms]);
 
-  const isLoading = classroomsLoading || settingsLoading || enrollmentsLoading || pupilsLoading;
+  const isLoading = classroomsLoading || settingsLoading || enrollmentsLoading || studentsLoading;
 
 
   return (
@@ -206,26 +206,26 @@ export default function PupilsPage() {
             <Button onClick={() => router.back()} variant="outline" size="icon">
                 <ArrowLeft className="h-4 w-4" />
             </Button>
-            <h1 className="text-3xl font-bold tracking-tight">Pupils</h1>
+            <h1 className="text-3xl font-bold tracking-tight">Students</h1>
         </div>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
             <Button>
               <PlusCircle className="mr-2 h-4 w-4" />
-              Add Pupil
+              Add Student
             </Button>
           </DialogTrigger>
           <DialogContent className="sm:max-w-xl">
             <DialogHeader>
-              <DialogTitle>Add New Pupil</DialogTitle>
+              <DialogTitle>Add New Student</DialogTitle>
               <DialogDescription>
-                Enter the pupil's details and assign them to a class. An admission number will be generated automatically.
+                Enter the student's details and assign them to a class. An admission number will be generated automatically.
               </DialogDescription>
             </DialogHeader>
-            <form onSubmit={handleAddPupil} className="grid gap-4 py-4">
+            <form onSubmit={handleAddStudent} className="grid gap-4 py-4">
                <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="name">Pupil Name</Label>
+                  <Label htmlFor="name">Student Name</Label>
                   <Input id="name" name="name" placeholder="John Doe" required />
                 </div>
                  <div className="space-y-2">
@@ -273,7 +273,7 @@ export default function PupilsPage() {
                   </div>
                </div>
               <DialogFooter className="mt-4">
-                <Button type="submit">Save Pupil</Button>
+                <Button type="submit">Save Student</Button>
               </DialogFooter>
             </form>
           </DialogContent>
@@ -297,9 +297,9 @@ export default function PupilsPage() {
         ) : (
              <Card>
                 <CardHeader>
-                <CardTitle>Pupil List by Class</CardTitle>
+                <CardTitle>Student List by Class</CardTitle>
                 <CardDescription>
-                    Select a class to view the pupils enrolled in it.
+                    Select a class to view the students enrolled in it.
                 </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -307,7 +307,7 @@ export default function PupilsPage() {
                         <TableHeader>
                             <TableRow>
                                 <TableHead>Class Name</TableHead>
-                                <TableHead>Number of Pupils</TableHead>
+                                <TableHead>Number of Students</TableHead>
                                 <TableHead className="text-right">Actions</TableHead>
                             </TableRow>
                         </TableHeader>
@@ -315,11 +315,11 @@ export default function PupilsPage() {
                             {sortedClassrooms.length > 0 ? sortedClassrooms.map((classroom) => (
                                 <TableRow key={classroom.id}>
                                     <TableCell className="font-medium">{classroom.name}</TableCell>
-                                    <TableCell>{pupilCounts[classroom.id] || 0}</TableCell>
+                                    <TableCell>{studentCounts[classroom.id] || 0}</TableCell>
                                     <TableCell className="text-right">
                                         <Button asChild variant="outline" size="sm">
                                             <Link href={`/admin/students/${classroom.id}`}>
-                                                View Pupils
+                                                View Students
                                                 <ArrowRight className="ml-2 h-4 w-4" />
                                             </Link>
                                         </Button>

@@ -39,13 +39,13 @@ import {
 } from 'firebase/firestore';
 
 // Define types based on backend.json
-type Pupil = { id: string; name: string };
+type Student = { id: string; name: string };
 type Subject = { id: string; name: string };
 type Classroom = { id: string; name: string; teacherId?: string };
-type Enrollment = { id: string; pupilId: string; classroomId: string };
+type Enrollment = { id: string; studentId: string; classroomId: string };
 type Result = {
   id?: string; // It will have an id when fetched
-  pupilId: string;
+  studentId: string;
   subjectId: string;
   classroomId: string; // denormalized for rules
   // termId and sessionId would be here in a full app
@@ -63,7 +63,7 @@ export function ResultInputTable() {
 
   const [teacherClass, setTeacherClass] = useState<Classroom | null>(null);
   const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
-  const [results, setResults] = useState<Record<string, Result>>({}); // pupilId -> Result
+  const [results, setResults] = useState<Record<string, Result>>({}); // studentId -> Result
   const [isSaving, setIsSaving] = useState(false);
   const [initialFetchDone, setInitialFetchDone] = useState(false);
 
@@ -115,7 +115,7 @@ export function ResultInputTable() {
     return allSubjects.filter(s => subjectIds.has(s.id));
   }, [classSubjects, allSubjects]);
 
-  // 4. Get pupils enrolled in the teacher's class
+  // 4. Get students enrolled in the teacher's class
   const enrollmentsQuery = useMemoFirebase(
     () =>
       teacherClass && firestore
@@ -128,17 +128,17 @@ export function ResultInputTable() {
   );
   const { data: enrollments, isLoading: enrollmentsLoading } = useCollection<Enrollment>(enrollmentsQuery);
 
-  const allPupilsQuery = useMemoFirebase(
-    () => (firestore && user ? collection(firestore, 'pupils') : null),
+  const allStudentsQuery = useMemoFirebase(
+    () => (firestore && user ? collection(firestore, 'students') : null),
     [firestore, user]
   );
-  const { data: allPupils, isLoading: allPupilsLoading } = useCollection<Pupil>(allPupilsQuery);
+  const { data: allStudents, isLoading: allStudentsLoading } = useCollection<Student>(allStudentsQuery);
   
-  const pupilsInClass = useMemo(() => {
-      if (!enrollments || !allPupils) return [];
-      const pupilIds = new Set(enrollments.map(e => e.pupilId));
-      return allPupils.filter(s => pupilIds.has(s.id));
-  }, [enrollments, allPupils]);
+  const studentsInClass = useMemo(() => {
+      if (!enrollments || !allStudents) return [];
+      const studentIds = new Set(enrollments.map(e => e.studentId));
+      return allStudents.filter(s => studentIds.has(s.id));
+  }, [enrollments, allStudents]);
 
   // --- Fetch existing results when class and subject are selected ---
   useEffect(() => {
@@ -161,14 +161,14 @@ export function ResultInputTable() {
         const fetchedResults: Record<string, Result> = {};
         querySnapshot.forEach((doc) => {
             const data = doc.data() as Result;
-            fetchedResults[data.pupilId] = { ...data, id: doc.id };
+            fetchedResults[data.studentId] = { ...data, id: doc.id };
         });
 
-        // Pre-fill results for pupils who don't have any yet
-        pupilsInClass.forEach(pupil => {
-          if (!fetchedResults[pupil.id]) {
-            fetchedResults[pupil.id] = {
-              pupilId: pupil.id,
+        // Pre-fill results for students who don't have any yet
+        studentsInClass.forEach(student => {
+          if (!fetchedResults[student.id]) {
+            fetchedResults[student.id] = {
+              studentId: student.id,
               subjectId: selectedSubject,
               classroomId: teacherClass.id,
               ca1: null, ca2: null, ca3: null, exam: null
@@ -182,10 +182,10 @@ export function ResultInputTable() {
     };
 
     fetchResults();
-  }, [teacherClass, selectedSubject, pupilsInClass, firestore]);
+  }, [teacherClass, selectedSubject, studentsInClass, firestore]);
 
   const handleScoreChange = (
-    pupilId: string,
+    studentId: string,
     field: 'ca1' | 'ca2' | 'ca3' | 'exam',
     value: string
   ) => {
@@ -193,8 +193,8 @@ export function ResultInputTable() {
 
     setResults((prevResults) => ({
       ...prevResults,
-      [pupilId]: {
-        ...prevResults[pupilId],
+      [studentId]: {
+        ...prevResults[studentId],
         [field]: numericValue,
       },
     }));
@@ -205,7 +205,7 @@ export function ResultInputTable() {
     setIsSaving(true);
     
     const promises = Object.values(results).map(result => {
-        const resultId = result.id || `${result.pupilId}_${result.subjectId}`; // Create a predictable ID
+        const resultId = result.id || `${result.studentId}_${result.subjectId}`; // Create a predictable ID
         const resultRef = doc(firestore, 'results', resultId);
         // Using set with merge to handle both create and update
         return setDocumentNonBlocking(resultRef, result, { merge: true });
@@ -223,7 +223,7 @@ export function ResultInputTable() {
     }, 1500)
   };
   
-  const isLoading = isUserLoading || classroomsLoading || classSubjectsLoading || allSubjectsLoading || enrollmentsLoading || allPupilsLoading;
+  const isLoading = isUserLoading || classroomsLoading || classSubjectsLoading || allSubjectsLoading || enrollmentsLoading || allStudentsLoading;
 
   if (isLoading) {
     return <Card><CardHeader><CardTitle>Loading Your Data...</CardTitle></CardHeader><CardContent><Loader2 className="animate-spin" /></CardContent></Card>
@@ -260,7 +260,7 @@ export function ResultInputTable() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="w-[250px]">Pupil Name</TableHead>
+                    <TableHead className="w-[250px]">Student Name</TableHead>
                     <TableHead>CA1 (10)</TableHead>
                     <TableHead>CA2 (10)</TableHead>
                     <TableHead>CA3 (10)</TableHead>
@@ -274,20 +274,20 @@ export function ResultInputTable() {
                   {!initialFetchDone ? (
                      <TableRow><TableCell colSpan={8} className="text-center"><Loader2 className="inline-block animate-spin mr-2" /> Loading scores...</TableCell></TableRow>
                   ) : (
-                    pupilsInClass.map((pupil) => {
-                      const result = results[pupil.id] || { ca1: null, ca2: null, ca3: null, exam: null };
+                    studentsInClass.map((student) => {
+                      const result = results[student.id] || { ca1: null, ca2: null, ca3: null, exam: null };
                       const total = (result.ca1 || 0) + (result.ca2 || 0) + (result.ca3 || 0) + (result.exam || 0);
                       const { grade: finalGrade, remark } = calculateGrade(total);
 
                       return (
-                        <TableRow key={pupil.id}>
-                          <TableCell className="font-medium">{pupil.name}</TableCell>
+                        <TableRow key={student.id}>
+                          <TableCell className="font-medium">{student.name}</TableCell>
                           <TableCell>
                             <Input
                               type="number"
                               className="h-8 w-20"
                               value={result.ca1 ?? ''}
-                              onChange={(e) => handleScoreChange(pupil.id, 'ca1', e.target.value)}
+                              onChange={(e) => handleScoreChange(student.id, 'ca1', e.target.value)}
                             />
                           </TableCell>
                           <TableCell>
@@ -295,7 +295,7 @@ export function ResultInputTable() {
                               type="number"
                               className="h-8 w-20"
                               value={result.ca2 ?? ''}
-                              onChange={(e) => handleScoreChange(pupil.id, 'ca2', e.target.value)}
+                              onChange={(e) => handleScoreChange(student.id, 'ca2', e.target.value)}
                             />
                           </TableCell>
                           <TableCell>
@@ -303,7 +303,7 @@ export function ResultInputTable() {
                               type="number"
                               className="h-8 w-20"
                               value={result.ca3 ?? ''}
-                              onChange={(e) => handleScoreChange(pupil.id, 'ca3', e.target.value)}
+                              onChange={(e) => handleScoreChange(student.id, 'ca3', e.target.value)}
                             />
                           </TableCell>
                           <TableCell>
@@ -311,7 +311,7 @@ export function ResultInputTable() {
                               type="number"
                               className="h-8 w-20"
                               value={result.exam ?? ''}
-                              onChange={(e) => handleScoreChange(pupil.id, 'exam', e.target.value)}
+                              onChange={(e) => handleScoreChange(student.id, 'exam', e.target.value)}
                             />
                           </TableCell>
                           <TableCell>{total}</TableCell>
@@ -337,7 +337,7 @@ export function ResultInputTable() {
           </>
         ) : (
           <div className="text-center text-muted-foreground py-12">
-            Please select a subject to view and enter pupil scores.
+            Please select a subject to view and enter student scores.
           </div>
         )}
       </CardContent>

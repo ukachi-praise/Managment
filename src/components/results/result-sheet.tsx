@@ -33,7 +33,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Separator } from '@/components/ui/separator';
 
 // --- TYPE DEFINITIONS ---
-export type PupilData = { id: string; name: string; admissionNumber: string; isDeleted?: boolean; };
+export type StudentData = { id: string; name: string; admissionNumber: string; isDeleted?: boolean; };
 export type Classroom = { id: string; name: string; };
 export type SchoolSettingsData = { currentSession: string; currentTermId: string; daysSchoolOpened: number; nextTermResumptionDate: Timestamp | Date | string; termEndingDate?: Timestamp | Date | string; };
 export type TemplateSettings = { studentInfo: { fontSize: number; visible: boolean; }; header: { visible: boolean; }; subjectsTable: { visible: boolean; }; summary: { visible: boolean; }; softSkills: { visible: boolean; }; gradingKey: { visible: boolean; }; remarks: { visible: boolean; }; signatures: { visible: boolean; }; };
@@ -51,7 +51,7 @@ type SubjectScore = {
 // Represents the entire result document for a term
 export type TermResult = {
   scores: Record<string, SubjectScore>; // subjectId -> SubjectScore
-  pupilId: string;
+  studentId: string;
   termId: string;
   sessionId: string;
   classroomId: string;
@@ -71,7 +71,7 @@ const termNames: Record<string, string> = { term1: '1st Term', term2: '2nd Term'
 const initialSettings: TemplateSettings = { studentInfo: { fontSize: 12, visible: true }, header: { visible: true }, subjectsTable: { visible: true }, summary: { visible: true }, softSkills: { visible: true }, gradingKey: { visible: true }, remarks: { visible: true }, signatures: { visible: true } };
 
 // --- HELPER COMPONENTS ---
-const PupilInfoDetail = ({ label, value, isLoading = false }: { label: string, value?: string | React.ReactNode, isLoading?: boolean }) => (
+const StudentInfoDetail = ({ label, value, isLoading = false }: { label: string, value?: string | React.ReactNode, isLoading?: boolean }) => (
     <div className="flex text-xs">
         <span className="font-semibold w-[90px] shrink-0">{label}:</span>
         <span className="flex-1 border-b border-dotted border-black">
@@ -81,7 +81,7 @@ const PupilInfoDetail = ({ label, value, isLoading = false }: { label: string, v
 );
 
 interface ResultSheetProps {
-  student: PupilData;
+  student: StudentData;
   classroom: Classroom;
   teacherName?: string; // Teacher's name is now a separate prop
   templateData?: SavedTemplateData; // Optional, for template builder
@@ -93,7 +93,7 @@ interface ResultSheetProps {
 
 // --- MAIN COMPONENT ---
 export const ResultSheet = forwardRef<HTMLDivElement, ResultSheetProps>(({ 
-  student: pupil, 
+  student, 
   classroom,
   teacherName,
   templateData,
@@ -103,7 +103,7 @@ export const ResultSheet = forwardRef<HTMLDivElement, ResultSheetProps>(({
   classPopulation
 }, ref) => {
   const firestore = useFirestore();
-  const pupilId = pupil.id;
+  const studentId = student.id;
   
   const [termResult, setTermResult] = useState<TermResult | null>(null);
   const [softSkillScores, setSoftSkillScores] = useState<SoftSkillScore[]>([]);
@@ -120,10 +120,10 @@ export const ResultSheet = forwardRef<HTMLDivElement, ResultSheetProps>(({
   const { data: allSubjects, isLoading: subjectsLoading } = useCollection<Subject>(subjectsQuery);
 
   const termResultRef = useMemoFirebase(() => {
-      if (isForTemplateBuilder || !firestore || !pupilId || !schoolSettings) return null;
+      if (isForTemplateBuilder || !firestore || !studentId || !schoolSettings) return null;
       const termResultId = `${schoolSettings.currentSession.replace('/', '-')}-${schoolSettings.currentTermId}`;
-      return doc(firestore, 'pupils', pupilId, 'results', termResultId);
-  }, [firestore, pupilId, schoolSettings, isForTemplateBuilder]);
+      return doc(firestore, 'students', studentId, 'results', termResultId);
+  }, [firestore, studentId, schoolSettings, isForTemplateBuilder]);
   
   useEffect(() => {
     if (isForTemplateBuilder || !termResultRef) {
@@ -199,7 +199,7 @@ export const ResultSheet = forwardRef<HTMLDivElement, ResultSheetProps>(({
       score: scores[Math.floor(Math.random() * scores.length)]
     }));
     setSoftSkillScores(generatedScores);
-  }, [isForTemplateBuilder, pupil.id]); // Depends on pupil ID to re-randomize for different pupils
+  }, [isForTemplateBuilder, student.id]); // Depends on student ID to re-randomize for different students
   
   const scoreTotals = useMemo(() => {
     if (!resultEntries || resultEntries.length === 0) {
@@ -256,8 +256,8 @@ export const ResultSheet = forwardRef<HTMLDivElement, ResultSheetProps>(({
     return <div className="relative mx-auto w-full max-w-[794px] aspect-[210/297] bg-white p-6 shadow-lg"><Skeleton className="h-full w-full" /></div>;
   }
   
-  if (!isForTemplateBuilder && !pupil) {
-      return <div className="rounded-lg border bg-card p-8">Pupil data could not be loaded.</div>
+  if (!isForTemplateBuilder && !student) {
+      return <div className="rounded-lg border bg-card p-8">Student data could not be loaded.</div>
   }
   
   const allSoftSkillsList = [
@@ -291,7 +291,7 @@ export const ResultSheet = forwardRef<HTMLDivElement, ResultSheetProps>(({
                             </div>
                         </div>
                         <div className="text-right">
-                            <h2 className="font-bold text-xl text-black">Pupil Report Card</h2>
+                            <h2 className="font-bold text-xl text-black">Student Report Card</h2>
                             <p className="text-base text-zinc-600">
                                 {reportTermName}, {reportSession}
                             </p>
@@ -305,15 +305,15 @@ export const ResultSheet = forwardRef<HTMLDivElement, ResultSheetProps>(({
                 {settings.studentInfo.visible && (
                     <div className="mb-4 p-2 border border-black" style={{ fontSize: `12px` }}>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-y-1 gap-x-4">
-                            <PupilInfoDetail label="Pupil Name" value={pupil.name} />
-                            <PupilInfoDetail label="Admission No" value={pupil.admissionNumber} />
-                            <PupilInfoDetail label="Class" value={classroom?.name} />
-                            <PupilInfoDetail label="No. in class" value={classPopulation ? classPopulation.toString() : 'N/A'} />
-                            <PupilInfoDetail label="Days Absent" value={daysAbsent} />
-                            <PupilInfoDetail label="Days Attended" value={isForTemplateBuilder ? '--' : termResult?.daysAttended?.toString() || '--'} />
-                            <PupilInfoDetail label="School Open" value={isForTemplateBuilder ? '65' : schoolSettings?.daysSchoolOpened?.toString()} />
-                            <PupilInfoDetail label="Term Ending" value={formattedTermEndingDate} />
-                            <PupilInfoDetail label="Resumption" value={formattedResumptionDate} />
+                            <StudentInfoDetail label="Student Name" value={student.name} />
+                            <StudentInfoDetail label="Admission No" value={student.admissionNumber} />
+                            <StudentInfoDetail label="Class" value={classroom?.name} />
+                            <StudentInfoDetail label="No. in class" value={classPopulation ? classPopulation.toString() : 'N/A'} />
+                            <StudentInfoDetail label="Days Absent" value={daysAbsent} />
+                            <StudentInfoDetail label="Days Attended" value={isForTemplateBuilder ? '--' : termResult?.daysAttended?.toString() || '--'} />
+                            <StudentInfoDetail label="School Open" value={isForTemplateBuilder ? '65' : schoolSettings?.daysSchoolOpened?.toString()} />
+                            <StudentInfoDetail label="Term Ending" value={formattedTermEndingDate} />
+                            <StudentInfoDetail label="Resumption" value={formattedResumptionDate} />
                         </div>
                     </div>
                 )}
@@ -399,7 +399,7 @@ export const ResultSheet = forwardRef<HTMLDivElement, ResultSheetProps>(({
                                         <TableRow><TableCell className="p-0.5 h-auto text-xs border border-black">70 – 79</TableCell><TableCell className="p-0.5 h-auto text-xs border border-black">B</TableCell><TableCell className="p-0.5 h-auto text-xs border border-black">Very Good</TableCell></TableRow>
                                         <TableRow><TableCell className="p-0.5 h-auto text-xs border border-black">60 – 69</TableCell><TableCell className="p-0.5 h-auto text-xs border border-black">C</TableCell><TableCell className="p-0.5 h-auto text-xs border border-black">Good</TableCell></TableRow>
                                         <TableRow><TableCell className="p-0.5 h-auto text-xs border border-black">50 – 59</TableCell><TableCell className="p-0.5 h-auto text-xs border border-black">D</TableCell><TableCell className="p-0.5 h-auto text-xs border border-black">Fair</TableCell></TableRow>
-                                        <TableRow><TableCell className="p-0.5 h-auto text-xs border border-black">0 – 49</TableCell><TableCell className="p-0.5 h-auto text-xs border border-black">F</TableCell><TableCell className="p-0.5 h-auto text-xs border-black">Fail</TableCell></TableRow>
+                                        <TableRow><TableCell className="p-0.5 h-auto text-xs border border-black">0 – 49</TableCell><TableCell className="p-0.5 h-auto text-xs border border-black">F</TableCell><TableCell className="p-0.5 h-auto text-xs border border-black">Fail</TableCell></TableRow>
                                     </TableBody>
                                 </Table>
                                 </div>

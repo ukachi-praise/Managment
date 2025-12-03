@@ -20,7 +20,7 @@ import { DocumentReference } from 'firebase/firestore';
 import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 
 interface RemarkGeneratorProps {
-  pupilName: string;
+  studentName: string;
   overallAverage: number;
   resultRef: DocumentReference | null;
   initialTeacherRemark?: string;
@@ -28,7 +28,7 @@ interface RemarkGeneratorProps {
 }
 
 export function RemarkGenerator({ 
-    pupilName, 
+    studentName, 
     overallAverage, 
     resultRef,
     initialTeacherRemark,
@@ -51,7 +51,7 @@ export function RemarkGenerator({
     toast({ title: 'Generating Remarks...', description: 'The AI is crafting personalized remarks.' });
 
     try {
-      const input: GenerateRemarksInput = { pupilName, overallAverage };
+      const input: GenerateRemarksInput = { studentName: studentName, overallAverage };
       const result = await generateRemarks(input);
       setTeacherRemark(result.teacherRemark);
       setHeadTeacherRemark(result.headTeacherRemark);
@@ -88,14 +88,14 @@ export function RemarkGenerator({
       <CardHeader>
         <CardTitle>AI-Powered Remarks</CardTitle>
         <CardDescription>
-          Generate personalized teacher and head teacher remarks based on the pupil&apos;s overall performance.
+          Generate personalized teacher and head teacher remarks based on the student&apos;s overall performance.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="flex items-center justify-between rounded-lg border bg-muted p-4">
             <div className='text-sm'>
-                <span className="text-muted-foreground">Pupil: </span>
-                <span className="font-semibold text-primary">{pupilName}</span>
+                <span className="text-muted-foreground">Student: </span>
+                <span className="font-semibold text-primary">{studentName}</span>
                 <span className="mx-4 text-slate-300">|</span>
                 <span className="text-muted-foreground">Overall Average: </span>
                 <span className="font-semibold text-primary">{overallAverage.toFixed(2)}%</span>

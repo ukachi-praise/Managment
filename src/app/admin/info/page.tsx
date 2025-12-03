@@ -58,7 +58,7 @@ const formSchema = z.object({
     required_error: 'Term ending date is required.',
   }),
   admissionNumberPrefix: z.string().optional(),
-  totalPupilCapacity: z.coerce.number().min(1, 'Must be greater than 0.'),
+  totalStudentCapacity: z.coerce.number().min(1, 'Must be greater than 0.'),
 });
 
 type SchoolSettings = z.infer<typeof formSchema>;
@@ -85,7 +85,7 @@ export default function InfoPage() {
         currentTermId: '',
         daysSchoolOpened: 0,
         admissionNumberPrefix: 'JKS',
-        totalPupilCapacity: 500,
+        totalStudentCapacity: 500,
     },
   });
   
@@ -122,32 +122,32 @@ export default function InfoPage() {
     });
   };
 
-  const handleDeleteAllPupils = async () => {
+  const handleDeleteAllStudents = async () => {
     if (!firestore) {
       toast({ variant: 'destructive', title: 'Error', description: 'Firestore not available.' });
       return;
     }
 
     setIsDeleting(true);
-    toast({ title: 'Processing...', description: 'Deleting all pupil data. This may take a moment.' });
+    toast({ title: 'Processing...', description: 'Deleting all student data. This may take a moment.' });
 
     try {
       const batch = writeBatch(firestore);
       
-      // 1. Get all classrooms to find all pupil subcollections
+      // 1. Get all classrooms to find all student subcollections
       const classroomsSnapshot = await getDocs(collection(firestore, 'classrooms'));
       for (const classroomDoc of classroomsSnapshot.docs) {
-        const pupilsInClassRef = collection(firestore, 'classrooms', classroomDoc.id, 'pupils');
-        const pupilsInClassSnapshot = await getDocs(pupilsInClassRef);
-        pupilsInClassSnapshot.forEach(doc => batch.delete(doc.ref));
+        const studentsInClassRef = collection(firestore, 'classrooms', classroomDoc.id, 'students');
+        const studentsInClassSnapshot = await getDocs(studentsInClassRef);
+        studentsInClassSnapshot.forEach(doc => batch.delete(doc.ref));
       }
       
-      // 2. Get all pupils to delete their root doc and results subcollection
-      const pupilsSnapshot = await getDocs(collection(firestore, 'pupils'));
-      for (const pupilDoc of pupilsSnapshot.docs) {
-          batch.delete(pupilDoc.ref); // Delete the pupil from /pupils
+      // 2. Get all students to delete their root doc and results subcollection
+      const studentsSnapshot = await getDocs(collection(firestore, 'students'));
+      for (const studentDoc of studentsSnapshot.docs) {
+          batch.delete(studentDoc.ref); // Delete the student from /students
           
-          const resultsRef = collection(firestore, 'pupils', pupilDoc.id, 'results');
+          const resultsRef = collection(firestore, 'students', studentDoc.id, 'results');
           const resultsSnapshot = await getDocs(resultsRef);
           resultsSnapshot.forEach(doc => batch.delete(doc.ref));
       }
@@ -160,7 +160,7 @@ export default function InfoPage() {
 
       toast({
         title: 'Success!',
-        description: 'All pupil data, enrollments, and results have been permanently deleted.',
+        description: 'All student data, enrollments, and results have been permanently deleted.',
       });
 
     } catch (error: any) {
@@ -169,7 +169,7 @@ export default function InfoPage() {
         title: 'Deletion Failed',
         description: error.message || 'An unexpected error occurred.',
       });
-      console.error("Error deleting all pupils:", error);
+      console.error("Error deleting all students:", error);
     } finally {
       setIsDeleting(false);
     }
@@ -269,10 +269,10 @@ export default function InfoPage() {
 
                 <FormField
                   control={form.control}
-                  name="totalPupilCapacity"
+                  name="totalStudentCapacity"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Total Pupil Capacity</FormLabel>
+                      <FormLabel>Total Student Capacity</FormLabel>
                       <FormControl>
                         <Input type="number" placeholder="e.g. 800" {...field} />
                       </FormControl>
@@ -383,26 +383,26 @@ export default function InfoPage() {
         <CardContent>
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between rounded-lg border border-destructive/30 bg-destructive/5 p-4 gap-4">
                 <div className="w-full sm:w-auto">
-                    <h3 className="font-semibold text-destructive">Delete All Pupils</h3>
-                    <p className="text-sm text-destructive/80">This will permanently delete all pupils, enrollments, and their results. This is useful for clearing test data.</p>
+                    <h3 className="font-semibold text-destructive">Delete All Students</h3>
+                    <p className="text-sm text-destructive/80">This will permanently delete all students, enrollments, and their results. This is useful for clearing test data.</p>
                 </div>
                 <AlertDialog>
                     <AlertDialogTrigger asChild>
                         <Button variant="destructive" disabled={isDeleting} className="w-full sm:w-auto flex-shrink-0">
                             {isDeleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <AlertTriangle className="mr-2 h-4 w-4" />}
-                            Delete All Pupil Data
+                            Delete All Student Data
                         </Button>
                     </AlertDialogTrigger>
                     <AlertDialogContent>
                         <AlertDialogHeader>
                             <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                             <AlertDialogDescription>
-                                This action is irreversible. It will permanently delete ALL pupil data across the entire application, including their personal details, class enrollments, and all past results. Do you wish to proceed?
+                                This action is irreversible. It will permanently delete ALL student data across the entire application, including their personal details, class enrollments, and all past results. Do you wish to proceed?
                             </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
                             <AlertDialogCancel>Cancel</AlertDialogCancel>
-                            <AlertDialogAction onClick={handleDeleteAllPupils} className="bg-destructive hover:bg-destructive/90">
+                            <AlertDialogAction onClick={handleDeleteAllStudents} className="bg-destructive hover:bg-destructive/90">
                                 Yes, delete everything
                             </AlertDialogAction>
                         </AlertDialogFooter>
@@ -415,7 +415,5 @@ export default function InfoPage() {
     </div>
   );
 }
-
-    
 
     

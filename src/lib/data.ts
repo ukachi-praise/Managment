@@ -1,5 +1,5 @@
 
-export type Pupil = {
+export type Student = {
   id: string;
   name: string;
   classId: string;
@@ -18,7 +18,7 @@ export type Subject = {
 };
 
 export type Grade = {
-  pupilId: string;
+  studentId: string;
   subjectId: string;
   ca1: number | null;
   ca2: number | null;

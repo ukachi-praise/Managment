@@ -41,8 +41,8 @@ export default function AdminDashboard() {
   const firestore = useFirestore();
   const { user } = useAppUser();
 
-  const pupilsQuery = useMemoFirebase(
-    () => (firestore ? query(collection(firestore, 'pupils')) : null),
+  const studentsQuery = useMemoFirebase(
+    () => (firestore ? query(collection(firestore, 'students')) : null),
     [firestore]
   );
   const classroomsQuery = useMemoFirebase(
@@ -58,26 +58,26 @@ export default function AdminDashboard() {
     [firestore]
   );
 
-  const { data: pupils, isLoading: pupilsLoading } = useCollection(pupilsQuery);
+  const { data: students, isLoading: studentsLoading } = useCollection(studentsQuery);
   const { data: classrooms, isLoading: classroomsLoading } = useCollection(classroomsQuery);
   const { data: subjects, isLoading: subjectsLoading } = useCollection(subjectsQuery);
   const { data: users, isLoading: usersLoading } = useCollection(usersQuery);
 
-  const totalPupils = pupils?.length ?? 0;
+  const totalStudents = students?.length ?? 0;
   const totalClasses = classrooms?.length ?? 0;
   const totalSubjects = subjects?.length ?? 0;
   // This is a simplification. A real app would filter for users with the 'teacher' role.
   const totalTeachers = users?.filter((u: any) => u.role === 'Teacher').length ?? 0;
   
-  const isLoading = pupilsLoading || classroomsLoading || subjectsLoading || usersLoading;
+  const isLoading = studentsLoading || classroomsLoading || subjectsLoading || usersLoading;
 
   return (
     <div className="space-y-6">
       <h1 className="text-3xl font-bold tracking-tight">Admin Dashboard</h1>
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatCard 
-          title="Total Pupils"
-          value={totalPupils}
+          title="Total Students"
+          value={totalStudents}
           icon={Users}
           note="Across all classes"
           isLoading={isLoading}

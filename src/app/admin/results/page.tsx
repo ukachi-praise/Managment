@@ -18,10 +18,10 @@ export default function ResultsPage() {
             </Button>
             <div className="space-y-1">
                 <h1 className="text-3xl font-bold tracking-tight">
-                View Pupil Results
+                View Student Results
                 </h1>
                 <p className="text-muted-foreground">
-                    Select a class to view and export pupil report cards.
+                    Select a class to view and export student report cards.
                 </p>
             </div>
         </div>
