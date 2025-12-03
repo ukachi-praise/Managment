@@ -11,7 +11,7 @@ type ScoreData = {
     remark: string;
 };
 
-type StudentInfo = {
+type PupilInfo = {
     name: string;
     admissionNumber: string;
 };
@@ -28,27 +28,27 @@ type SchoolSettingsInfo = {
 const termNames: Record<string, string> = { term1: '1st Term', term2: '2nd Term', term3: '3rd Term' };
 
 
-export async function generateStudentExcel(
-    student: StudentInfo, 
+export async function generatePupilExcel(
+    pupil: PupilInfo, 
     classroom: ClassroomInfo, 
     scores: ScoreData[],
     overall: { average: string, grade: string },
     schoolSettings: SchoolSettingsInfo
 ) {
     const workbook = new ExcelJS.Workbook();
-    const sheet = workbook.addWorksheet(`${student.name} Result`);
+    const sheet = workbook.addWorksheet(`${pupil.name} Result`);
 
     // --- Header ---
     sheet.mergeCells('A1:F1');
     const titleCell = sheet.getCell('A1');
-    titleCell.value = 'Student Report Card';
+    titleCell.value = 'Pupil Report Card';
     titleCell.font = { name: 'Arial Black', size: 16, bold: true };
     titleCell.alignment = { vertical: 'middle', horizontal: 'center' };
     sheet.getRow(1).height = 30;
 
-    // --- Student Info ---
+    // --- Pupil Info ---
     sheet.addRow([]); // Spacer
-    sheet.addRow(['Student Name:', student.name, '', 'Admission No:', student.admissionNumber]);
+    sheet.addRow(['Pupil Name:', pupil.name, '', 'Admission No:', pupil.admissionNumber]);
     sheet.addRow(['Class:', classroom.name, '', 'Session:', schoolSettings.currentSession]);
     sheet.addRow(['Term:', termNames[schoolSettings.currentTermId] || 'N/A']);
     sheet.getRow(3).font = { bold: true };
@@ -116,4 +116,3 @@ export async function generateStudentExcel(
     return await workbook.xlsx.writeBuffer();
 }
 
-    

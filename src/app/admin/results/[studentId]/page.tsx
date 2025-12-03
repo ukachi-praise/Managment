@@ -20,7 +20,7 @@ import { useToast } from '@/hooks/use-toast';
 
 
 // --- TYPE DEFINITIONS ---
-type Student = { id: string; name: string; admissionNumber: string; isDeleted?: boolean; };
+type Pupil = { id: string; name: string; admissionNumber: string; isDeleted?: boolean; };
 type Classroom = { id: string; name: string; teacherId?: string; };
 type Enrollment = { id: string; studentId: string; classroomId: string };
 type User = { id: string; name: string; };
@@ -42,7 +42,7 @@ export default function ResultSheetPage() {
     () => (firestore && studentId ? doc(firestore, 'students', studentId) : null),
     [firestore, studentId]
   );
-  const { data: student, isLoading: studentLoading } = useDoc<Student>(studentRef);
+  const { data: student, isLoading: studentLoading } = useDoc<Pupil>(studentRef);
   
   const enrollmentsQuery = useMemoFirebase(
     () => (firestore && studentId ? query(collection(firestore, 'enrollments'), where('studentId', '==', studentId)) : null),
@@ -165,7 +165,7 @@ export default function ResultSheetPage() {
             <Card className="m-4">
                 <CardContent className="p-8">
                      <h2 className="text-xl font-semibold text-destructive">Error Loading Report</h2>
-                     <p className="text-muted-foreground mt-2">Could not find the required student or classroom data.</p>
+                     <p className="text-muted-foreground mt-2">Could not find the required pupil or classroom data.</p>
                      <Button onClick={() => router.back()} className="mt-6">
                         <ArrowLeft className="mr-2 h-4 w-4" /> Go Back
                      </Button>
@@ -193,5 +193,3 @@ export default function ResultSheetPage() {
     </div>
   );
 }
-
-    

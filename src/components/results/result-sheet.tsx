@@ -33,7 +33,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Separator } from '@/components/ui/separator';
 
 // --- TYPE DEFINITIONS ---
-export type StudentData = { id: string; name: string; admissionNumber: string; isDeleted?: boolean; };
+export type PupilData = { id: string; name: string; admissionNumber: string; isDeleted?: boolean; };
 export type Classroom = { id: string; name: string; };
 export type SchoolSettingsData = { currentSession: string; currentTermId: string; daysSchoolOpened: number; nextTermResumptionDate: Timestamp | Date | string; termEndingDate?: Timestamp | Date | string; };
 export type TemplateSettings = { studentInfo: { fontSize: number; visible: boolean; }; header: { visible: boolean; }; subjectsTable: { visible: boolean; }; summary: { visible: boolean; }; softSkills: { visible: boolean; }; gradingKey: { visible: boolean; }; remarks: { visible: boolean; }; signatures: { visible: boolean; }; };
@@ -81,7 +81,7 @@ const StudentInfoDetail = ({ label, value, isLoading = false }: { label: string,
 );
 
 interface ResultSheetProps {
-  student: StudentData;
+  student: PupilData;
   classroom: Classroom;
   teacherName?: string; // Teacher's name is now a separate prop
   templateData?: SavedTemplateData; // Optional, for template builder
@@ -291,7 +291,7 @@ export const ResultSheet = forwardRef<HTMLDivElement, ResultSheetProps>(({
                             </div>
                         </div>
                         <div className="text-right">
-                            <h2 className="font-bold text-xl text-black">Student Report Card</h2>
+                            <h2 className="font-bold text-xl text-black">Pupil Report Card</h2>
                             <p className="text-base text-zinc-600">
                                 {reportTermName}, {reportSession}
                             </p>
@@ -474,5 +474,3 @@ export const ResultSheet = forwardRef<HTMLDivElement, ResultSheetProps>(({
 });
 
 ResultSheet.displayName = 'ResultSheet';
-
-    
