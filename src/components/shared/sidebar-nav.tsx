@@ -41,7 +41,7 @@ type NavItem = {
 
 const adminNavItems: NavItem[] = [
   { href: () => '/admin/dashboard', label: 'Dashboard', icon: Home },
-  { href: () => '/admin/students', label: 'Students', icon: Users },
+  { href: () => '/admin/students', label: 'Pupils', icon: Users },
   { href: () => '/admin/staff', label: 'Staff', icon: Users2 },
   { href: () => '/admin/classrooms', label: 'Classrooms', icon: Presentation },
   { href: () => '/admin/subjects', label: 'Subjects', icon: BookCopy },
@@ -134,3 +134,5 @@ export function SidebarNav({ role }: { role: 'admin' | 'teacher' }) {
     </Sidebar>
   );
 }
+
+    

@@ -28,8 +28,8 @@ import { Loader2, ArrowLeft } from 'lucide-react';
 import { format } from 'date-fns';
 import AuthGuard from '@/components/auth/AuthGuard';
 
-type Enrollment = { id: string; classroomId: string; studentId: string; createdAt: any };
-type Student = { id: string; name: string; isDeleted?: boolean; };
+type Enrollment = { id: string; classroomId: string; pupilId: string; createdAt: any };
+type Pupil = { id: string; name: string; isDeleted?: boolean; };
 type Classroom = { id: string; name: string; teacherId?: string };
 
 function EnrollmentPageContent() {
@@ -51,36 +51,36 @@ function EnrollmentPageContent() {
   );
   const { data: enrollments, isLoading: enrollmentsLoading } = useCollection<Enrollment>(enrollmentsQuery);
 
-  const studentIds = useMemo(() => enrollments?.map(e => e.studentId) || [], [enrollments]);
+  const pupilIds = useMemo(() => enrollments?.map(e => e.pupilId) || [], [enrollments]);
 
-  // Firestore 'in' queries are limited to 30 items. We might need to batch this in the future if a class has more students.
-  const studentsQuery = useMemoFirebase(
-    () => studentIds.length > 0 && firestore ? query(collection(firestore, 'students'), where('__name__', 'in', studentIds)) : null,
-    [firestore, studentIds]
+  // Firestore 'in' queries are limited to 30 items. We might need to batch this in the future if a class has more pupils.
+  const pupilsQuery = useMemoFirebase(
+    () => pupilIds.length > 0 && firestore ? query(collection(firestore, 'pupils'), where('__name__', 'in', pupilIds)) : null,
+    [firestore, pupilIds]
   );
-  const { data: students, isLoading: studentsLoading } = useCollection<Student>(studentsQuery);
+  const { data: pupils, isLoading: pupilsLoading } = useCollection<Pupil>(pupilsQuery);
 
-  const studentMap = useMemo(() => {
-    if (!students) return new Map();
-    return new Map(students.map(s => [s.id, s]));
-  }, [students]);
+  const pupilMap = useMemo(() => {
+    if (!pupils) return new Map();
+    return new Map(pupils.map(s => [s.id, s]));
+  }, [pupils]);
 
   const combinedEnrollmentData = useMemo(() => {
     if (!enrollments) return [];
     return enrollments
       .map(enrollment => {
-        const student = studentMap.get(enrollment.studentId);
-        if (!student || student.isDeleted) return null;
+        const pupil = pupilMap.get(enrollment.pupilId);
+        if (!pupil || pupil.isDeleted) return null;
         return {
           enrollmentId: enrollment.id,
-          studentName: student.name,
+          pupilName: pupil.name,
           enrollmentDate: enrollment.createdAt?.toDate ? format(enrollment.createdAt.toDate(), 'PPP') : 'N/A',
         };
       })
       .filter(item => item !== null);
-  }, [enrollments, studentMap]);
+  }, [enrollments, pupilMap]);
 
-  const isLoading = classroomLoading || enrollmentsLoading || studentsLoading;
+  const isLoading = classroomLoading || enrollmentsLoading || pupilsLoading;
 
   if (isLoading) {
       return (
@@ -98,7 +98,7 @@ function EnrollmentPageContent() {
             Enrollments for {classroom?.name}
           </h1>
           <p className="text-muted-foreground">
-            A list of all students enrolled in this class.
+            A list of all pupils enrolled in this class.
           </p>
         </div>
         <Button onClick={() => router.push('/admin/classrooms')} variant="outline">
@@ -109,16 +109,16 @@ function EnrollmentPageContent() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Student List</CardTitle>
+          <CardTitle>Pupil List</CardTitle>
           <CardDescription>
-            {combinedEnrollmentData.length} student(s) enrolled.
+            {combinedEnrollmentData.length} pupil(s) enrolled.
           </CardDescription>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Student Name</TableHead>
+                <TableHead>Pupil Name</TableHead>
                 <TableHead>Enrollment Date</TableHead>
               </TableRow>
             </TableHeader>
@@ -130,10 +130,10 @@ function EnrollmentPageContent() {
                       <div className="flex items-center gap-3">
                         <Avatar>
                           <AvatarFallback>
-                            {item.studentName.charAt(0).toUpperCase()}
+                            {item.pupilName.charAt(0).toUpperCase()}
                           </AvatarFallback>
                         </Avatar>
-                        <span>{item.studentName}</span>
+                        <span>{item.pupilName}</span>
                       </div>
                     </TableCell>
                     <TableCell>{item.enrollmentDate}</TableCell>
@@ -142,7 +142,7 @@ function EnrollmentPageContent() {
               ) : (
                 <TableRow>
                   <TableCell colSpan={2} className="h-24 text-center">
-                    No students found for this class.
+                    No pupils found for this class.
                   </TableCell>
                 </TableRow>
               )}
@@ -165,3 +165,5 @@ export default function GuardedEnrollmentPage() {
         </AuthGuard>
     )
 }
+
+    

@@ -57,9 +57,9 @@ import {
 } from '@/components/ui/select';
 
 
-type Student = { id: string; name: string; isDeleted?: boolean; admissionNumber: string; dob: string; gender: string; parentName: string; contact: string; };
+type Pupil = { id: string; name: string; isDeleted?: boolean; admissionNumber: string; dob: string; gender: string; parentName: string; contact: string; };
 type Classroom = { id: string; name: string };
-type StudentInClass = { id: string; name: string; studentId: string; };
+type PupilInClass = { id: string; name: string; pupilId: string; };
 
 
 export default function TeacherClassPage() {
@@ -70,9 +70,9 @@ export default function TeacherClassPage() {
   const { user } = useUser();
   const { toast } = useToast();
 
-  const [studentToDelete, setStudentToDelete] = useState<Student | null>(null);
-  const [editingStudent, setEditingStudent] = useState<Student | null>(null);
-  const [studentDetails, setStudentDetails] = useState<Student[]>([]);
+  const [pupilToDelete, setPupilToDelete] = useState<Pupil | null>(null);
+  const [editingPupil, setEditingPupil] = useState<Pupil | null>(null);
+  const [pupilDetails, setPupilDetails] = useState<Pupil[]>([]);
   const [detailsLoading, setDetailsLoading] = useState(true);
 
   // --- Data Fetching ---
@@ -82,97 +82,97 @@ export default function TeacherClassPage() {
   );
   const { data: classroom, isLoading: classroomLoading } = useDoc<Classroom>(classroomRef);
 
-  const studentsInClassQuery = useMemoFirebase(
-    () => (firestore && classroomId) ? query(collection(firestore, 'classrooms', classroomId, 'students')) : null,
+  const pupilsInClassQuery = useMemoFirebase(
+    () => (firestore && classroomId) ? query(collection(firestore, 'classrooms', classroomId, 'pupils')) : null,
     [firestore, classroomId]
   );
-  const { data: studentsInClass, isLoading: studentsLoading } = useCollection<StudentInClass>(studentsInClassQuery);
+  const { data: pupilsInClass, isLoading: pupilsLoading } = useCollection<PupilInClass>(pupilsInClassQuery);
   
   
   useEffect(() => {
-    const fetchStudentDetails = async () => {
-      if (!firestore || !studentsInClass) {
-        setStudentDetails([]);
+    const fetchPupilDetails = async () => {
+      if (!firestore || !pupilsInClass) {
+        setPupilDetails([]);
         setDetailsLoading(false);
         return;
       }
       
-      if (studentsInClass.length === 0) {
-        setStudentDetails([]);
+      if (pupilsInClass.length === 0) {
+        setPupilDetails([]);
         setDetailsLoading(false);
         return;
       }
 
       setDetailsLoading(true);
       try {
-        const studentIds = studentsInClass.map(e => e.studentId);
+        const pupilIds = pupilsInClass.map(e => e.pupilId);
         
-        if (studentIds.length === 0) {
-            setStudentDetails([]);
+        if (pupilIds.length === 0) {
+            setPupilDetails([]);
             setDetailsLoading(false);
             return;
         }
         
         const batches = [];
-        for (let i = 0; i < studentIds.length; i += 30) {
-          const batch = studentIds.slice(i, i + 30);
+        for (let i = 0; i < pupilIds.length; i += 30) {
+          const batch = pupilIds.slice(i, i + 30);
           if (batch.length > 0) {
-            const q = query(collection(firestore, 'students'), where('__name__', 'in', batch));
+            const q = query(collection(firestore, 'pupils'), where('__name__', 'in', batch));
             batches.push(getDocs(q));
           }
         }
 
         const results = await Promise.all(batches);
-        const allStudents: Student[] = [];
+        const allPupils: Pupil[] = [];
         
         results.forEach(snapshot => {
           snapshot.docs.forEach(doc => {
-            allStudents.push({ id: doc.id, ...doc.data() } as Student);
+            allPupils.push({ id: doc.id, ...doc.data() } as Pupil);
           });
         });
 
-        setStudentDetails(allStudents);
+        setPupilDetails(allPupils);
       } catch (error) {
-        console.error('Error fetching student details:', error);
+        console.error('Error fetching pupil details:', error);
         toast({
           variant: 'destructive',
           title: 'Error',
-          description: 'Failed to load student details.'
+          description: 'Failed to load pupil details.'
         });
       } finally {
         setDetailsLoading(false);
       }
     };
 
-    fetchStudentDetails();
-  }, [firestore, studentsInClass, toast]);
+    fetchPupilDetails();
+  }, [firestore, pupilsInClass, toast]);
   
-  const combinedStudentData = useMemo(() => {
-    if (!studentsInClass || !studentDetails) return [];
+  const combinedPupilData = useMemo(() => {
+    if (!pupilsInClass || !pupilDetails) return [];
     
-    const detailsMap = new Map(studentDetails.map(d => [d.id, d]));
+    const detailsMap = new Map(pupilDetails.map(d => [d.id, d]));
     
-    return studentsInClass
+    return pupilsInClass
       .map(e => {
-        const details = detailsMap.get(e.studentId);
+        const details = detailsMap.get(e.pupilId);
         if (!details || details.isDeleted) return null;
         return { ...details }; 
       })
-      .filter((s): s is Student => s !== null)
+      .filter((s): s is Pupil => s !== null)
       .sort((a,b) => a.name.localeCompare(b.name));
 
-  }, [studentsInClass, studentDetails]);
+  }, [pupilsInClass, pupilDetails]);
 
 
-  const isLoading = classroomLoading || studentsLoading || detailsLoading;
+  const isLoading = classroomLoading || pupilsLoading || detailsLoading;
 
-  const handleEditStudent = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleEditPupil = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!firestore || !editingStudent) return;
+    if (!firestore || !editingPupil) return;
     
     const form = event.currentTarget;
     const formData = new FormData(form);
-    const updatedStudentData = {
+    const updatedPupilData = {
       name: formData.get('name') as string,
       admissionNumber: formData.get('admissionNumber') as string,
       dob: formData.get('dob') as string,
@@ -181,30 +181,30 @@ export default function TeacherClassPage() {
       contact: formData.get('contact') as string,
     };
     
-    const studentRef = doc(firestore, 'students', editingStudent.id);
-    setDocumentNonBlocking(studentRef, updatedStudentData, { merge: true });
+    const pupilRef = doc(firestore, 'pupils', editingPupil.id);
+    setDocumentNonBlocking(pupilRef, updatedPupilData, { merge: true });
     
-    toast({ title: "Student Updated", description: `${updatedStudentData.name}'s details have been updated.` });
-    setEditingStudent(null);
+    toast({ title: "Pupil Updated", description: `${updatedPupilData.name}'s details have been updated.` });
+    setEditingPupil(null);
   };
 
 
-  const handleDeleteStudent = async () => {
-    if (!firestore || !studentToDelete) return;
+  const handleDeletePupil = async () => {
+    if (!firestore || !pupilToDelete) return;
     
     try {
         const batch = writeBatch(firestore);
 
-        // 1. Mark the main student record as deleted
-        const studentRef = doc(firestore, 'students', studentToDelete.id);
-        batch.update(studentRef, { isDeleted: true });
+        // 1. Mark the main pupil record as deleted
+        const pupilRef = doc(firestore, 'pupils', pupilToDelete.id);
+        batch.update(pupilRef, { isDeleted: true });
 
         // 2. Delete their reference from the classroom's subcollection
-        const classStudentRef = doc(firestore, 'classrooms', classroomId, 'students', studentToDelete.id);
-        batch.delete(classStudentRef);
+        const classPupilRef = doc(firestore, 'classrooms', classroomId, 'pupils', pupilToDelete.id);
+        batch.delete(classPupilRef);
         
         // 3. Delete from the root /enrollments collection
-        const enrollmentsQuery = query(collection(firestore, 'enrollments'), where('studentId', '==', studentToDelete.id), where('classroomId', '==', classroomId));
+        const enrollmentsQuery = query(collection(firestore, 'enrollments'), where('pupilId', '==', pupilToDelete.id), where('classroomId', '==', classroomId));
         const enrollmentsSnapshot = await getDocs(enrollmentsQuery);
         enrollmentsSnapshot.forEach(doc => batch.delete(doc.ref));
 
@@ -212,64 +212,64 @@ export default function TeacherClassPage() {
 
         toast({
             variant: 'destructive',
-            title: 'Student Removed',
-            description: `${studentToDelete.name} has been moved to the Recycle Bin.`,
+            title: 'Pupil Removed',
+            description: `${pupilToDelete.name} has been moved to the Recycle Bin.`,
         });
     } catch(error: any) {
         toast({
             variant: 'destructive',
-            title: 'Error Removing Student',
-            description: error.message || 'Could not remove the student.',
+            title: 'Error Removing Pupil',
+            description: error.message || 'Could not remove the pupil.',
         });
     } finally {
-        setStudentToDelete(null);
+        setPupilToDelete(null);
     }
   }
 
   return (
     <div className="space-y-6">
-      <AlertDialog open={!!studentToDelete} onOpenChange={(open) => !open && setStudentToDelete(null)}>
+      <AlertDialog open={!!pupilToDelete} onOpenChange={(open) => !open && setPupilToDelete(null)}>
         <AlertDialogContent>
             <AlertDialogHeader>
                 <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                 <AlertDialogDescription>
-                    This will remove <span className="font-semibold">{studentToDelete?.name}</span> from the class. This action moves the student to the recycle bin but does not permanently erase their data.
+                    This will remove <span className="font-semibold">{pupilToDelete?.name}</span> from the class. This action moves the pupil to the recycle bin but does not permanently erase their data.
                 </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
                 <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction onClick={handleDeleteStudent} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                <AlertDialogAction onClick={handleDeletePupil} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
                   Continue
                 </AlertDialogAction>
             </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
 
-      <Dialog open={!!editingStudent} onOpenChange={(open) => !open && setEditingStudent(null)}>
+      <Dialog open={!!editingPupil} onOpenChange={(open) => !open && setEditingPupil(null)}>
           <DialogContent className="sm:max-w-xl">
             <DialogHeader>
-              <DialogTitle>Edit Student Details</DialogTitle>
+              <DialogTitle>Edit Pupil Details</DialogTitle>
               <DialogDescription>
-                Update the information for {editingStudent?.name}.
+                Update the information for {editingPupil?.name}.
               </DialogDescription>
             </DialogHeader>
-            <form onSubmit={handleEditStudent} className="grid gap-4 py-4">
+            <form onSubmit={handleEditPupil} className="grid gap-4 py-4">
                <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="name">Student Name</Label>
-                  <Input id="name" name="name" defaultValue={editingStudent?.name} required />
+                  <Label htmlFor="name">Pupil Name</Label>
+                  <Input id="name" name="name" defaultValue={editingPupil?.name} required />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="admissionNumber">Admission Number</Label>
-                  <Input id="admissionNumber" name="admissionNumber" defaultValue={editingStudent?.admissionNumber} required />
+                  <Input id="admissionNumber" name="admissionNumber" defaultValue={editingPupil?.admissionNumber} required />
                 </div>
                  <div className="space-y-2">
                   <Label htmlFor="dob">Date of Birth</Label>
-                  <Input id="dob" name="dob" type="date" defaultValue={editingStudent?.dob} />
+                  <Input id="dob" name="dob" type="date" defaultValue={editingPupil?.dob} />
                 </div>
                 <div className="space-y-2">
                    <Label htmlFor="gender">Gender</Label>
-                    <Select name="gender" required defaultValue={editingStudent?.gender}>
+                    <Select name="gender" required defaultValue={editingPupil?.gender}>
                       <SelectTrigger>
                         <SelectValue placeholder="Select Gender" />
                       </SelectTrigger>
@@ -281,15 +281,15 @@ export default function TeacherClassPage() {
                  </div>
                  <div className="space-y-2">
                   <Label htmlFor="parentName">Parent / Guardian Name</Label>
-                  <Input id="parentName" name="parentName" defaultValue={editingStudent?.parentName} />
+                  <Input id="parentName" name="parentName" defaultValue={editingPupil?.parentName} />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="contact">Contact Number</Label>
-                  <Input id="contact" name="contact" defaultValue={editingStudent?.contact} />
+                  <Input id="contact" name="contact" defaultValue={editingPupil?.contact} />
                 </div>
                </div>
               <DialogFooter className="mt-4">
-                 <Button type="button" variant="outline" onClick={() => setEditingStudent(null)}>Cancel</Button>
+                 <Button type="button" variant="outline" onClick={() => setEditingPupil(null)}>Cancel</Button>
                 <Button type="submit">Save Changes</Button>
               </DialogFooter>
             </form>
@@ -314,9 +314,9 @@ export default function TeacherClassPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Student List</CardTitle>
+          <CardTitle>Pupil List</CardTitle>
           <CardDescription>
-            A list of all students enrolled in your class. Click a student's name to enter their scores.
+            A list of all pupils enrolled in your class. Click a pupil's name to enter their scores.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -328,38 +328,38 @@ export default function TeacherClassPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Student</TableHead>
+                  <TableHead>Pupil</TableHead>
                   <TableHead>Admission Number</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {combinedStudentData && combinedStudentData.length > 0 ? (
-                  combinedStudentData.map((student) => (
-                      <TableRow key={student.id}>
+                {combinedPupilData && combinedPupilData.length > 0 ? (
+                  combinedPupilData.map((pupil) => (
+                      <TableRow key={pupil.id}>
                         <TableCell className="font-medium">
                           <div className="flex items-center gap-3">
                             <Avatar>
                               <AvatarFallback>
-                                {student.name.charAt(0).toUpperCase()}
+                                {pupil.name.charAt(0).toUpperCase()}
                               </AvatarFallback>
                             </Avatar>
-                            <span>{student.name}</span>
+                            <span>{pupil.name}</span>
                           </div>
                         </TableCell>
                         <TableCell>
-                          {student.admissionNumber || 'N/A'}
+                          {pupil.admissionNumber || 'N/A'}
                         </TableCell>
                          <TableCell className="text-right">
                           <Button asChild variant="outline" size="sm">
-                            <Link href={`/teacher/results/${student.id}`}>
+                            <Link href={`/teacher/results/${pupil.id}`}>
                               Scores
                             </Link>
                           </Button>
-                           <Button variant="ghost" size="icon" onClick={() => setEditingStudent(student)}>
+                           <Button variant="ghost" size="icon" onClick={() => setEditingPupil(pupil)}>
                             <Edit className="h-4 w-4" />
                           </Button>
-                          <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => setStudentToDelete(student)}>
+                          <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => setPupilToDelete(pupil)}>
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         </TableCell>
@@ -368,7 +368,7 @@ export default function TeacherClassPage() {
                 ) : (
                   <TableRow>
                     <TableCell colSpan={3} className="h-24 text-center">
-                      No students found in this class.
+                      No pupils found in this class.
                     </TableCell>
                   </TableRow>
                 )}
@@ -380,5 +380,7 @@ export default function TeacherClassPage() {
     </div>
   );
 }
+
+    
 
     

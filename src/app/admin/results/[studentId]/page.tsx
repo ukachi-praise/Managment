@@ -20,16 +20,16 @@ import { useToast } from '@/hooks/use-toast';
 
 
 // --- TYPE DEFINITIONS ---
-type Student = { id: string; name: string; admissionNumber: string; isDeleted?: boolean; };
+type Pupil = { id: string; name: string; admissionNumber: string; isDeleted?: boolean; };
 type Classroom = { id: string; name: string; teacherId?: string; };
-type Enrollment = { id: string; studentId: string; classroomId: string };
+type Enrollment = { id: string; pupilId: string; classroomId: string };
 type User = { id: string; name: string; };
 
 
 export default function ResultSheetPage() {
   const params = useParams();
   const router = useRouter();
-  const studentId = params.studentId as string;
+  const pupilId = params.studentId as string;
   const firestore = useFirestore();
   const resultSheetRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
@@ -38,15 +38,15 @@ export default function ResultSheetPage() {
   const [classPopulation, setClassPopulation] = useState<number | null>(null);
   
   // --- Data Fetching ---
-  const studentRef = useMemoFirebase(
-    () => (firestore && studentId ? doc(firestore, 'students', studentId) : null),
-    [firestore, studentId]
+  const pupilRef = useMemoFirebase(
+    () => (firestore && pupilId ? doc(firestore, 'pupils', pupilId) : null),
+    [firestore, pupilId]
   );
-  const { data: student, isLoading: studentLoading } = useDoc<Student>(studentRef);
+  const { data: pupil, isLoading: pupilLoading } = useDoc<Pupil>(pupilRef);
   
   const enrollmentsQuery = useMemoFirebase(
-    () => (firestore && studentId ? query(collection(firestore, 'enrollments'), where('studentId', '==', studentId)) : null),
-    [firestore, studentId]
+    () => (firestore && pupilId ? query(collection(firestore, 'enrollments'), where('pupilId', '==', pupilId)) : null),
+    [firestore, pupilId]
   );
   const { data: enrollments, isLoading: enrollmentsLoading } = useCollection<Enrollment>(enrollmentsQuery);
 
@@ -81,11 +81,11 @@ export default function ResultSheetPage() {
   }, [firestore, classroom]);
 
 
-  const isLoading = studentLoading || classroomLoading || enrollmentsLoading;
+  const isLoading = pupilLoading || classroomLoading || enrollmentsLoading;
   
   const exportA4PDF = async () => {
     const node = resultSheetRef.current;
-    if (!node || !student) {
+    if (!node || !pupil) {
         toast({
             variant: "destructive",
             title: "Export Error",
@@ -129,7 +129,7 @@ export default function ResultSheetPage() {
             const y = (pageHeight - renderHeight) / 2;
 
             pdf.addImage(dataUrl, "PNG", x, y, renderWidth, renderHeight, undefined, "FAST");
-            pdf.save(`${student.name.replace(/ /g, '_')}_Report.pdf`);
+            pdf.save(`${pupil.name.replace(/ /g, '_')}_Report.pdf`);
             
             toast({
                 title: "Download Started",
@@ -159,13 +159,13 @@ export default function ResultSheetPage() {
     );
   }
 
-  if (!student || !classroom) {
+  if (!pupil || !classroom) {
     return (
         <div className="flex h-screen items-center justify-center bg-muted">
             <Card className="m-4">
                 <CardContent className="p-8">
                      <h2 className="text-xl font-semibold text-destructive">Error Loading Report</h2>
-                     <p className="text-muted-foreground mt-2">Could not find the required student or classroom data.</p>
+                     <p className="text-muted-foreground mt-2">Could not find the required pupil or classroom data.</p>
                      <Button onClick={() => router.back()} className="mt-6">
                         <ArrowLeft className="mr-2 h-4 w-4" /> Go Back
                      </Button>
@@ -188,8 +188,10 @@ export default function ResultSheetPage() {
         </Button>
       </div>
       <div className="max-w-4xl mx-auto space-y-4">
-         <ResultSheet ref={resultSheetRef} student={student} classroom={classroom} teacherName={teacher?.name} classPopulation={classPopulation} />
+         <ResultSheet ref={resultSheetRef} student={pupil} classroom={classroom} teacherName={teacher?.name} classPopulation={classPopulation} />
       </div>
     </div>
   );
 }
+
+    

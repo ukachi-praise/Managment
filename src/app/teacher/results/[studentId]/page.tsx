@@ -39,9 +39,9 @@ import {
 } from 'firebase/firestore';
 
 // --- TYPE DEFINITIONS ---
-type Student = { id: string; name: string; admissionNumber: string };
+type Pupil = { id: string; name: string; admissionNumber: string };
 type Subject = { id: string; name: string; subSubjects?: string[] };
-type Enrollment = { id: string; studentId: string; classroomId: string };
+type Enrollment = { id: string; pupilId: string; classroomId: string };
 type SchoolSettings = { currentSession: string; currentTermId: string; }
 
 // Represents a single subject's scores within the main result document
@@ -54,7 +54,7 @@ type SubjectScore = {
 // Represents the entire result document for a term
 type TermResult = {
   scores: Record<string, SubjectScore>; // subjectId -> SubjectScore
-  studentId: string;
+  pupilId: string;
   termId: string;
   sessionId: string;
   classroomId: string;
@@ -64,9 +64,9 @@ type TermResult = {
 };
 
 
-export default function StudentResultEntryPage() {
+export default function PupilResultEntryPage() {
   const params = useParams();
-  const studentId = params.studentId as string;
+  const pupilId = params.studentId as string;
   const router = useRouter();
 
   const { toast } = useToast();
@@ -76,12 +76,12 @@ export default function StudentResultEntryPage() {
   const [isSaving, setIsSaving] = useState(false);
 
   // --- DATA FETCHING ---
-  const studentRef = useMemoFirebase(() => (firestore ? doc(firestore, 'students', studentId) : null), [firestore, studentId]);
-  const { data: student, isLoading: studentLoading } = useDoc<Student>(studentRef);
+  const pupilRef = useMemoFirebase(() => (firestore ? doc(firestore, 'pupils', pupilId) : null), [firestore, pupilId]);
+  const { data: pupil, isLoading: pupilLoading } = useDoc<Pupil>(pupilRef);
   
   const enrollmentsQuery = useMemoFirebase(
-    () => (firestore && studentId ? query(collection(firestore, 'enrollments'), where('studentId', '==', studentId)) : null),
-    [firestore, studentId]
+    () => (firestore && pupilId ? query(collection(firestore, 'enrollments'), where('pupilId', '==', pupilId)) : null),
+    [firestore, pupilId]
   );
   const { data: enrollments, isLoading: enrollmentsLoading } = useCollection<Enrollment>(enrollmentsQuery);
 
@@ -121,10 +121,10 @@ export default function StudentResultEntryPage() {
   }, [classroomSubjects, allSubjects]);
 
   const termResultRef = useMemoFirebase(() => {
-      if (!firestore || !studentId || !schoolSettings) return null;
+      if (!firestore || !pupilId || !schoolSettings) return null;
       const termResultId = `${schoolSettings.currentSession.replace('/', '-')}-${schoolSettings.currentTermId}`;
-      return doc(firestore, 'students', studentId, 'results', termResultId);
-  }, [firestore, studentId, schoolSettings]);
+      return doc(firestore, 'pupils', pupilId, 'results', termResultId);
+  }, [firestore, pupilId, schoolSettings]);
 
   // --- REAL-TIME DATA SUBSCRIPTION ---
   useEffect(() => {
@@ -144,7 +144,7 @@ export default function StudentResultEntryPage() {
 
       setTermResult({
           scores: newScores,
-          studentId,
+          pupilId,
           termId: schoolSettings.currentTermId,
           sessionId: schoolSettings.currentSession,
           classroomId,
@@ -154,12 +154,12 @@ export default function StudentResultEntryPage() {
       });
 
     }, (error) => {
-        console.error("Error fetching student results:", error);
-        toast({ variant: 'destructive', title: "Error", description: "Could not fetch student scores." });
+        console.error("Error fetching pupil results:", error);
+        toast({ variant: 'destructive', title: "Error", description: "Could not fetch pupil scores." });
     });
 
     return () => unsubscribe();
-  }, [termResultRef, subjectsForClass, classroomId, studentId, schoolSettings, toast]);
+  }, [termResultRef, subjectsForClass, classroomId, pupilId, schoolSettings, toast]);
 
 
   const handleScoreChange = (
@@ -217,7 +217,7 @@ export default function StudentResultEntryPage() {
         setIsSaving(false);
         toast({
           title: 'Scores Saved!',
-          description: `Scores for ${student?.name} have been updated.`,
+          description: `Scores for ${pupil?.name} have been updated.`,
         });
         if(classroomId) {
             router.push(`/teacher/class/${classroomId}`);
@@ -242,7 +242,7 @@ export default function StudentResultEntryPage() {
   }, [termResult]);
 
 
-  const pageIsLoading = studentLoading || enrollmentsLoading || classSubjectsLoading || subjectsLoading || settingsLoading || !termResult;
+  const pageIsLoading = pupilLoading || enrollmentsLoading || classSubjectsLoading || subjectsLoading || settingsLoading || !termResult;
 
   return (
     <div className="space-y-6">
@@ -253,7 +253,7 @@ export default function StudentResultEntryPage() {
             </Button>
             <div>
                 <h1 className="text-3xl font-bold tracking-tight">
-                Result Entry for {student?.name || '...'}
+                Result Entry for {pupil?.name || '...'}
                 </h1>
                 <p className="text-muted-foreground">
                 Enter CA and Exam scores for each subject below.
@@ -350,7 +350,7 @@ export default function StudentResultEntryPage() {
             
             <div className="mt-6 border-t pt-6 space-y-4">
                 <div className="w-full max-w-xs">
-                    <Label htmlFor="daysAttended" className="font-semibold">Days Attended by Student</Label>
+                    <Label htmlFor="daysAttended" className="font-semibold">Days Attended by Pupil</Label>
                      <Input
                         id="daysAttended"
                         type="text"
@@ -378,9 +378,9 @@ export default function StudentResultEntryPage() {
       </CardContent>
     </Card>
 
-    {!pageIsLoading && student && (
+    {!pageIsLoading && pupil && (
         <RemarkGenerator 
-            studentName={student.name}
+            pupilName={pupil.name}
             overallAverage={overallAverage}
             resultRef={termResultRef}
             initialTeacherRemark={termResult?.teacherRemark}
@@ -391,5 +391,7 @@ export default function StudentResultEntryPage() {
     </div>
   );
 }
+
+    
 
     

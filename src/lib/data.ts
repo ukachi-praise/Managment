@@ -1,5 +1,5 @@
 
-export type Student = {
+export type Pupil = {
   id: string;
   name: string;
   classId: string;
@@ -18,7 +18,7 @@ export type Subject = {
 };
 
 export type Grade = {
-  studentId: string;
+  pupilId: string;
   subjectId: string;
   ca1: number | null;
   ca2: number | null;
@@ -43,3 +43,5 @@ export const headTeacherRemarks: string[] = [
     "Very Good Conduct",
     "Needs to Improve Behaviour",
 ];
+
+    

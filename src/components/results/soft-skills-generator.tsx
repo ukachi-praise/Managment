@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useFormState, useFormStatus } from 'react-dom';
@@ -15,7 +16,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Wand2, Loader2 } from 'lucide-react';
-import type { Student } from '@/lib/data';
+import type { Pupil } from '@/lib/data';
 import { useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 
@@ -33,7 +34,7 @@ function SubmitButton() {
   );
 }
 
-export function SoftSkillsGenerator({ student }: { student: Student }) {
+export function SoftSkillsGenerator({ pupil }: { pupil: Pupil }) {
   const { toast } = useToast();
   const initialState: FormState = {
     status: 'idle',
@@ -64,7 +65,7 @@ export function SoftSkillsGenerator({ student }: { student: Student }) {
         <CardHeader>
           <CardTitle>Soft Skill & Remark Generation</CardTitle>
           <CardDescription>
-            Use AI to automatically generate soft skill assessments and remarks based on student data.
+            Use AI to automatically generate soft skill assessments and remarks based on pupil data.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -82,7 +83,7 @@ export function SoftSkillsGenerator({ student }: { student: Student }) {
               <Input
                 id="attendance"
                 name="attendance"
-                defaultValue={student.attendance}
+                defaultValue={pupil.attendance}
               />
             </div>
           </div>
@@ -112,3 +113,5 @@ export function SoftSkillsGenerator({ student }: { student: Student }) {
     </Card>
   );
 }
+
+    

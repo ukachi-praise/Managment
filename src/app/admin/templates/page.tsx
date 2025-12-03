@@ -22,7 +22,7 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { ResultSheet } from '@/components/results/result-sheet';
-import type { SavedTemplateData, TemplateSettings, Classroom, SchoolSettingsData, StudentData, TermResult, ResultEntry } from '@/components/results/result-sheet';
+import type { SavedTemplateData, TemplateSettings, Classroom, SchoolSettingsData, PupilData, TermResult, ResultEntry } from '@/components/results/result-sheet';
 
 
 const initialSettings: TemplateSettings = {
@@ -121,8 +121,8 @@ export default function TemplatesPage() {
   };
   
     // Dummy data for previewing the ResultSheet component
-  const dummyStudent: StudentData = { id: 'dummy-student', name: 'John Doe', admissionNumber: 'JKS-00123' };
-  const dummyClassroom: Classroom = { id: 'dummy-class', name: 'Primary 5', teacherName: 'Mrs. Doe' };
+  const dummyPupil: PupilData = { id: 'dummy-pupil', name: 'John Doe', admissionNumber: 'JKS-00123' };
+  const dummyClassroom: Classroom = { id: 'dummy-class', name: 'Primary 5' };
   
   const dummyResultEntries: ResultEntry[] = Array.from({ length: 9 }).map((_, index) => ({
       subjectName: `Subject ${index + 1}`,
@@ -178,8 +178,9 @@ export default function TemplatesPage() {
 
       <main className="flex-1 p-4 sm:p-6 overflow-auto">
         <ResultSheet
-          student={dummyStudent}
+          student={dummyPupil}
           classroom={dummyClassroom}
+          teacherName="Mrs. Doe"
           templateData={{ name: templateName, schoolName, settings }}
           isForTemplateBuilder={true}
           resultEntries={dummyResultEntries}
@@ -189,3 +190,5 @@ export default function TemplatesPage() {
     </div>
   );
 }
+
+    
