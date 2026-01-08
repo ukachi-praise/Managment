@@ -101,7 +101,7 @@ export function ResultViewTable() {
                 return;
             }
 
-            // 2. Fetch student documents in batches
+            // 2. Fetch student documents in batches of 30
             const studentDetails: Student[] = [];
             for (let i = 0; i < studentIds.length; i += 30) {
                 const batchIds = studentIds.slice(i, i + 30);
@@ -184,7 +184,7 @@ export function ResultViewTable() {
             const average = scores.length > 0 ? (totalSum / scores.length) : 0;
             const overall = { average: average.toFixed(2), grade: calculateGrade(average).grade };
 
-            return { student, termResult, scores, overall };
+            return { pupil: student, classroom: { name: classroom.name, teacherName: classroom.teacherName }, termResult, scores, overall };
         }));
 
         const validStudentData = studentDataForApi.filter(data => data !== null);
@@ -196,7 +196,7 @@ export function ResultViewTable() {
         }
 
         const payload = {
-            students: validStudentData,
+            pupils: validStudentData,
             classroom,
             schoolSettings,
             templateData: savedTemplateData, // Pass the template data
