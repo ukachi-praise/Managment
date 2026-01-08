@@ -19,7 +19,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Loader2, Download, FileArchive } from 'lucide-react';
+import { Loader2, Download, FileArchive, Edit } from 'lucide-react';
 import {
   useFirestore,
   useUser,
@@ -260,7 +260,13 @@ export function ResultViewTable() {
                           <TableCell className="font-medium">
                               {student.name}
                           </TableCell>
-                           <TableCell className="text-right">
+                           <TableCell className="text-right space-x-2">
+                             <Button asChild variant="outline" size="sm">
+                              <Link href={`/admin/results/entry/${student.id}`}>
+                                 <Edit className="mr-2 h-4 w-4" />
+                                 Enter/Edit Scores
+                              </Link>
+                            </Button>
                             <Button asChild variant="outline" size="sm">
                               <Link href={`/admin/results/${student.id}`}>
                                 View Report
