@@ -17,6 +17,7 @@ import {
   Users2,
   User as UserIcon,
   Trash2,
+  Sheet,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -49,6 +50,7 @@ const adminNavItems: NavItem[] = [
   { href: () => '/admin/info', label: 'Info', icon: Info },
   { href: () => '/admin/remarks', label: 'Remarks', icon: MessageSquareQuote },
   { href: () => '/admin/results', label: 'Results', icon: ClipboardList },
+  { href: () => '/admin/broadsheet', label: 'Broadsheet', icon: Sheet },
   { href: () => '/admin/templates', label: 'Templates', icon: LayoutTemplate },
   { href: () => '/admin/students/deleted', label: 'Recycle Bin', icon: Trash2 },
   { href: () => '/admin/settings', label: 'Settings', icon: Settings },
@@ -88,6 +90,7 @@ export function SidebarNav({ role }: { role: 'admin' | 'teacher' }) {
   const isActive = (href: string, exact?: boolean) => {
     // Special handling for nested routes
     if (pathname.includes('/profile') && href.includes('/profile')) return true;
+    if (pathname.includes('/broadsheet') && href.includes('/broadsheet')) return true;
 
     // Special handling for the dynamic "My Class" link
     if (href.startsWith('/teacher/class/')) {
