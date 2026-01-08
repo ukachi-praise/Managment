@@ -51,7 +51,10 @@ type TemplateSettings = { studentInfo: { fontSize: number; visible: boolean; }; 
 type SavedTemplateData = { name: string; schoolName: string; settings: TemplateSettings; };
 type SubjectScore = { ca1: number | null; ca2: number | null; exam: number | null; };
 type TermResult = { scores: Record<string, SubjectScore>; studentId: string; termId: string; sessionId: string; classroomId: string; daysAttended?: number; };
-const termNames: Record<string, string> = { term1: '1st Term', term2: '2nd Term', term3: '3rd Term' };
+type AcademicSession = { id: string; name: string; }
+type Term = { id: string; name: "1st" | "2nd" | "3rd"; }
+
+const termNames: Record<string, string> = { "1st": '1st Term', "2nd": '2nd Term', "3rd": '3rd Term' };
 
 
 export function ResultViewTable() {
@@ -59,13 +62,22 @@ export function ResultViewTable() {
   const { toast } = useToast();
   const { user } = useUser();
 
+  const [selectedSession, setSelectedSession] = useState<string | null>(null);
+  const [selectedTerm, setSelectedTerm] = useState<string | null>(null);
   const [selectedClass, setSelectedClass] = useState<string | null>(null);
+
   const [studentsInClass, setStudentsInClass] = useState<Student[]>([]);
   const [isFetchingStudents, setIsFetchingStudents] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
   const [isZipping, setIsZipping] = useState(false);
   
   // --- Data Fetching ---
+  const sessionsQuery = useMemoFirebase(() => (firestore ? collection(firestore, 'sessions') : null), [firestore]);
+  const { data: sessions, isLoading: sessionsLoading } = useCollection<AcademicSession>(sessionsQuery);
+  
+  const termsQuery = useMemoFirebase(() => (firestore && selectedSession ? collection(firestore, 'sessions', selectedSession, 'terms') : null), [firestore, selectedSession]);
+  const { data: terms, isLoading: termsLoading } = useCollection<Term>(termsQuery);
+  
   const classroomsQuery = useMemoFirebase(
     () => (firestore ? collection(firestore, 'classrooms') : null),
     [firestore]
@@ -80,6 +92,11 @@ export function ResultViewTable() {
   
   const subjectsQuery = useMemoFirebase(() => (firestore ? collection(firestore, 'subjects') : null), [firestore]);
   const { data: allSubjects } = useCollection<Subject>(subjectsQuery);
+
+  const sortedSessions = useMemo(() => {
+    if (!sessions) return [];
+    return [...sessions].sort((a,b) => b.name.localeCompare(a.name));
+  }, [sessions]);
   
   useEffect(() => {
     const fetchStudents = async () => {
@@ -145,17 +162,21 @@ export function ResultViewTable() {
         duration: 10000,
     });
     
-    // Stagger the window opening to reduce the chance of browser blocking
     for (let i = 0; i < studentsInClass.length; i++) {
-      await new Promise(resolve => setTimeout(resolve, 300)); // 300ms delay between opening each tab
-      window.open(`/admin/results/${studentsInClass[i].id}`, '_blank');
+      await new Promise(resolve => setTimeout(resolve, 300));
+      const url = `/admin/results/${studentsInClass[i].id}?session=${selectedSession}&term=${selectedTerm}`;
+      window.open(url, '_blank');
     }
     
     setIsDownloading(false);
   };
   
     const handleBulkZip = async () => {
-    if (!studentsInClass || studentsInClass.length === 0 || !firestore || !schoolSettings || !allSubjects) return;
+    if (!studentsInClass || studentsInClass.length === 0 || !firestore || !schoolSettings || !allSubjects || !selectedSession || !selectedTerm) {
+        toast({ variant: "destructive", title: "Missing Info", description: "Please select a session, term, and class." });
+        return;
+    }
+
     setIsZipping(true);
     toast({
       title: 'Initiating ZIP Export...',
@@ -165,10 +186,17 @@ export function ResultViewTable() {
     try {
         const classroom = classrooms?.find(c => c.id === selectedClass);
         if(!classroom) throw new Error("Classroom not found");
+        
+        const sessionDoc = sessions?.find(s => s.id === selectedSession);
+        if(!sessionDoc) throw new Error("Session not found");
+
 
         const studentDataForApi = await Promise.all(studentsInClass.map(async (student) => {
-            const resultDocSnap = await getDocs(query(collection(firestore, 'students', student.id, 'results'), where('termId', '==', schoolSettings.currentTermId), where('sessionId', '==', schoolSettings.currentSession)));
             
+            const termResultId = `${sessionDoc.name.replace('/', '-')}-${selectedTerm}`;
+            const resultDocRef = doc(firestore, 'students', student.id, 'results', termResultId);
+            const resultDocSnap = await getDocs(query(collection(firestore, 'students', student.id, 'results'), where('__name__', '==', termResultId)));
+
             if (resultDocSnap.empty) return null;
 
             const termResult = resultDocSnap.docs[0].data() as TermResult;
@@ -190,7 +218,7 @@ export function ResultViewTable() {
         const validStudentData = studentDataForApi.filter(data => data !== null);
 
         if (validStudentData.length === 0) {
-            toast({ variant: "destructive", title: "No Data", description: "No result data found for any student in this class for the current term." });
+            toast({ variant: "destructive", title: "No Data", description: "No result data found for any student in this class for the selected term." });
             setIsZipping(false);
             return;
         }
@@ -198,8 +226,12 @@ export function ResultViewTable() {
         const payload = {
             pupils: validStudentData,
             classroom,
-            schoolSettings,
-            templateData: savedTemplateData, // Pass the template data
+            schoolSettings: {
+                ...schoolSettings,
+                currentSession: sessionDoc.name,
+                currentTermId: selectedTerm,
+            },
+            templateData: savedTemplateData,
         };
 
         const response = await fetch('/api/export-class-zip', {
@@ -226,45 +258,54 @@ export function ResultViewTable() {
     }
   };
 
-
-  const isLoading = classroomsLoading;
+  const isLoading = classroomsLoading || sessionsLoading;
 
   return (
     <Card>
       <CardHeader>
         <CardTitle>View & Export Results</CardTitle>
         <CardDescription>
-            Select a class to view the student list and export their report cards.
+            Select a session, term, and class to view student results and export their report cards.
         </CardDescription>
-        <div className="mt-4 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <Select onValueChange={handleClassChange} value={selectedClass || ''}>
-            <SelectTrigger className="w-full md:w-[300px]">
-              <SelectValue placeholder="Select a Class" />
-            </SelectTrigger>
-            <SelectContent>
-              {classrooms?.sort((a, b) => a.name.localeCompare(b.name)).map((c) => (
-                <SelectItem key={c.id} value={c.id}>
-                  {c.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-           {selectedClass && (
-            <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
-                <Button onClick={handleBulkDownload} disabled={isDownloading || isZipping || isFetchingStudents || studentsInClass.length === 0} className="w-full">
-                    {isDownloading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
-                    Export PDFs (Multi-Tab)
-                </Button>
-                <Button onClick={handleBulkZip} disabled={isDownloading || isZipping || isFetchingStudents || studentsInClass.length === 0} className="w-full">
-                    {isZipping ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileArchive className="mr-2 h-4 w-4" />}
-                    Export All as ZIP
-                </Button>
-            </div>
-           )}
+        <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Select onValueChange={setSelectedSession} value={selectedSession || ''}>
+                <SelectTrigger><SelectValue placeholder="Select Session" /></SelectTrigger>
+                <SelectContent>
+                    {sortedSessions.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
+                </SelectContent>
+            </Select>
+
+            <Select onValueChange={setSelectedTerm} value={selectedTerm || ''} disabled={!selectedSession || termsLoading}>
+                <SelectTrigger><SelectValue placeholder={termsLoading ? "Loading..." : "Select Term"} /></SelectTrigger>
+                <SelectContent>
+                    {terms?.map(t => <SelectItem key={t.id} value={t.name}>{termNames[t.name]}</SelectItem>)}
+                </SelectContent>
+            </Select>
+            
+            <Select onValueChange={handleClassChange} value={selectedClass || ''}>
+                <SelectTrigger><SelectValue placeholder="Select Class" /></SelectTrigger>
+                <SelectContent>
+                {classrooms?.sort((a, b) => a.name.localeCompare(b.name)).map((c) => (
+                    <SelectItem key={c.id} value={c.id}>
+                    {c.name}
+                    </SelectItem>
+                ))}
+                </SelectContent>
+            </Select>
+        </div>
+         <div className="mt-4 flex flex-col sm:flex-row gap-2 justify-end">
+            <Button onClick={handleBulkDownload} disabled={isDownloading || isZipping || isFetchingStudents || studentsInClass.length === 0} className="w-full sm:w-auto">
+                {isDownloading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
+                Export PDFs (Multi-Tab)
+            </Button>
+            <Button onClick={handleBulkZip} disabled={isDownloading || isZipping || isFetchingStudents || studentsInClass.length === 0} className="w-full sm:w-auto">
+                {isZipping ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileArchive className="mr-2 h-4 w-4" />}
+                Export All as ZIP
+            </Button>
         </div>
       </CardHeader>
       <CardContent>
-        {selectedClass ? (
+        {selectedClass && selectedSession && selectedTerm ? (
           <>
             <p className="text-sm text-muted-foreground mb-4">
               Click &quot;Export PDFs&quot; to open each report in a new tab (allow pop-ups), or &quot;Export All as ZIP&quot; to get a single file with all reports. You can also view an individual report by clicking the button in the table.
@@ -294,7 +335,7 @@ export function ResultViewTable() {
                               </Link>
                             </Button>
                             <Button asChild variant="outline" size="sm">
-                              <Link href={`/admin/results/${student.id}`}>
+                              <Link href={`/admin/results/${student.id}?session=${selectedSession}&term=${selectedTerm}`}>
                                 View Report
                               </Link>
                             </Button>
@@ -314,7 +355,7 @@ export function ResultViewTable() {
           </>
         ) : (
           <div className="text-center text-muted-foreground py-12">
-            Please select a class to view the list of students.
+            Please select a session, term, and class to view the list of students.
           </div>
         )}
       </CardContent>

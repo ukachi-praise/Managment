@@ -40,6 +40,7 @@ export type TemplateSettings = { studentInfo: { fontSize: number; visible: boole
 export type SavedTemplateData = { name: string; schoolName: string; settings: TemplateSettings; };
 export type ResultEntry = { subjectName: string; ca1: number | null; ca2: number | null; exam: number | null; total: number; grade: string; remark: string; subSubjects?: string[] };
 type Subject = { id:string; name: string; subSubjects?: string[] };
+type AcademicSession = { id: string; name: string; };
 
 // Represents a single subject's scores within the main result document
 type SubjectScore = {
@@ -66,7 +67,7 @@ type SoftSkillScore = {
 };
 
 
-const termNames: Record<string, string> = { term1: '1st Term', term2: '2nd Term', term3: '3rd Term' };
+const termNames: Record<string, string> = { "1st": '1st Term', "2nd": '2nd Term', "3rd": '3rd Term' };
 
 const initialSettings: TemplateSettings = { studentInfo: { fontSize: 12, visible: true }, header: { visible: true }, subjectsTable: { visible: true }, summary: { visible: true }, softSkills: { visible: true }, gradingKey: { visible: true }, remarks: { visible: true }, signatures: { visible: true } };
 
@@ -83,12 +84,16 @@ const StudentInfoDetail = ({ label, value, isLoading = false }: { label: string,
 interface ResultSheetProps {
   student: PupilData;
   classroom: Classroom;
-  teacherName?: string; // Teacher's name is now a separate prop
-  templateData?: SavedTemplateData; // Optional, for template builder
-  isForTemplateBuilder?: boolean; // Flag to indicate context
-  resultEntries?: ResultEntry[]; // Optional, for template builder
-  overall?: { average: string, grade: string }; // Optional, for template builder
+  teacherName?: string;
   classPopulation?: number | null;
+  // New props for historical data
+  sessionId: string | null;
+  termId: string | null;
+  // Props for template builder
+  templateData?: SavedTemplateData; 
+  isForTemplateBuilder?: boolean; 
+  resultEntries?: ResultEntry[];
+  overall?: { average: string, grade: string };
 }
 
 // --- MAIN COMPONENT ---
@@ -96,11 +101,13 @@ export const ResultSheet = forwardRef<HTMLDivElement, ResultSheetProps>(({
   student, 
   classroom,
   teacherName,
+  classPopulation,
+  sessionId,
+  termId,
   templateData,
   isForTemplateBuilder = false,
-  resultEntries: templateResultEntries, // Renamed to avoid conflict
-  overall: templateOverall, // Renamed to avoid conflict
-  classPopulation
+  resultEntries: templateResultEntries,
+  overall: templateOverall,
 }, ref) => {
   const firestore = useFirestore();
   const studentId = student.id;
@@ -113,6 +120,9 @@ export const ResultSheet = forwardRef<HTMLDivElement, ResultSheetProps>(({
   const settingsRef = useMemoFirebase(() => (!isForTemplateBuilder && firestore ? doc(firestore, 'schoolSettings', 'current') : null), [firestore, isForTemplateBuilder]);
   const { data: schoolSettings, isLoading: settingsLoading } = useDoc<SchoolSettingsData>(settingsRef);
   
+  const sessionDocRef = useMemoFirebase(() => (firestore && sessionId ? doc(firestore, 'sessions', sessionId) : null), [firestore, sessionId]);
+  const { data: sessionDoc, isLoading: sessionLoading } = useDoc<AcademicSession>(sessionDocRef);
+
   const templateRef = useMemoFirebase(() => (!isForTemplateBuilder && firestore ? doc(firestore, 'resultTemplates', 'main-template') : null), [firestore, isForTemplateBuilder]);
   const { data: savedTemplateData, isLoading: templateLoading } = useDoc<SavedTemplateData>(templateRef);
   
@@ -120,10 +130,10 @@ export const ResultSheet = forwardRef<HTMLDivElement, ResultSheetProps>(({
   const { data: allSubjects, isLoading: subjectsLoading } = useCollection<Subject>(subjectsQuery);
 
   const termResultRef = useMemoFirebase(() => {
-      if (isForTemplateBuilder || !firestore || !studentId || !schoolSettings) return null;
-      const termResultId = `${schoolSettings.currentSession.replace('/', '-')}-${schoolSettings.currentTermId}`;
+      if (isForTemplateBuilder || !firestore || !studentId || !sessionDoc || !termId) return null;
+      const termResultId = `${sessionDoc.name.replace('/', '-')}-${termId}`;
       return doc(firestore, 'students', studentId, 'results', termResultId);
-  }, [firestore, studentId, schoolSettings, isForTemplateBuilder]);
+  }, [firestore, studentId, sessionDoc, termId, isForTemplateBuilder]);
   
   useEffect(() => {
     if (isForTemplateBuilder || !termResultRef) {
@@ -180,43 +190,26 @@ export const ResultSheet = forwardRef<HTMLDivElement, ResultSheetProps>(({
   }, [resultEntries]);
 
   useEffect(() => {
-    // This effect now runs only on the client-side after hydration.
-    const allSoftSkills = [
-        "Punctuality", "Neatness", "Creativity", "Honesty", 
-        "Communication", "Teamwork", "Attentiveness", 
-        "Self Control", "Leadership", "Initiative"
-    ];
-
+    const allSoftSkills = ["Punctuality", "Neatness", "Creativity", "Honesty", "Communication", "Teamwork", "Attentiveness", "Self Control", "Leadership", "Initiative"];
     if (isForTemplateBuilder) {
-      const dummySkills = allSoftSkills.map(skill => ({ skillName: skill, score: 5 }));
-      setSoftSkillScores(dummySkills);
+      setSoftSkillScores(allSoftSkills.map(skill => ({ skillName: skill, score: 5 })));
       return;
     }
-
     const scores = [3, 4, 5];
-    const generatedScores = allSoftSkills.map(skill => ({
-      skillName: skill,
-      score: scores[Math.floor(Math.random() * scores.length)]
-    }));
+    const generatedScores = allSoftSkills.map(skill => ({ skillName: skill, score: scores[Math.floor(Math.random() * scores.length)] }));
     setSoftSkillScores(generatedScores);
-  }, [isForTemplateBuilder, student.id]); // Depends on student ID to re-randomize for different students
+  }, [isForTemplateBuilder, student.id]);
   
   const scoreTotals = useMemo(() => {
-    if (!resultEntries || resultEntries.length === 0) {
-      return { ca1: 0, ca2: 0, exam: 0, total: 0 };
-    }
-    return resultEntries.reduce(
-      (acc, entry) => {
-        acc.ca1 += entry.ca1 || 0;
-        acc.ca2 += entry.ca2 || 0;
-        acc.exam += entry.exam || 0;
-        acc.total += entry.total || 0;
-        return acc;
-      },
-      { ca1: 0, ca2: 0, exam: 0, total: 0 }
-    );
+    if (!resultEntries || resultEntries.length === 0) return { ca1: 0, ca2: 0, exam: 0, total: 0 };
+    return resultEntries.reduce((acc, entry) => {
+      acc.ca1 += entry.ca1 || 0;
+      acc.ca2 += entry.ca2 || 0;
+      acc.exam += entry.exam || 0;
+      acc.total += entry.total || 0;
+      return acc;
+    }, { ca1: 0, ca2: 0, exam: 0, total: 0 });
   }, [resultEntries]);
-
 
   const parseAndFormatDate = (dateValue: any) => {
     if (!dateValue) return 'N/A';
@@ -235,10 +228,10 @@ export const ResultSheet = forwardRef<HTMLDivElement, ResultSheetProps>(({
     return parseAndFormatDate(schoolSettings?.termEndingDate);
   }, [schoolSettings, isForTemplateBuilder]);
 
-  const reportSession = isForTemplateBuilder ? '2023/2024' : (termResult?.sessionId || schoolSettings?.currentSession);
-  const reportTermName = isForTemplateBuilder ? '1st Term' : (schoolSettings?.currentTermId ? termNames[schoolSettings.currentTermId] : 'N/A');
+  const reportSession = isForTemplateBuilder ? '2023/2024' : (sessionDoc?.name || '...');
+  const reportTermName = isForTemplateBuilder ? '1st Term' : (termId ? termNames[termId] : 'N/A');
 
-  const isLoading = !isForTemplateBuilder && (settingsLoading || templateLoading || subjectsLoading || !termResultRef);
+  const isLoading = !isForTemplateBuilder && (settingsLoading || templateLoading || subjectsLoading || sessionLoading || termResultLoading);
   
   const daysAbsent = useMemo(() => {
     if (isForTemplateBuilder) return '--';
@@ -260,19 +253,12 @@ export const ResultSheet = forwardRef<HTMLDivElement, ResultSheetProps>(({
       return <div className="rounded-lg border bg-card p-8">Student data could not be loaded.</div>
   }
   
-  const allSoftSkillsList = [
-    "Punctuality", "Neatness", "Creativity",
-    "Honesty", "Communication", "Teamwork",
-    "Attentiveness", "Self Control", "Leadership", "Initiative"
-  ];
-
+  const allSoftSkillsList = ["Punctuality", "Neatness", "Creativity", "Honesty", "Communication", "Teamwork", "Attentiveness", "Self Control", "Leadership", "Initiative"];
   const softSkillsMap = new Map(softSkillScores.map(s => [s.skillName, s.score]));
-  
   const softSkillsCol1 = allSoftSkillsList.slice(0, 6);
   const softSkillsCol2 = allSoftSkillsList.slice(6);
 
 
-  // --- RENDER ---
   return (
     <div ref={ref} className="relative w-full max-w-[794px] mx-auto min-h-[1250px] scale-[0.3] sm:scale-[0.5] md:scale-[0.7] lg:scale-100 origin-top-left sm:origin-top bg-white text-black print:shadow-none print:m-0 print:p-0 print:w-full print:h-auto print:scale-100 flex flex-col p-6 border-4 border-black">
         <div className="absolute inset-0 z-0 flex items-center justify-center pointer-events-none">

@@ -1,0 +1,246 @@
+
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "type": "object",
+      "description": "Represents a user in the system (Admin or Teacher).",
+      "properties": {
+        "id": { "type": "string", "description": "Unique identifier for the user." },
+        "name": { "type": "string", "description": "User's full name." },
+        "email": { "type": "string", "description": "User's email for login." },
+        "role": { "type": "string", "enum": ["Admin", "Teacher"], "description": "User's role in the system." },
+        "assignedClassroomId": { "type": "string", "description": "For teachers, the ID of the classroom they are assigned to." },
+        "phoneNumber": { "type": "string", "description": "User's contact phone number." }
+      },
+      "required": ["id", "name", "role", "email"]
+    },
+    "Classroom": {
+      "title": "Classroom",
+      "type": "object",
+      "description": "Represents a classroom.",
+      "properties": {
+        "id": { "type": "string", "description": "Unique identifier for the classroom." },
+        "name": { "type": "string", "description": "Name of the classroom (e.g., 'Creche', 'Primary 5')." },
+        "teacherId": { "type": "string", "description": "Reference to the assigned teacher." },
+        "teacherName": { "type": "string", "description": "Denormalized name of the assigned teacher." }
+      },
+      "required": ["id", "name"]
+    },
+    "Subject": {
+      "title": "Subject",
+      "type": "object",
+      "description": "Represents an academic subject. Can include sub-subjects for display purposes.",
+      "properties": {
+        "id": { "type": "string", "description": "Unique identifier for the subject." },
+        "name": { "type": "string", "description": "Name of the subject (e.g., 'Mathematics', 'B.S.T')." },
+        "subSubjects": { 
+          "type": "array", 
+          "description": "Optional list of sub-subject names for display.",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": ["id", "name"]
+    },
+    "ClassroomSubject": {
+      "title": "ClassroomSubject",
+      "type": "object",
+      "description": "Represents the assignment of a subject to a classroom.",
+      "properties": {
+        "classroomId": { "type": "string" },
+        "subjectId": { "type": "string" }
+      },
+      "required": ["classroomId", "subjectId"]
+    },
+    "Student": {
+      "title": "Student",
+      "type": "object",
+      "description": "Represents a student.",
+      "properties": {
+        "id": { "type": "string", "description": "Unique identifier for the student." },
+        "name": { "type": "string", "description": "Name of the student." },
+        "admissionNumber": { "type": "string", "description": "The student's unique admission number." },
+        "gender": { "type": "string", "enum": ["Male", "Female"] },
+        "isDeleted": {"type": "boolean", "description": "Flag for soft-deleting a student."}
+      },
+      "required": ["id", "name", "admissionNumber", "gender"]
+    },
+    "ClassroomStudent": {
+        "title": "ClassroomStudent",
+        "type": "object",
+        "description": "Represents a student within a class subcollection.",
+        "properties": {
+            "name": { "type": "string" },
+            "studentId": { "type": "string" },
+            "createdAt": { "type": "string", "format": "date-time" }
+        },
+        "required": ["name", "studentId", "createdAt"]
+    },
+    "AcademicSession": {
+        "title": "AcademicSession",
+        "type": "object",
+        "description": "Represents an academic session, e.g., 2025/2026.",
+        "properties": {
+            "id": { "type": "string" },
+            "name": { "type": "string", "description": "Format: YYYY/YYYY" }
+        },
+        "required": ["id", "name"]
+    },
+    "Term": {
+        "title": "Term",
+        "type": "object",
+        "description": "Represents a term within an academic session (1st, 2nd, 3rd).",
+        "properties": {
+            "id": { "type": "string" },
+            "sessionId": { "type": "string" },
+            "name": { "type": "string", "enum": ["1st", "2nd", "3rd"] }
+        },
+        "required": ["id", "sessionId", "name"]
+    },
+    "Result": {
+      "title": "Result",
+      "type": "object",
+      "description": "Represents a student's academic scores for all subjects in a specific term.",
+      "properties": {
+        "studentId": { "type": "string" },
+        "termId": { "type": "string" },
+        "sessionId": { "type": "string" },
+        "classroomId": { "type": "string", "description": "Denormalized for security rules."},
+        "scores": {
+          "type": "object",
+          "description": "A map of subject IDs to their scores.",
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "ca1": { "type": "number" },
+              "ca2": { "type": "number" },
+              "exam": { "type": "number" }
+            }
+          }
+        },
+        "daysSchoolOpened": { "type": "number" },
+        "daysAttended": { "type": "number" },
+        "attendancePercentage": { "type": "number" },
+        "teacherRemark": { "type": "string", "description": "The class teacher's remark for the term." },
+        "headTeacherRemark": { "type": "string", "description": "The head teacher's remark for the term." }
+      },
+      "required": ["studentId", "termId", "sessionId", "classroomId"]
+    },
+    "SoftSkillResult": {
+      "title": "SoftSkillResult",
+      "type": "object",
+      "description": "Represents a student's score for a specific soft skill.",
+      "properties": {
+          "studentId": { "type": "string" },
+          "termId": { "type": "string" },
+          "skillName": { "type": "string" },
+          "score": { "type": "number" }
+      },
+      "required": ["studentId", "termId", "skillName", "score"]
+    },
+    "HeadTeacherRemark": {
+        "title": "HeadTeacherRemark",
+        "type": "object",
+        "description": "A predefined remark that a Head Teacher can use.",
+        "properties": {
+            "id": { "type": "string" },
+            "remark": { "type": "string" }
+        },
+        "required": ["id", "remark"]
+    },
+    "ResultSummary": {
+        "title": "ResultSummary",
+        "type": "object",
+        "description": "Contains overall summary information for a student's term report.",
+        "properties": {
+            "studentId": { "type": "string" },
+            "termId": { "type": "string" },
+            "overallAverage": { "type": "number" },
+            "overallGrade": { "type": "string" },
+            "headTeacherRemark": { "type": "string" },
+            "nextTermResumptionDate": { "type": "string", "format": "date" },
+            "nextTermFees": { "type": "number" }
+        },
+        "required": ["studentId", "termId"]
+    },
+    "NextTermInfo": {
+        "title": "NextTermInfo",
+        "type": "object",
+        "description": "Information about the next term for a specific class.",
+        "properties": {
+            "classroomId": { "type": "string" },
+            "termId": { "type": "string" },
+            "resumptionDate": { "type": "string", "format": "date" },
+            "fees": { "type": "number" }
+        },
+        "required": ["classroomId", "termId", "resumptionDate", "fees"]
+    },
+    "ResultTemplate": {
+      "title": "ResultTemplate",
+      "type": "object",
+      "description": "Represents a template for generating results.",
+      "properties": {
+        "id": { "type": "string" }, "name": { "type": "string" },
+        "templateData": { "type": "string", "description": "JSON data representing the template structure." },
+        "logoUrl": { "type": "string", "description": "URL to the logo image in cloud storage."}
+      },
+      "required": ["id", "name", "templateData"]
+    },
+    "AuditLog": {
+        "title": "AuditLog",
+        "type": "object",
+        "description": "Logs changes made to important data like results.",
+        "properties": {
+            "timestamp": { "type": "string", "format": "date-time" },
+            "userId": { "type": "string" },
+            "action": { "type": "string" },
+            "entity": { "type": "string" },
+            "entityId": { "type": "string" },
+            "oldValue": { "type": "object" },
+            "newValue": { "type": "object" }
+        },
+        "required": ["timestamp", "userId", "action", "entity", "entityId"]
+    },
+    "SchoolSettings": {
+      "title": "SchoolSettings",
+      "type": "object",
+      "description": "Global settings for the school, like current term and session.",
+      "properties": {
+        "currentSession": { "type": "string" },
+        "currentTermId": { "type": "string" },
+        "daysSchoolOpened": { "type": "number" },
+        "nextTermResumptionDate": { "type": "string", "format": "date" },
+        "termEndingDate": { "type": "string", "format": "date" },
+        "admissionNumberPrefix": { "type": "string", "description": "The prefix for auto-generated student admission numbers (e.g., 'JKS')."},
+        "totalStudentCapacity": { "type": "number", "description": "The maximum number of students the school expects to have." }
+      },
+      "required": ["currentSession", "currentTermId"]
+    }
+  },
+  "auth": {
+    "providers": ["password", "anonymous"]
+  },
+  "firestore": {
+    "structure": [
+      { "path": "/users/{userId}", "definition": { "schema": { "$ref": "#/backend/entities/User" } } },
+      { "path": "/classrooms/{classroomId}", "definition": { "schema": { "$ref": "#/backend/entities/Classroom" } } },
+      { "path": "/classrooms/{classroomId}/students/{studentId}", "definition": { "schema": { "$ref": "#/backend/entities/ClassroomStudent" } } },
+      { "path": "/subjects/{subjectId}", "definition": { "schema": { "$ref": "#/backend/entities/Subject" } } },
+      { "path": "/classroomSubjects/{classroomSubjectId}", "definition": { "schema": { "$ref": "#/backend/entities/ClassroomSubject" } } },
+      { "path": "/students/{studentId}", "definition": { "schema": { "$ref": "#/backend/entities/Student" } } },
+      { "path": "/students/{studentId}/results/{termResultId}", "definition": { "schema": { "$ref": "#/backend/entities/Result" } } },
+      { "path": "/sessions/{sessionId}", "definition": { "schema": { "$ref": "#/backend/entities/AcademicSession" } } },
+      { "path": "/sessions/{sessionId}/terms/{termId}", "definition": { "schema": { "$ref": "#/backend/entities/Term" } } },
+      { "path": "/softSkillResults/{softSkillResultId}", "definition": { "schema": { "$ref": "#/backend/entities/SoftSkillResult" } } },
+      { "path": "/headTeacherRemarks/{remarkId}", "definition": { "schema": { "$ref": "#/backend/entities/HeadTeacherRemark" } } },
+      { "path": "/resultSummaries/{summaryId}", "definition": { "schema": { "$ref": "#/backend/entities/ResultSummary" } } },
+      { "path": "/nextTermInfo/{infoId}", "definition": { "schema": { "$ref": "#/backend/entities/NextTermInfo" } } },
+      { "path": "/resultTemplates/{templateId}", "definition": { "schema": { "$ref": "#/backend/entities/ResultTemplate" } } },
+      { "path": "/auditLogs/{logId}", "definition": { "schema": { "$ref": "#/backend/entities/AuditLog" } } },
+      { "path": "/roles_admin/{userId}", "definition": { "schema": { "$ref": "#/backend/entities/User" } } },
+      { "path": "/schoolSettings/{settingsId}", "definition": { "schema": { "$ref": "#/backend/entities/SchoolSettings" } } }
+    ]
+  }
+}

@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useMemo, useRef, useState, useEffect } from 'react';
 import {
   useFirestore,
@@ -9,7 +9,7 @@ import {
 import { useDoc } from '@/firebase/firestore/use-doc';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { useMemoFirebase } from '@/firebase/provider';
-import { collection, query, where, doc, getDocs } from 'firebase/firestore';
+import { collection, query, where, doc, getDocs, getDoc } from 'firebase/firestore';
 import { ResultSheet } from '@/components/results/result-sheet';
 import { Loader2, ArrowLeft, Printer } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -22,14 +22,18 @@ import { useToast } from '@/hooks/use-toast';
 // --- TYPE DEFINITIONS ---
 type Pupil = { id: string; name: string; admissionNumber: string; isDeleted?: boolean; };
 type Classroom = { id: string; name: string; teacherId?: string; };
-type Enrollment = { id: string; studentId: string; classroomId: string };
 type User = { id: string; name: string; };
+type AcademicSession = { id: string; name: string; }
 
 
 export default function ResultSheetPage() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const studentId = params.studentId as string;
+  const sessionId = searchParams.get('session');
+  const termId = searchParams.get('term');
+
   const firestore = useFirestore();
   const resultSheetRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
@@ -44,13 +48,16 @@ export default function ResultSheetPage() {
   );
   const { data: student, isLoading: studentLoading } = useDoc<Pupil>(studentRef);
   
-  const enrollmentsQuery = useMemoFirebase(
-    () => (firestore && studentId ? query(collection(firestore, 'enrollments'), where('studentId', '==', studentId)) : null),
-    [firestore, studentId]
-  );
-  const { data: enrollments, isLoading: enrollmentsLoading } = useCollection<Enrollment>(enrollmentsQuery);
-
-  const classroomId = useMemo(() => enrollments?.[0]?.classroomId, [enrollments]);
+  // Fetch the result document for the specific session and term
+  const termResultRef = useMemoFirebase(() => {
+    if (!firestore || !studentId || !sessionId || !termId) return null;
+    const sessionName = sessionId.replace('-', '/'); // Assuming session ID is like '2023-2024'
+    const termResultId = `${sessionName}-${termId}`;
+    return doc(firestore, 'students', studentId, 'results', termResultId);
+  }, [firestore, studentId, sessionId, termId]);
+  const { data: termResult, isLoading: termResultLoading } = useDoc(termResultRef);
+  
+  const classroomId = useMemo(() => termResult?.classroomId, [termResult]);
 
   const classroomRef = useMemoFirebase(
     () => (firestore && classroomId ? doc(firestore, 'classrooms', classroomId) : null),
@@ -66,22 +73,22 @@ export default function ResultSheetPage() {
       // Fetch teacher name
       if (classroom.teacherId) {
         const teacherDocRef = doc(firestore, 'users', classroom.teacherId);
-        const teacherSnap = await getDocs(query(collection(firestore, 'users'), where('__name__', '==', classroom.teacherId)));
-        if (!teacherSnap.empty) {
-            setTeacher(teacherSnap.docs[0].data() as User);
+        const teacherSnap = await getDoc(teacherDocRef);
+        if (teacherSnap.exists()) {
+            setTeacher(teacherSnap.data() as User);
         }
       }
 
-      // Fetch class population
-      const classEnrollmentsQuery = query(collection(firestore, 'enrollments'), where('classroomId', '==', classroom.id));
-      const classEnrollmentsSnap = await getDocs(classEnrollmentsQuery);
+      // Fetch class population from the subcollection count
+      const classStudentsRef = collection(firestore, 'classrooms', classroom.id, 'students');
+      const classEnrollmentsSnap = await getDocs(classStudentsRef);
       setClassPopulation(classEnrollmentsSnap.size);
     }
     fetchExtraData();
   }, [firestore, classroom]);
 
 
-  const isLoading = studentLoading || classroomLoading || enrollmentsLoading;
+  const isLoading = studentLoading || classroomLoading || termResultLoading;
   
   const exportA4PDF = async () => {
     const node = resultSheetRef.current;
@@ -101,30 +108,19 @@ export default function ResultSheetPage() {
     });
 
     try {
-        // Convert HTML to image
         const dataUrl = await htmlToImage.toPng(node, { quality: 1.0, pixelRatio: 2 });
-
-        // Create PDF
         const pdf = new jsPDF("p", "mm", "a4");
-
-        // Get image properties
         const img = new Image();
         img.src = dataUrl;
 
         img.onload = () => {
             const pageWidth = pdf.internal.pageSize.getWidth(); // 210mm
             const pageHeight = pdf.internal.pageSize.getHeight(); // 297mm
-
             const imgWidth = img.width;
             const imgHeight = img.height;
-
-            // Scale image to fit A4 page while maintaining aspect ratio
             const ratio = Math.min(pageWidth / imgWidth, pageHeight / imgHeight);
-
             const renderWidth = imgWidth * ratio;
             const renderHeight = imgHeight * ratio;
-
-            // Center image on the page
             const x = (pageWidth - renderWidth) / 2;
             const y = (pageHeight - renderHeight) / 2;
 
@@ -136,15 +132,13 @@ export default function ResultSheetPage() {
                 description: "Your PDF has been successfully generated.",
             });
         };
-        img.onerror = () => {
-            throw new Error("Failed to load the generated image for PDF creation.");
-        }
+        img.onerror = () => { throw new Error("Failed to load generated image."); }
     } catch (error: any) {
         console.error("PDF Export Error:", error);
         toast({
             variant: "destructive",
             title: "Export Failed",
-            description: error.message || "An unexpected error occurred during PDF generation.",
+            description: error.message || "An unexpected error occurred.",
         });
     } finally {
         setIsExporting(false);
@@ -159,13 +153,13 @@ export default function ResultSheetPage() {
     );
   }
 
-  if (!student || !classroom) {
+  if (!student || !classroom || !sessionId || !termId) {
     return (
         <div className="flex h-screen items-center justify-center bg-muted">
             <Card className="m-4">
                 <CardContent className="p-8">
                      <h2 className="text-xl font-semibold text-destructive">Error Loading Report</h2>
-                     <p className="text-muted-foreground mt-2">Could not find the required pupil or classroom data.</p>
+                     <p className="text-muted-foreground mt-2">Could not find the required pupil, classroom, or term information.</p>
                      <Button onClick={() => router.back()} className="mt-6">
                         <ArrowLeft className="mr-2 h-4 w-4" /> Go Back
                      </Button>
@@ -188,7 +182,14 @@ export default function ResultSheetPage() {
         </Button>
       </div>
       <div className="max-w-4xl mx-auto space-y-4">
-         <ResultSheet ref={resultSheetRef} student={student} classroom={classroom} teacherName={teacher?.name} classPopulation={classPopulation} />
+         <ResultSheet 
+            student={student} 
+            classroom={classroom} 
+            teacherName={teacher?.name} 
+            classPopulation={classPopulation}
+            sessionId={sessionId}
+            termId={termId}
+         />
       </div>
     </div>
   );
