@@ -217,23 +217,6 @@
         "totalStudentCapacity": { "type": "number", "description": "The maximum number of students the school expects to have." }
       },
       "required": ["currentSession", "currentTermId"]
-    },
-    "Broadsheet": {
-      "title": "Broadsheet",
-      "type": "object",
-      "description": "A snapshot of all student results for a specific class, term, and session.",
-      "properties": {
-        "sessionId": { "type": "string" },
-        "termId": { "type": "string" },
-        "classroomId": { "type": "string" },
-        "classroomName": { "type": "string" },
-        "createdAt": { "type": "string", "format": "date-time" },
-        "results": {
-          "type": "array",
-          "items": { "type": "object" }
-        }
-      },
-      "required": ["sessionId", "termId", "classroomId", "createdAt", "results"]
     }
   },
   "auth": {
@@ -257,10 +240,7 @@
       { "path": "/resultTemplates/{templateId}", "definition": { "schema": { "$ref": "#/backend/entities/ResultTemplate" } } },
       { "path": "/auditLogs/{logId}", "definition": { "schema": { "$ref": "#/backend/entities/AuditLog" } } },
       { "path": "/roles_admin/{userId}", "definition": { "schema": { "$ref": "#/backend/entities/User" } } },
-      { "path": "/schoolSettings/{settingsId}", "definition": { "schema": { "$ref": "#/backend/entities/SchoolSettings" } } },
-      { "path": "/broadsheets/{broadsheetId}", "definition": { "schema": { "$ref": "#/backend/entities/Broadsheet" } } }
+      { "path": "/schoolSettings/{settingsId}", "definition": { "schema": { "$ref": "#/backend/entities/SchoolSettings" } } }
     ]
   }
 }
-
-    

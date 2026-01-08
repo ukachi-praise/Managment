@@ -50,7 +50,7 @@ const adminNavItems: NavItem[] = [
   { href: () => '/admin/info', label: 'Info', icon: Info },
   { href: () => '/admin/remarks', label: 'Remarks', icon: MessageSquareQuote },
   { href: () => '/admin/results', label: 'Results', icon: ClipboardList },
-  { href: () => '/admin/broadsheet', label: 'Broadsheet', icon: Sheet },
+  
   { href: () => '/admin/templates', label: 'Templates', icon: LayoutTemplate },
   { href: () => '/admin/students/deleted', label: 'Recycle Bin', icon: Trash2 },
   { href: () => '/admin/settings', label: 'Settings', icon: Settings },
@@ -137,5 +137,3 @@ export function SidebarNav({ role }: { role: 'admin' | 'teacher' }) {
     </Sidebar>
   );
 }
-
-    

@@ -321,5 +321,3 @@ export function ResultViewTable() {
     </Card>
   );
 }
-
-    
