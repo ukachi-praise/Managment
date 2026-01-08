@@ -111,20 +111,26 @@ export default function BroadsheetPage() {
       }
 
 
-      // 3. Fetch all results for these students for the current term
-      const resultsQuery = query(
-        collectionGroup(firestore, 'results'),
-        where('studentId', 'in', studentIds),
-        where('termId', '==', currentTermId),
-        where('sessionId', '==', currentSession)
-      );
-      const resultsSnap = await getDocs(resultsQuery);
-      
+      // 3. Fetch all results for these students for the current term in batches
       const resultsByStudentId = new Map<string, TermResult>();
-      resultsSnap.forEach(doc => {
-          const result = doc.data() as TermResult;
-          resultsByStudentId.set(result.studentId, result);
-      });
+      for (let i = 0; i < studentIds.length; i += 30) {
+        const batchIds = studentIds.slice(i, i + 30);
+        if (batchIds.length === 0) continue;
+
+        const resultsQuery = query(
+          collectionGroup(firestore, 'results'),
+          where('studentId', 'in', batchIds),
+          where('termId', '==', currentTermId),
+          where('sessionId', '==', currentSession)
+        );
+        const resultsSnap = await getDocs(resultsQuery);
+        
+        resultsSnap.forEach(doc => {
+            const result = doc.data() as TermResult;
+            resultsByStudentId.set(result.studentId, result);
+        });
+      }
+
 
       // 4. Compile the data
       const compiledResults = studentIds.map(id => {
