@@ -32,7 +32,7 @@ import {
 } from '@/firebase/provider';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { useDoc } from '@/firebase/firestore/use-doc';
-import { collection, query, where, doc, getDocs, collectionGroup, serverTimestamp } from 'firebase/firestore';
+import { collection, query, where, doc, getDoc, getDocs, collectionGroup, serverTimestamp } from 'firebase/firestore';
 import { addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { format } from 'date-fns';
 
@@ -113,22 +113,12 @@ export default function BroadsheetPage() {
 
       // 3. Fetch all results for these students for the current term in batches
       const resultsByStudentId = new Map<string, TermResult>();
-      for (let i = 0; i < studentIds.length; i += 30) {
-        const batchIds = studentIds.slice(i, i + 30);
-        if (batchIds.length === 0) continue;
-
-        const resultsQuery = query(
-          collectionGroup(firestore, 'results'),
-          where('studentId', 'in', batchIds),
-          where('termId', '==', currentTermId),
-          where('sessionId', '==', currentSession)
-        );
-        const resultsSnap = await getDocs(resultsQuery);
-        
-        resultsSnap.forEach(doc => {
-            const result = doc.data() as TermResult;
-            resultsByStudentId.set(result.studentId, result);
-        });
+      for (const studentId of studentIds) {
+        const resultDocRef = doc(firestore, 'students', studentId, 'results', termResultId);
+        const resultSnap = await getDoc(resultDocRef);
+        if (resultSnap.exists()) {
+            resultsByStudentId.set(studentId, resultSnap.data() as TermResult);
+        }
       }
 
 
