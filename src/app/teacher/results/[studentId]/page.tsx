@@ -42,7 +42,9 @@ import {
 type Student = { id: string; name: string; admissionNumber: string };
 type Subject = { id: string; name: string; subSubjects?: string[] };
 type Enrollment = { id: string; studentId: string; classroomId: string };
-type SchoolSettings = { currentSession: string; currentTermId: string; }
+type AcademicSession = { id: string, name: string };
+type Term = { id: string, name: string };
+type SchoolSettings = { currentSessionId: string; currentTermId: string; }
 
 // Represents a single subject's scores within the main result document
 type SubjectScore = {
@@ -98,6 +100,11 @@ export default function StudentResultEntryPage() {
   const settingsRef = useMemoFirebase(() => (firestore ? doc(firestore, 'schoolSettings', 'current') : null), [firestore]);
   const { data: schoolSettings, isLoading: settingsLoading } = useDoc<SchoolSettings>(settingsRef);
   
+  const currentSessionRef = useMemoFirebase(() => (firestore && schoolSettings?.currentSessionId ? doc(firestore, 'sessions', schoolSettings.currentSessionId) : null), [firestore, schoolSettings]);
+  const { data: currentSession, isLoading: currentSessionLoading } = useDoc<AcademicSession>(currentSessionRef);
+  
+  const currentTermRef = useMemoFirebase(() => (firestore && schoolSettings?.currentSessionId && schoolSettings.currentTermId ? doc(firestore, 'sessions', schoolSettings.currentSessionId, 'terms', schoolSettings.currentTermId) : null), [firestore, schoolSettings]);
+  const { data: currentTerm, isLoading: currentTermLoading } = useDoc<Term>(currentTermRef);
   
   const subjectsForClass = useMemo(() => {
     if (!classroomSubjects || !allSubjects) return [];
@@ -122,7 +129,8 @@ export default function StudentResultEntryPage() {
 
   const termResultRef = useMemoFirebase(() => {
       if (!firestore || !studentId || !schoolSettings) return null;
-      const termResultId = `${schoolSettings.currentSession.replace('/', '-')}-${schoolSettings.currentTermId}`;
+      // CRITICAL FIX: Use stable IDs, not names, for the document path.
+      const termResultId = `${schoolSettings.currentSessionId}-${schoolSettings.currentTermId}`;
       return doc(firestore, 'students', studentId, 'results', termResultId);
   }, [firestore, studentId, schoolSettings]);
 
@@ -146,7 +154,7 @@ export default function StudentResultEntryPage() {
           scores: newScores,
           studentId,
           termId: schoolSettings.currentTermId,
-          sessionId: schoolSettings.currentSession,
+          sessionId: schoolSettings.currentSessionId,
           classroomId,
           teacherRemark: existingData?.teacherRemark,
           headTeacherRemark: existingData?.headTeacherRemark,
@@ -242,7 +250,7 @@ export default function StudentResultEntryPage() {
   }, [termResult]);
 
 
-  const pageIsLoading = studentLoading || enrollmentsLoading || classSubjectsLoading || subjectsLoading || settingsLoading || !termResult;
+  const pageIsLoading = studentLoading || enrollmentsLoading || classSubjectsLoading || subjectsLoading || settingsLoading || !termResult || currentSessionLoading || currentTermLoading;
 
   return (
     <div className="space-y-6">
@@ -267,8 +275,8 @@ export default function StudentResultEntryPage() {
         <div className="flex justify-between items-center">
             <CardTitle>Enter Scores</CardTitle>
             <div className="flex items-center gap-4 text-sm">
-                <span className="text-muted-foreground">Session: <span className="font-semibold text-foreground">{schoolSettings?.currentSession || '...'}</span></span>
-                <span className="text-muted-foreground">Term: <span className="font-semibold text-foreground">{schoolSettings?.currentTermId ? schoolSettings.currentTermId.replace('term', '') : '...'}</span></span>
+                <span className="text-muted-foreground">Session: <span className="font-semibold text-foreground">{currentSession?.name || '...'}</span></span>
+                <span className="text-muted-foreground">Term: <span className="font-semibold text-foreground">{currentTerm?.name ? `${currentTerm.name} Term` : '...'}</span></span>
             </div>
         </div>
       </CardHeader>
@@ -391,5 +399,7 @@ export default function StudentResultEntryPage() {
     </div>
   );
 }
+
+    
 
     

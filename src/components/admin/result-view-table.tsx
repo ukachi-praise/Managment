@@ -33,7 +33,8 @@ import {
   where,
   doc,
   getDocs,
-  Timestamp
+  Timestamp,
+  getDoc
 } from 'firebase/firestore';
 import { Button } from '../ui/button';
 import { useToast } from '@/hooks/use-toast';
@@ -46,7 +47,7 @@ type Student = { id: string; name: string; admissionNumber: string; isDeleted?: 
 type Classroom = { id: string; name: string; teacherName?: string; };
 type StudentInClass = { studentId: string; name: string; };
 type Subject = { id: string; name: string; subSubjects?: string[] };
-type SchoolSettingsData = { currentSession: string; currentTermId: string; daysSchoolOpened: number; nextTermResumptionDate: Timestamp | Date | string; };
+type SchoolSettingsData = { currentSessionId: string; currentTermId: string; daysSchoolOpened: number; nextTermResumptionDate: Timestamp | Date | string; };
 type TemplateSettings = { studentInfo: { fontSize: number; visible: boolean; }; header: { visible: boolean; }; subjectsTable: { visible: boolean; }; summary: { visible: boolean; }; softSkills: { visible: boolean; }; gradingKey: { visible: boolean; }; remarks: { visible: boolean; }; signatures: { visible: boolean; }; };
 type SavedTemplateData = { name: string; schoolName: string; settings: TemplateSettings; };
 type SubjectScore = { ca1: number | null; ca2: number | null; exam: number | null; };
@@ -162,9 +163,11 @@ export function ResultViewTable() {
         duration: 10000,
     });
     
+    const sessionName = sessions?.find(s => s.id === selectedSession)?.name.replace('/', '-');
+
     for (let i = 0; i < studentsInClass.length; i++) {
       await new Promise(resolve => setTimeout(resolve, 300));
-      const url = `/admin/results/${studentsInClass[i].id}?session=${selectedSession}&term=${selectedTerm}`;
+      const url = `/admin/results/${studentsInClass[i].id}?session=${sessionName}&term=${selectedTerm}`;
       window.open(url, '_blank');
     }
     
@@ -192,14 +195,14 @@ export function ResultViewTable() {
 
 
         const studentDataForApi = await Promise.all(studentsInClass.map(async (student) => {
-            
-            const termResultId = `${sessionDoc.name.replace('/', '-')}-${selectedTerm}`;
+            // CRITICAL FIX: Use stable IDs for document path
+            const termResultId = `${selectedSession}-${selectedTerm}`;
             const resultDocRef = doc(firestore, 'students', student.id, 'results', termResultId);
-            const resultDocSnap = await getDocs(query(collection(firestore, 'students', student.id, 'results'), where('__name__', '==', termResultId)));
+            const resultDocSnap = await getDoc(resultDocRef);
 
-            if (resultDocSnap.empty) return null;
+            if (!resultDocSnap.exists()) return null;
 
-            const termResult = resultDocSnap.docs[0].data() as TermResult;
+            const termResult = resultDocSnap.data() as TermResult;
             
             const scores = Object.entries(termResult.scores).map(([subjectId, score]) => {
                 const subject = allSubjects.find(s => s.id === subjectId);
@@ -362,3 +365,5 @@ export function ResultViewTable() {
     </Card>
   );
 }
+
+    

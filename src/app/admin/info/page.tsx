@@ -40,15 +40,15 @@ import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { useFirestore, useMemoFirebase } from '@/firebase/provider';
 import { useDoc } from '@/firebase/firestore/use-doc';
-import { doc, Timestamp, writeBatch, collection, getDocs, collectionGroup } from 'firebase/firestore';
-import { useEffect, useState } from 'react';
+import { doc, Timestamp, writeBatch, collection, getDocs, collectionGroup, getDoc } from 'firebase/firestore';
+import { useEffect, useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { setDocumentNonBlocking as setDocNB } from '@/firebase/non-blocking-updates';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-
+import { useCollection } from '@/firebase/firestore/use-collection';
 
 const formSchema = z.object({
-  currentSession: z.string().min(1, 'Please enter a session name.'),
+  currentSessionId: z.string().min(1, 'Please select a session.'),
   currentTermId: z.string().min(1, 'Please select a term.'),
   daysSchoolOpened: z.coerce.number().min(0, 'Must be a positive number.'),
   nextTermResumptionDate: z.date({
@@ -62,26 +62,41 @@ const formSchema = z.object({
 });
 
 type SchoolSettings = z.infer<typeof formSchema>;
+type AcademicSession = { id: string; name: string };
+type Term = { id: string; name: string };
+const termNames: Record<string, string> = { "1st": '1st Term', "2nd": '2nd Term', "3rd": '3rd Term' };
+
 
 export default function InfoPage() {
   const { toast } = useToast();
   const firestore = useFirestore();
   const router = useRouter();
   const [isDeleting, setIsDeleting] = useState(false);
+  const [selectedSession, setSelectedSession] = useState<string | null>(null);
 
   // --- Data Fetching ---
   const settingsRef = useMemoFirebase(
     () => (firestore ? doc(firestore, 'schoolSettings', 'current') : null),
     [firestore]
   );
-  const { data: settingsData, isLoading: settingsLoading } =
-    useDoc<SchoolSettings>(settingsRef);
+  const { data: settingsData, isLoading: settingsLoading } = useDoc<SchoolSettings>(settingsRef);
+  
+  const sessionsQuery = useMemoFirebase(() => (firestore ? collection(firestore, 'sessions') : null), [firestore]);
+  const { data: sessions, isLoading: sessionsLoading } = useCollection<AcademicSession>(sessionsQuery);
+
+  const termsQuery = useMemoFirebase(() => (firestore && selectedSession ? collection(firestore, 'sessions', selectedSession, 'terms') : null), [firestore, selectedSession]);
+  const { data: terms, isLoading: termsLoading } = useCollection<Term>(termsQuery);
+  
+  const sortedSessions = useMemo(() => {
+    if (!sessions) return [];
+    return [...sessions].sort((a,b) => b.name.localeCompare(a.name));
+  }, [sessions]);
 
 
   const form = useForm<SchoolSettings>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-        currentSession: '',
+        currentSessionId: '',
         currentTermId: '',
         daysSchoolOpened: 0,
         admissionNumberPrefix: 'JKS',
@@ -109,8 +124,19 @@ export default function InfoPage() {
         nextTermResumptionDate: parseTimestampToDate(settingsData.nextTermResumptionDate),
         termEndingDate: parseTimestampToDate(settingsData.termEndingDate),
       });
+      setSelectedSession(settingsData.currentSessionId);
     }
   }, [settingsData, form]);
+
+  const watchedSessionId = form.watch('currentSessionId');
+
+  useEffect(() => {
+    if (watchedSessionId && watchedSessionId !== selectedSession) {
+      setSelectedSession(watchedSessionId);
+      // Reset term when session changes
+      form.setValue('currentTermId', '');
+    }
+  }, [watchedSessionId, selectedSession, form]);
 
 
   const onSubmit = async (values: SchoolSettings) => {
@@ -134,27 +160,27 @@ export default function InfoPage() {
     try {
       const batch = writeBatch(firestore);
       
-      // 1. Get all classrooms to find all student subcollections
+      const studentsSnapshot = await getDocs(collection(firestore, 'students'));
+      for (const studentDoc of studentsSnapshot.docs) {
+          batch.delete(studentDoc.ref); // Delete from /students
+
+          // Now find and delete their results from the subcollection
+          const resultsRef = collection(firestore, 'students', studentDoc.id, 'results');
+          const resultsSnapshot = await getDocs(resultsRef);
+          resultsSnapshot.forEach(doc => batch.delete(doc.ref));
+      }
+
+      // Delete all from /enrollments
+      const enrollmentsSnapshot = await getDocs(collection(firestore, 'enrollments'));
+      enrollmentsSnapshot.forEach(doc => batch.delete(doc.ref));
+
+      // Delete all from classrooms/{id}/students
       const classroomsSnapshot = await getDocs(collection(firestore, 'classrooms'));
       for (const classroomDoc of classroomsSnapshot.docs) {
         const studentsInClassRef = collection(firestore, 'classrooms', classroomDoc.id, 'students');
         const studentsInClassSnapshot = await getDocs(studentsInClassRef);
         studentsInClassSnapshot.forEach(doc => batch.delete(doc.ref));
       }
-      
-      // 2. Get all students to delete their root doc and results subcollection
-      const studentsSnapshot = await getDocs(collection(firestore, 'students'));
-      for (const studentDoc of studentsSnapshot.docs) {
-          batch.delete(studentDoc.ref); // Delete the student from /students
-          
-          const resultsRef = collection(firestore, 'students', studentDoc.id, 'results');
-          const resultsSnapshot = await getDocs(resultsRef);
-          resultsSnapshot.forEach(doc => batch.delete(doc.ref));
-      }
-      
-      // 3. Delete all from /enrollments
-      const enrollmentsSnapshot = await getDocs(collection(firestore, 'enrollments'));
-      enrollmentsSnapshot.forEach(doc => batch.delete(doc.ref));
       
       await batch.commit();
 
@@ -176,7 +202,7 @@ export default function InfoPage() {
   };
 
 
-  const isLoading = form.formState.isSubmitting || settingsLoading;
+  const isLoading = form.formState.isSubmitting || settingsLoading || sessionsLoading;
 
   return (
     <div className="space-y-6">
@@ -200,13 +226,23 @@ export default function InfoPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                 <FormField
                   control={form.control}
-                  name="currentSession"
+                  name="currentSessionId"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Current Academic Session</FormLabel>
-                      <FormControl>
-                        <Input placeholder="e.g. 2025/2026" {...field} />
-                      </FormControl>
+                       <Select
+                        onValueChange={field.onChange}
+                        value={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select a session" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {sortedSessions.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -221,17 +257,15 @@ export default function InfoPage() {
                        <Select
                         onValueChange={field.onChange}
                         value={field.value}
+                        disabled={termsLoading || !selectedSession}
                       >
                         <FormControl>
                           <SelectTrigger>
-                            <SelectValue placeholder="Select a term" />
+                            <SelectValue placeholder={termsLoading ? 'Loading...' : 'Select a term'} />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {/* Simplified: In a real app, these would be fetched based on session */}
-                          <SelectItem value="term1">1st Term</SelectItem>
-                          <SelectItem value="term2">2nd Term</SelectItem>
-                          <SelectItem value="term3">3rd Term</SelectItem>
+                           {terms?.map(t => <SelectItem key={t.id} value={t.id}>{termNames[t.name]}</SelectItem>)}
                         </SelectContent>
                       </Select>
                       <FormMessage />

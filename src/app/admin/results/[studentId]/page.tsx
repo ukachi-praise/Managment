@@ -51,8 +51,8 @@ export default function ResultSheetPage() {
   // Fetch the result document for the specific session and term
   const termResultRef = useMemoFirebase(() => {
     if (!firestore || !studentId || !sessionId || !termId) return null;
-    const sessionName = sessionId.replace('-', '/'); // Assuming session ID is like '2023-2024'
-    const termResultId = `${sessionName}-${termId}`;
+    // CRITICAL FIX: Use stable IDs for document path
+    const termResultId = `${sessionId}-${termId}`;
     return doc(firestore, 'students', studentId, 'results', termResultId);
   }, [firestore, studentId, sessionId, termId]);
   const { data: termResult, isLoading: termResultLoading } = useDoc(termResultRef);
@@ -194,3 +194,5 @@ export default function ResultSheetPage() {
     </div>
   );
 }
+
+    
