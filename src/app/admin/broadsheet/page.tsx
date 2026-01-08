@@ -23,7 +23,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion"
-import { Loader2, ArrowLeft, Download, Save, Sheet } from 'lucide-react';
+import { Loader2, ArrowLeft, Download, Save, Eye } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import {
@@ -35,6 +35,9 @@ import { useDoc } from '@/firebase/firestore/use-doc';
 import { collection, query, where, doc, getDoc, getDocs, collectionGroup, serverTimestamp } from 'firebase/firestore';
 import { addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { format } from 'date-fns';
+import { generateBroadsheetExcel } from '@/lib/generateExcel';
+import { saveAs } from 'file-saver';
+import Link from 'next/link';
 
 
 // --- TYPE DEFINITIONS ---
@@ -55,6 +58,7 @@ export default function BroadsheetPage() {
 
   const [selectedClass, setSelectedClass] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isExporting, setIsExporting] = useState<string | null>(null);
 
   // --- Data Fetching ---
   const classroomsQuery = useMemoFirebase(() => firestore ? query(collection(firestore, 'classrooms')) : null, [firestore]);
@@ -102,18 +106,22 @@ export default function BroadsheetPage() {
       
       // 2. Fetch all student documents in batches to get their names
       const studentMap = new Map<string, Student>();
-      for (let i = 0; i < studentIds.length; i += 30) {
-          const batch = studentIds.slice(i, i + 30);
-          if (batch.length === 0) continue;
-          const studentsQuery = query(collection(firestore, 'students'), where('__name__', 'in', batch));
-          const studentsSnap = await getDocs(studentsQuery);
-          studentsSnap.forEach(doc => studentMap.set(doc.id, doc.data() as Student));
+       for (let i = 0; i < studentIds.length; i += 30) {
+        const batch = studentIds.slice(i, i + 30);
+        if (batch.length === 0) continue;
+        const studentsQuery = query(collection(firestore, "students"), where("__name__", "in", batch));
+        const studentsSnap = await getDocs(studentsQuery);
+        studentsSnap.forEach(doc => {
+            if (!(doc.data() as Student).isDeleted) {
+                studentMap.set(doc.id, doc.data() as Student);
+            }
+        });
       }
 
 
       // 3. Fetch all results for these students for the current term in batches
       const resultsByStudentId = new Map<string, TermResult>();
-      for (const studentId of studentIds) {
+      for (const studentId of studentMap.keys()) {
         const resultDocRef = doc(firestore, 'students', studentId, 'results', termResultId);
         const resultSnap = await getDoc(resultDocRef);
         if (resultSnap.exists()) {
@@ -123,7 +131,7 @@ export default function BroadsheetPage() {
 
 
       // 4. Compile the data
-      const compiledResults = studentIds.map(id => {
+      const compiledResults = Array.from(studentMap.keys()).map(id => {
           const student = studentMap.get(id);
           const result = resultsByStudentId.get(id);
           return {
@@ -155,6 +163,36 @@ export default function BroadsheetPage() {
       setIsGenerating(false);
     }
   };
+  
+   const handleExport = async (sheet: Broadsheet) => {
+        if (!firestore) return;
+        setIsExporting(sheet.id);
+
+        try {
+            const subjectsSnapshot = await getDocs(collection(firestore, 'subjects'));
+            const subjectMap = new Map(subjectsSnapshot.docs.map(doc => [doc.id, doc.data().name]));
+
+            const subjectIds = new Set<string>();
+            sheet.results.forEach(result => {
+                Object.keys(result.scores).forEach(subjectId => subjectIds.add(subjectId));
+            });
+
+            const orderedSubjectIds = Array.from(subjectIds).sort((a,b) => (subjectMap.get(a) || '').localeCompare(subjectMap.get(b) || ''));
+            const subjectHeader = orderedSubjectIds.map(id => subjectMap.get(id) || 'Unknown');
+            
+            const excelBuffer = await generateBroadsheetExcel(sheet, subjectHeader, orderedSubjectIds);
+
+            saveAs(
+                new Blob([excelBuffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }),
+                `${sheet.classroomName}_${sheet.sessionId.replace('/', '-')}_${sheet.termId}_Broadsheet.xlsx`
+            );
+
+        } catch (error: any) {
+            toast({ variant: 'destructive', title: 'Export Failed', description: error.message });
+        } finally {
+            setIsExporting(null);
+        }
+    };
   
   const isLoading = classroomsLoading || settingsLoading || broadsheetsLoading;
 
@@ -216,15 +254,23 @@ export default function BroadsheetPage() {
                             <AccordionContent>
                                 <div className="divide-y">
                                 {sheets.sort((a, b) => a.termId.localeCompare(b.termId)).map(sheet => (
-                                    <div key={sheet.id} className="p-4 flex justify-between items-center">
+                                    <div key={sheet.id} className="p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                                         <div>
                                             <p className="font-bold text-md">{sheet.classroomName} - {termNames[sheet.termId] || sheet.termId}</p>
                                             <p className="text-sm text-muted-foreground">Generated on: {sheet.createdAt ? format(sheet.createdAt.toDate(), 'PPP, p') : 'N/A'}</p>
                                         </div>
-                                        <Button variant="outline" size="sm">
-                                            <Download className="mr-2 h-4 w-4" />
-                                            Download
-                                        </Button>
+                                        <div className="flex gap-2 w-full sm:w-auto">
+                                            <Button asChild variant="outline" size="sm" className="flex-1">
+                                                <Link href={`/admin/broadsheet/${sheet.id}`}>
+                                                     <Eye className="mr-2 h-4 w-4" />
+                                                     View
+                                                </Link>
+                                            </Button>
+                                            <Button onClick={() => handleExport(sheet)} variant="outline" size="sm" disabled={isExporting === sheet.id} className="flex-1">
+                                                {isExporting === sheet.id ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
+                                                Download
+                                            </Button>
+                                        </div>
                                     </div>
                                 ))}
                                 </div>

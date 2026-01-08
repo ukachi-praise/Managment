@@ -1,5 +1,6 @@
 
 import * as ExcelJS from 'exceljs';
+import { saveAs } from 'file-saver';
 
 type ScoreData = {
     subjectName: string;
@@ -24,6 +25,17 @@ type SchoolSettingsInfo = {
     currentSession: string;
     currentTermId: string;
 };
+
+type BroadsheetData = {
+    classroomName: string;
+    sessionId: string;
+    termId: string;
+    results: Array<{
+        studentName: string;
+        scores: Record<string, { ca1: number; ca2: number; exam: number }>;
+    }>;
+};
+
 
 const termNames: Record<string, string> = { term1: '1st Term', term2: '2nd Term', term3: '3rd Term' };
 
@@ -116,3 +128,77 @@ export async function generatePupilExcel(
     return await workbook.xlsx.writeBuffer();
 }
 
+export async function generateBroadsheetExcel(broadsheet: BroadsheetData, subjectHeaders: string[], orderedSubjectIds: string[]): Promise<Buffer> {
+    const workbook = new ExcelJS.Workbook();
+    const sheet = workbook.addWorksheet(`${broadsheet.classroomName} Broadsheet`);
+
+    // --- Header ---
+    sheet.mergeCells('A1:D1');
+    const titleCell = sheet.getCell('A1');
+    titleCell.value = `${broadsheet.classroomName} - ${termNames[broadsheet.termId]} Broadsheet`;
+    titleCell.font = { name: 'Arial Black', size: 16, bold: true };
+
+    sheet.mergeCells('A2:D2');
+    const sessionCell = sheet.getCell('A2');
+    sessionCell.value = `Academic Session: ${broadsheet.sessionId}`;
+    sessionCell.font = { size: 12 };
+    
+    sheet.addRow([]); // Spacer
+
+    // --- Table Headers ---
+    const headerRow = sheet.addRow(['S/N', 'Student Name', ...subjectHeaders, 'Total', 'Average']);
+    headerRow.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+    headerRow.eachCell(cell => {
+        cell.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: 'FF000080' } // Navy Blue
+        };
+        cell.border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
+        cell.alignment = { vertical: 'middle', horizontal: 'center' };
+    });
+
+
+    // --- Table Body ---
+    broadsheet.results.forEach((result, index) => {
+        let studentTotal = 0;
+        const studentScores = orderedSubjectIds.map(subId => {
+            const subjectScore = result.scores[subId];
+            if (subjectScore) {
+                const total = (subjectScore.ca1 || 0) + (subjectScore.ca2 || 0) + (subjectScore.exam || 0);
+                studentTotal += total;
+                return total;
+            }
+            return 0;
+        });
+
+        const studentAverage = orderedSubjectIds.length > 0 ? studentTotal / orderedSubjectIds.length : 0;
+        
+        const row = sheet.addRow([
+            index + 1,
+            result.studentName,
+            ...studentScores,
+            studentTotal,
+            Number(studentAverage.toFixed(2))
+        ]);
+
+        row.eachCell((cell, colNumber) => {
+            cell.border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
+            if (colNumber > 2) {
+                 cell.alignment = { horizontal: 'center' };
+            }
+        });
+    });
+
+    // --- Column Widths ---
+    sheet.getColumn('A').width = 5;
+    sheet.getColumn('B').width = 35;
+    subjectHeaders.forEach((_, index) => {
+        sheet.getColumn(3 + index).width = 15;
+    });
+    sheet.getColumn(3 + subjectHeaders.length).width = 12;
+    sheet.getColumn(4 + subjectHeaders.length).width = 12;
+
+    const buffer = await workbook.xlsx.writeBuffer();
+    return Buffer.from(buffer);
+}
