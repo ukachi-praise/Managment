@@ -21,7 +21,7 @@ import {
 import { useFirestore, useMemoFirebase } from '@/firebase/provider';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { useDoc } from '@/firebase/firestore/use-doc';
-import { collection, query, where, doc, getDocs } from 'firebase/firestore';
+import { collection, query, where, doc, getDocs, Timestamp } from 'firebase/firestore';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Loader2, ArrowLeft } from 'lucide-react';
@@ -29,9 +29,15 @@ import { format } from 'date-fns';
 import AuthGuard from '@/components/auth/AuthGuard';
 import { useToast } from '@/hooks/use-toast';
 
-type Enrollment = { id: string; classroomId: string; studentId: string; createdAt: any };
+type StudentInClass = { studentId: string; name: string; createdAt: Timestamp };
 type Student = { id: string; name: string; isDeleted?: boolean; };
 type Classroom = { id: string; name: string; teacherId?: string };
+
+type CombinedEnrollment = {
+    enrollmentId: string;
+    studentName: string;
+    enrollmentDate: string;
+}
 
 function EnrollmentPageContent() {
   const params = useParams();
@@ -40,7 +46,7 @@ function EnrollmentPageContent() {
   const firestore = useFirestore();
   const { toast } = useToast();
 
-  const [studentDetails, setStudentDetails] = useState<Student[]>([]);
+  const [combinedData, setCombinedData] = useState<CombinedEnrollment[]>([]);
   const [detailsLoading, setDetailsLoading] = useState(true);
 
   // --- Data Fetching ---
@@ -50,50 +56,61 @@ function EnrollmentPageContent() {
   );
   const { data: classroom, isLoading: classroomLoading } = useDoc<Classroom>(classroomRef);
 
-  const enrollmentsQuery = useMemoFirebase(
-    () => classroomId && firestore ? query(collection(firestore, 'enrollments'), where('classroomId', '==', classroomId)) : null,
+  // 1. Fetch the list of student references from the subcollection. This is efficient.
+  const studentsInClassQuery = useMemoFirebase(
+    () => classroomId && firestore ? query(collection(firestore, 'classrooms', classroomId, 'students')) : null,
     [classroomId, firestore]
   );
-  const { data: enrollments, isLoading: enrollmentsLoading } = useCollection<Enrollment>(enrollmentsQuery);
+  const { data: studentsInClass, isLoading: enrollmentsLoading } = useCollection<StudentInClass>(studentsInClassQuery);
 
   
+  // 2. Once we have the student references, fetch their full details in batches.
   useEffect(() => {
     const fetchStudentDetails = async () => {
-      if (!firestore || !enrollments) {
-        setStudentDetails([]);
+      if (!firestore || !studentsInClass) {
+        setCombinedData([]);
         setDetailsLoading(false);
         return;
       }
       
-      if (enrollments.length === 0) {
-        setStudentDetails([]);
+      if (studentsInClass.length === 0) {
+        setCombinedData([]);
         setDetailsLoading(false);
         return;
       }
 
       setDetailsLoading(true);
       try {
-        const studentIds = enrollments.map(e => e.studentId);
+        const studentIds = studentsInClass.map(e => e.studentId);
         
-        const batches = [];
+        const studentDetailsMap = new Map<string, Student>();
+        // Batch fetch student details
         for (let i = 0; i < studentIds.length; i += 30) {
           const batch = studentIds.slice(i, i + 30);
           if (batch.length > 0) {
             const q = query(collection(firestore, 'students'), where('__name__', 'in', batch));
-            batches.push(getDocs(q));
+            const snapshot = await getDocs(q);
+             snapshot.docs.forEach(doc => {
+                studentDetailsMap.set(doc.id, { id: doc.id, ...doc.data() } as Student);
+             });
           }
         }
-
-        const results = await Promise.all(batches);
-        const allStudents: Student[] = [];
         
-        results.forEach(snapshot => {
-          snapshot.docs.forEach(doc => {
-            allStudents.push({ id: doc.id, ...doc.data() } as Student);
-          });
-        });
+        // Combine the data
+        const combined = studentsInClass
+            .map(enrollment => {
+                const student = studentDetailsMap.get(enrollment.studentId);
+                if (!student || student.isDeleted) return null;
+                return {
+                    enrollmentId: student.id, // Using studentId as key since enrollment doc isn't fetched
+                    studentName: student.name,
+                    enrollmentDate: enrollment.createdAt?.toDate ? format(enrollment.createdAt.toDate(), 'PPP') : 'N/A',
+                };
+            })
+            .filter((item): item is CombinedEnrollment => item !== null);
 
-        setStudentDetails(allStudents);
+        setCombinedData(combined);
+
       } catch (error) {
         console.error('Error fetching student details:', error);
         toast({
@@ -107,26 +124,7 @@ function EnrollmentPageContent() {
     };
 
     fetchStudentDetails();
-  }, [firestore, enrollments, toast]);
-
-
-  const combinedEnrollmentData = useMemo(() => {
-    if (!enrollments || !studentDetails) return [];
-    
-    const detailsMap = new Map(studentDetails.map(s => [s.id, s]));
-    
-    return enrollments
-      .map(enrollment => {
-        const student = detailsMap.get(enrollment.studentId);
-        if (!student || student.isDeleted) return null;
-        return {
-          enrollmentId: enrollment.id,
-          studentName: student.name,
-          enrollmentDate: enrollment.createdAt?.toDate ? format(enrollment.createdAt.toDate(), 'PPP') : 'N/A',
-        };
-      })
-      .filter(item => item !== null);
-  }, [enrollments, studentDetails]);
+  }, [firestore, studentsInClass, toast]);
 
 
   const isLoading = classroomLoading || enrollmentsLoading || detailsLoading;
@@ -160,7 +158,7 @@ function EnrollmentPageContent() {
         <CardHeader>
           <CardTitle>Student List</CardTitle>
           <CardDescription>
-            {combinedEnrollmentData.length} student(s) enrolled.
+            {combinedData.length} student(s) enrolled.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -172,8 +170,8 @@ function EnrollmentPageContent() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {combinedEnrollmentData.length > 0 ? (
-                combinedEnrollmentData.map((item) => (
+              {combinedData.length > 0 ? (
+                combinedData.map((item) => (
                   <TableRow key={item.enrollmentId}>
                     <TableCell className="font-medium">
                       <div className="flex items-center gap-3">
