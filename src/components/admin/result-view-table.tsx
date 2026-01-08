@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import {
   Table,
@@ -44,7 +44,7 @@ import { saveAs } from 'file-saver';
 // --- TYPE DEFINITIONS ---
 type Student = { id: string; name: string; admissionNumber: string; isDeleted?: boolean; };
 type Classroom = { id: string; name: string; teacherName?: string; };
-type Enrollment = { id: string; studentId: string; classroomId: string };
+type StudentInClass = { studentId: string; name: string; };
 type Subject = { id: string; name: string; subSubjects?: string[] };
 type SchoolSettingsData = { currentSession: string; currentTermId: string; daysSchoolOpened: number; nextTermResumptionDate: Timestamp | Date | string; };
 type TemplateSettings = { studentInfo: { fontSize: number; visible: boolean; }; header: { visible: boolean; }; subjectsTable: { visible: boolean; }; summary: { visible: boolean; }; softSkills: { visible: boolean; }; gradingKey: { visible: boolean; }; remarks: { visible: boolean; }; signatures: { visible: boolean; }; };
@@ -60,6 +60,8 @@ export function ResultViewTable() {
   const { user } = useUser();
 
   const [selectedClass, setSelectedClass] = useState<string | null>(null);
+  const [studentsInClass, setStudentsInClass] = useState<Student[]>([]);
+  const [isFetchingStudents, setIsFetchingStudents] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
   const [isZipping, setIsZipping] = useState(false);
   
@@ -70,24 +72,6 @@ export function ResultViewTable() {
   );
   const { data: classrooms, isLoading: classroomsLoading } = useCollection<Classroom>(classroomsQuery);
   
-  const enrollmentsQuery = useMemoFirebase(
-    () =>
-      selectedClass && firestore
-        ? query(
-            collection(firestore, 'enrollments'),
-            where('classroomId', '==', selectedClass)
-          )
-        : null,
-    [selectedClass, firestore]
-  );
-  const { data: enrollments, isLoading: enrollmentsLoading } = useCollection<Enrollment>(enrollmentsQuery);
-
-  const allStudentsQuery = useMemoFirebase(
-    () => (firestore ? query(collection(firestore, 'students')) : null),
-    [firestore]
-  );
-  const { data: allStudents, isLoading: allStudentsLoading } = useCollection<Student>(allStudentsQuery);
-
   const settingsRef = useMemoFirebase(() => (firestore ? doc(firestore, 'schoolSettings', 'current') : null), [firestore]);
   const { data: schoolSettings } = useDoc<SchoolSettingsData>(settingsRef);
   
@@ -97,11 +81,54 @@ export function ResultViewTable() {
   const subjectsQuery = useMemoFirebase(() => (firestore ? collection(firestore, 'subjects') : null), [firestore]);
   const { data: allSubjects } = useCollection<Subject>(subjectsQuery);
   
-  const studentsInClass = useMemo(() => {
-      if (!enrollments || !allStudents) return [];
-      const studentIds = new Set(enrollments.map(e => e.studentId));
-      return allStudents.filter(s => studentIds.has(s.id) && !s.isDeleted).sort((a,b) => a.name.localeCompare(b.name));
-  }, [enrollments, allStudents]);
+  useEffect(() => {
+    const fetchStudents = async () => {
+        if (!selectedClass || !firestore) {
+            setStudentsInClass([]);
+            return;
+        }
+
+        setIsFetchingStudents(true);
+        try {
+            // 1. Get student references from the subcollection
+            const studentsInClassRef = collection(firestore, 'classrooms', selectedClass, 'students');
+            const studentsInClassSnap = await getDocs(studentsInClassRef);
+            const studentIds = studentsInClassSnap.docs.map(d => d.id);
+
+            if (studentIds.length === 0) {
+                setStudentsInClass([]);
+                setIsFetchingStudents(false);
+                return;
+            }
+
+            // 2. Fetch student documents in batches
+            const studentDetails: Student[] = [];
+            for (let i = 0; i < studentIds.length; i += 30) {
+                const batchIds = studentIds.slice(i, i + 30);
+                if (batchIds.length === 0) continue;
+
+                const studentsQuery = query(collection(firestore, 'students'), where('__name__', 'in', batchIds));
+                const studentsSnap = await getDocs(studentsQuery);
+                studentsSnap.forEach(doc => {
+                    const studentData = doc.data() as Omit<Student, 'id'>;
+                    if (!studentData.isDeleted) {
+                        studentDetails.push({ id: doc.id, ...studentData });
+                    }
+                });
+            }
+            
+            setStudentsInClass(studentDetails.sort((a, b) => a.name.localeCompare(b.name)));
+
+        } catch (error) {
+            console.error("Error fetching students for class:", error);
+            toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch students for the selected class.' });
+        } finally {
+            setIsFetchingStudents(false);
+        }
+    };
+
+    fetchStudents();
+  }, [selectedClass, firestore, toast]);
 
 
   const handleClassChange = (classId: string) => {
@@ -201,7 +228,6 @@ export function ResultViewTable() {
 
 
   const isLoading = classroomsLoading;
-  const isFetchingStudents = enrollmentsLoading || allStudentsLoading;
 
   return (
     <Card>
