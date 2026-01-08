@@ -100,10 +100,15 @@ export default function BroadsheetPage() {
         throw new Error("No students found in this class.");
       }
       
-      // 2. Fetch all student documents to get their names
-      const studentsQuery = query(collection(firestore, 'students'), where('__name__', 'in', studentIds));
-      const studentsSnap = await getDocs(studentsQuery);
-      const studentMap = new Map(studentsSnap.docs.map(d => [d.id, d.data() as Student]));
+      // 2. Fetch all student documents in batches to get their names
+      const studentMap = new Map<string, Student>();
+      for (let i = 0; i < studentIds.length; i += 30) {
+          const batch = studentIds.slice(i, i + 30);
+          if (batch.length === 0) continue;
+          const studentsQuery = query(collection(firestore, 'students'), where('__name__', 'in', batch));
+          const studentsSnap = await getDocs(studentsQuery);
+          studentsSnap.forEach(doc => studentMap.set(doc.id, doc.data() as Student));
+      }
 
 
       // 3. Fetch all results for these students for the current term
@@ -240,5 +245,3 @@ export default function BroadsheetPage() {
     </div>
   );
 }
-
-    

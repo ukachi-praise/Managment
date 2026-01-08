@@ -2,7 +2,7 @@
 'use client';
 
 import { useParams, useRouter } from 'next/navigation';
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import {
   Card,
   CardContent,
@@ -21,12 +21,13 @@ import {
 import { useFirestore, useMemoFirebase } from '@/firebase/provider';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { useDoc } from '@/firebase/firestore/use-doc';
-import { collection, query, where, doc } from 'firebase/firestore';
+import { collection, query, where, doc, getDocs } from 'firebase/firestore';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Loader2, ArrowLeft } from 'lucide-react';
 import { format } from 'date-fns';
 import AuthGuard from '@/components/auth/AuthGuard';
+import { useToast } from '@/hooks/use-toast';
 
 type Enrollment = { id: string; classroomId: string; studentId: string; createdAt: any };
 type Student = { id: string; name: string; isDeleted?: boolean; };
@@ -37,6 +38,10 @@ function EnrollmentPageContent() {
   const router = useRouter();
   const classroomId = params.classroomId as string;
   const firestore = useFirestore();
+  const { toast } = useToast();
+
+  const [studentDetails, setStudentDetails] = useState<Student[]>([]);
+  const [detailsLoading, setDetailsLoading] = useState(true);
 
   // --- Data Fetching ---
   const classroomRef = useMemoFirebase(
@@ -51,25 +56,68 @@ function EnrollmentPageContent() {
   );
   const { data: enrollments, isLoading: enrollmentsLoading } = useCollection<Enrollment>(enrollmentsQuery);
 
-  const studentIds = useMemo(() => enrollments?.map(e => e.studentId) || [], [enrollments]);
+  
+  useEffect(() => {
+    const fetchStudentDetails = async () => {
+      if (!firestore || !enrollments) {
+        setStudentDetails([]);
+        setDetailsLoading(false);
+        return;
+      }
+      
+      if (enrollments.length === 0) {
+        setStudentDetails([]);
+        setDetailsLoading(false);
+        return;
+      }
 
-  // Firestore 'in' queries are limited to 30 items. We might need to batch this in the future if a class has more students.
-  const studentsQuery = useMemoFirebase(
-    () => studentIds.length > 0 && firestore ? query(collection(firestore, 'students'), where('__name__', 'in', studentIds)) : null,
-    [firestore, studentIds]
-  );
-  const { data: students, isLoading: studentsLoading } = useCollection<Student>(studentsQuery);
+      setDetailsLoading(true);
+      try {
+        const studentIds = enrollments.map(e => e.studentId);
+        
+        const batches = [];
+        for (let i = 0; i < studentIds.length; i += 30) {
+          const batch = studentIds.slice(i, i + 30);
+          if (batch.length > 0) {
+            const q = query(collection(firestore, 'students'), where('__name__', 'in', batch));
+            batches.push(getDocs(q));
+          }
+        }
 
-  const studentMap = useMemo(() => {
-    if (!students) return new Map();
-    return new Map(students.map(s => [s.id, s]));
-  }, [students]);
+        const results = await Promise.all(batches);
+        const allStudents: Student[] = [];
+        
+        results.forEach(snapshot => {
+          snapshot.docs.forEach(doc => {
+            allStudents.push({ id: doc.id, ...doc.data() } as Student);
+          });
+        });
+
+        setStudentDetails(allStudents);
+      } catch (error) {
+        console.error('Error fetching student details:', error);
+        toast({
+          variant: 'destructive',
+          title: 'Error',
+          description: 'Failed to load student details.'
+        });
+      } finally {
+        setDetailsLoading(false);
+      }
+    };
+
+    fetchStudentDetails();
+  }, [firestore, enrollments, toast]);
+
 
   const combinedEnrollmentData = useMemo(() => {
-    if (!enrollments) return [];
+    if (!enrollments || !studentDetails) return [];
+    
+    const detailsMap = new Map(studentDetails.map(s => [s.id, s]));
+    
     return enrollments
       .map(enrollment => {
-        const student = studentMap.get(enrollment.studentId);
+        const student = detailsMap.get(enrollment.studentId);
         if (!student || student.isDeleted) return null;
         return {
           enrollmentId: enrollment.id,
@@ -78,9 +126,10 @@ function EnrollmentPageContent() {
         };
       })
       .filter(item => item !== null);
-  }, [enrollments, studentMap]);
+  }, [enrollments, studentDetails]);
 
-  const isLoading = classroomLoading || enrollmentsLoading || studentsLoading;
+
+  const isLoading = classroomLoading || enrollmentsLoading || detailsLoading;
 
   if (isLoading) {
       return (
@@ -165,5 +214,3 @@ export default function GuardedEnrollmentPage() {
         </AuthGuard>
     )
 }
-
-    
