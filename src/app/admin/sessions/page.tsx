@@ -35,6 +35,7 @@ import { useFirestore, useMemoFirebase } from '@/firebase/provider';
 import { collection, query, doc, writeBatch } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
+import { Badge } from '@/components/ui/badge';
 
 type AcademicSession = {
   id: string;
