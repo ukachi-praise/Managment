@@ -41,6 +41,8 @@ export type SavedTemplateData = { name: string; schoolName: string; settings: Te
 export type ResultEntry = { subjectName: string; ca1: number | null; ca2: number | null; exam: number | null; total: number; grade: string; remark: string; subSubjects?: string[] };
 type Subject = { id:string; name: string; subSubjects?: string[] };
 type AcademicSession = { id: string; name: string; };
+type Term = { id: string; name: "1st" | "2nd" | "3rd"; };
+
 
 // Represents a single subject's scores within the main result document
 type SubjectScore = {
@@ -114,7 +116,7 @@ export const ResultSheet = forwardRef<HTMLDivElement, ResultSheetProps>(({
   
   const [termResult, setTermResult] = useState<TermResult | null>(null);
   const [softSkillScores, setSoftSkillScores] = useState<SoftSkillScore[]>([]);
-
+  const [termResultLoading, setTermResultLoading] = useState(true);
 
   // --- DATA FETCHING ---
   const settingsRef = useMemoFirebase(() => (!isForTemplateBuilder && firestore ? doc(firestore, 'schoolSettings', 'current') : null), [firestore, isForTemplateBuilder]);
@@ -123,6 +125,9 @@ export const ResultSheet = forwardRef<HTMLDivElement, ResultSheetProps>(({
   const sessionDocRef = useMemoFirebase(() => (firestore && sessionId ? doc(firestore, 'sessions', sessionId) : null), [firestore, sessionId]);
   const { data: sessionDoc, isLoading: sessionLoading } = useDoc<AcademicSession>(sessionDocRef);
 
+  const termDocRef = useMemoFirebase(() => (firestore && sessionId && termId ? doc(firestore, 'sessions', sessionId, 'terms', termId) : null), [firestore, sessionId, termId]);
+  const { data: termDoc, isLoading: termLoading } = useDoc<Term>(termDocRef);
+
   const templateRef = useMemoFirebase(() => (!isForTemplateBuilder && firestore ? doc(firestore, 'resultTemplates', 'main-template') : null), [firestore, isForTemplateBuilder]);
   const { data: savedTemplateData, isLoading: templateLoading } = useDoc<SavedTemplateData>(templateRef);
   
@@ -130,19 +135,29 @@ export const ResultSheet = forwardRef<HTMLDivElement, ResultSheetProps>(({
   const { data: allSubjects, isLoading: subjectsLoading } = useCollection<Subject>(subjectsQuery);
 
   const termResultRef = useMemoFirebase(() => {
-      if (isForTemplateBuilder || !firestore || !studentId || !sessionDoc || !termId) return null;
-      const termResultId = `${sessionDoc.name.replace('/', '-')}-${termId}`;
+      if (isForTemplateBuilder || !firestore || !studentId || !sessionId || !termId) return null;
+      const termResultId = `${sessionId}-${termId}`;
       return doc(firestore, 'students', studentId, 'results', termResultId);
-  }, [firestore, studentId, sessionDoc, termId, isForTemplateBuilder]);
+  }, [firestore, studentId, sessionId, termId, isForTemplateBuilder]);
   
   useEffect(() => {
     if (isForTemplateBuilder || !termResultRef) {
         setTermResult(null);
+        setTermResultLoading(false);
         return;
     };
+    setTermResultLoading(true);
     const unsubscribe = onSnapshot(termResultRef, (snap) => {
-      if (snap.exists()) setTermResult(snap.data() as TermResult);
-      else setTermResult(null);
+      if (snap.exists()) {
+        setTermResult(snap.data() as TermResult);
+      } else {
+        setTermResult(null);
+      }
+      setTermResultLoading(false);
+    }, (error) => {
+        console.error("Error fetching term result:", error);
+        setTermResult(null);
+        setTermResultLoading(false);
     });
     return () => unsubscribe();
   }, [termResultRef, isForTemplateBuilder]);
@@ -229,9 +244,9 @@ export const ResultSheet = forwardRef<HTMLDivElement, ResultSheetProps>(({
   }, [schoolSettings, isForTemplateBuilder]);
 
   const reportSession = isForTemplateBuilder ? '2023/2024' : (sessionDoc?.name || '...');
-  const reportTermName = isForTemplateBuilder ? '1st Term' : (termId ? termNames[termId] : 'N/A');
+  const reportTermName = isForTemplateBuilder ? '1st Term' : (termDoc ? termNames[termDoc.name] : 'N/A');
 
-  const isLoading = !isForTemplateBuilder && (settingsLoading || templateLoading || subjectsLoading || sessionLoading || termResultLoading);
+  const isLoading = !isForTemplateBuilder && (settingsLoading || templateLoading || subjectsLoading || sessionLoading || termLoading || termResultLoading);
   
   const daysAbsent = useMemo(() => {
     if (isForTemplateBuilder) return '--';

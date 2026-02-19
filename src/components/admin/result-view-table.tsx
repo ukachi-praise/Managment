@@ -154,7 +154,7 @@ export function ResultViewTable() {
   }
 
   const handleBulkDownload = async () => {
-    if (!studentsInClass || studentsInClass.length === 0) return;
+    if (!studentsInClass || studentsInClass.length === 0 || !selectedSession || !selectedTerm) return;
 
     setIsDownloading(true);
     toast({
@@ -163,11 +163,9 @@ export function ResultViewTable() {
         duration: 10000,
     });
     
-    const sessionName = sessions?.find(s => s.id === selectedSession)?.name.replace('/', '-');
-
     for (let i = 0; i < studentsInClass.length; i++) {
       await new Promise(resolve => setTimeout(resolve, 300));
-      const url = `/admin/results/${studentsInClass[i].id}?session=${sessionName}&term=${selectedTerm}`;
+      const url = `/admin/results/${studentsInClass[i].id}?session=${selectedSession}&term=${selectedTerm}`;
       window.open(url, '_blank');
     }
     
@@ -195,7 +193,6 @@ export function ResultViewTable() {
 
 
         const studentDataForApi = await Promise.all(studentsInClass.map(async (student) => {
-            // CRITICAL FIX: Use stable IDs for document path
             const termResultId = `${selectedSession}-${selectedTerm}`;
             const resultDocRef = doc(firestore, 'students', student.id, 'results', termResultId);
             const resultDocSnap = await getDoc(resultDocRef);
@@ -281,7 +278,7 @@ export function ResultViewTable() {
             <Select onValueChange={setSelectedTerm} value={selectedTerm || ''} disabled={!selectedSession || termsLoading}>
                 <SelectTrigger><SelectValue placeholder={termsLoading ? "Loading..." : "Select Term"} /></SelectTrigger>
                 <SelectContent>
-                    {terms?.map(t => <SelectItem key={t.id} value={t.name}>{termNames[t.name]}</SelectItem>)}
+                    {terms?.map(t => <SelectItem key={t.id} value={t.id}>{termNames[t.name]}</SelectItem>)}
                 </SelectContent>
             </Select>
             
