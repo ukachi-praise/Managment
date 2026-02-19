@@ -60,8 +60,12 @@ export async function generateSoftSkills(input: GenerateSoftSkillsInput): Promis
 
     return validatedOutput.data;
 
-  } catch (error) {
-    console.error("Error calling OpenAI for soft skills:", error);
-    throw new Error('Failed to generate soft skills from OpenAI.');
+  } catch (error: any) {
+    console.error("🔥 OpenAI Error in generateSoftSkills:", error);
+    throw new Error(
+      error?.response?.data?.error?.message ||
+      error?.message ||
+      "Unknown OpenAI error occurred in generateSoftSkills"
+    );
   }
 }

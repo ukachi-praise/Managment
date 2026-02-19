@@ -59,8 +59,12 @@ export async function gradeSoftSkill(input: GradeSoftSkillInput): Promise<GradeS
 
     return validatedOutput.data;
 
-  } catch (error) {
-    console.error("Error calling OpenAI for soft skill grading:", error);
-    throw new Error('Failed to grade soft skill from OpenAI.');
+  } catch (error: any) {
+    console.error("🔥 OpenAI Error in gradeSoftSkill:", error);
+    throw new Error(
+      error?.response?.data?.error?.message ||
+      error?.message ||
+      "Unknown OpenAI error occurred in gradeSoftSkill"
+    );
   }
 }

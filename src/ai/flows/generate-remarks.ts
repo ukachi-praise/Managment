@@ -82,8 +82,12 @@ export async function generateRemarks(input: GenerateRemarksInput): Promise<Gene
 
     return validatedOutput.data;
 
-  } catch (error) {
-    console.error("Error calling OpenAI:", error);
-    throw new Error('Failed to generate remarks from OpenAI.');
+  } catch (error: any) {
+    console.error("🔥 OpenAI Error in generateRemarks:", error);
+    throw new Error(
+      error?.response?.data?.error?.message ||
+      error?.message ||
+      "Unknown OpenAI error occurred in generateRemarks"
+    );
   }
 }
