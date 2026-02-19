@@ -1,15 +1,12 @@
 
 'use server';
-/**
- * @fileOverview Generates a remark for a soft skill based on a score.
- *
- * - gradeSoftSkill - A function that handles the soft skill grading.
- * - GradeSoftSkillInput - The input type for the gradeSoftSkill function.
- * - GradeSoftSkillOutput - The return type for the gradeSoftSkill function.
- */
 
-import {ai} from '@/ai/genkit';
-import {z} from 'genkit';
+import OpenAI from 'openai';
+import { z } from 'zod';
+
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY!,
+});
 
 const GradeSoftSkillInputSchema = z.object({
   skillName: z.string().describe('The name of the soft skill being assessed (e.g., "Punctuality", "Creativity").'),
@@ -26,30 +23,44 @@ export type GradeSoftSkillOutput = z.infer<typeof GradeSoftSkillOutputSchema>;
 
 
 export async function gradeSoftSkill(input: GradeSoftSkillInput): Promise<GradeSoftSkillOutput> {
-  return gradeSoftSkillFlow(input);
-}
-
-const prompt = ai.definePrompt({
-  name: 'gradeSoftSkillPrompt',
-  input: {schema: GradeSoftSkillInputSchema},
-  output: {schema: GradeSoftSkillOutputSchema},
-  model: 'googleai/gemini-1.5-pro-latest',
-  prompt: `You are an experienced educator providing a brief remark for a pupil's report card.
-  
-  Skill: {{{skillName}}}
-  Score: {{{score}}} (out of 5)
-
-  Based on the score, write a single, concise sentence that summarizes the pupil's performance in this skill. Be encouraging for high scores and constructive for low scores.`,
-});
-
-const gradeSoftSkillFlow = ai.defineFlow(
-  {
-    name: 'gradeSoftSkillFlow',
-    inputSchema: GradeSoftSkillInputSchema,
-    outputSchema: GradeSoftSkillOutputSchema,
-  },
-  async input => {
-    const {output} = await prompt(input);
-    return output!;
+  const validatedInput = GradeSoftSkillInputSchema.safeParse(input);
+  if (!validatedInput.success) {
+    throw new Error('Invalid input for gradeSoftSkill');
   }
-);
+
+  try {
+    const completion = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [
+        {
+          role: "system",
+          content: `You are an experienced educator providing a brief remark for a pupil's report card. Based on the skill and score provided, write a single, concise sentence that summarizes the pupil's performance in this skill. Be encouraging for high scores and constructive for low scores. The output must be a valid JSON object with a single key "remark".`
+        },
+        {
+          role: "user",
+          content: `Skill: ${validatedInput.data.skillName}\nScore: ${validatedInput.data.score} (out of 5)`
+        }
+      ],
+      response_format: { type: "json_object" },
+    });
+
+    const resultJson = completion.choices[0].message.content;
+    if (!resultJson) {
+      throw new Error('OpenAI returned an empty response.');
+    }
+    
+    const parsedResult = JSON.parse(resultJson);
+    const validatedOutput = GradeSoftSkillOutputSchema.safeParse(parsedResult);
+    
+    if (!validatedOutput.success) {
+        console.error("OpenAI response did not match schema:", validatedOutput.error);
+        throw new Error('AI response did not match the expected format.');
+    }
+
+    return validatedOutput.data;
+
+  } catch (error) {
+    console.error("Error calling OpenAI for soft skill grading:", error);
+    throw new Error('Failed to grade soft skill from OpenAI.');
+  }
+}

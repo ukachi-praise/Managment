@@ -1,17 +1,13 @@
 
-// src/ai/flows/generate-soft-skills.ts
 'use server';
 
-/**
- * @fileOverview Generates soft skill assessments and remarks based on pupil data.
- *
- * - generateSoftSkills - A function that handles the soft skill generation process.
- * - GenerateSoftSkillsInput - The input type for the generateSoftSkills function.
- * - GenerateSoftSkillsOutput - The return type for the generateSoftSkills function.
- */
+import OpenAI from 'openai';
+import { z } from 'zod';
 
-import {ai} from '@/ai/genkit';
-import {z} from 'genkit';
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY!,
+});
+
 
 const GenerateSoftSkillsInputSchema = z.object({
   academicPerformance: z.string().describe('Description of the pupil\'s academic performance.'),
@@ -28,31 +24,44 @@ const GenerateSoftSkillsOutputSchema = z.object({
 export type GenerateSoftSkillsOutput = z.infer<typeof GenerateSoftSkillsOutputSchema>;
 
 export async function generateSoftSkills(input: GenerateSoftSkillsInput): Promise<GenerateSoftSkillsOutput> {
-  return generateSoftSkillsFlow(input);
-}
-
-const prompt = ai.definePrompt({
-  name: 'generateSoftSkillsPrompt',
-  input: {schema: GenerateSoftSkillsInputSchema},
-  output: {schema: GenerateSoftSkillsOutputSchema},
-  model: 'googleai/gemini-1.5-pro-latest',
-  prompt: `You are an API that generates pupil assessments. Based on the data provided, return a JSON object with two keys: "softSkillsAssessment" and "remarks".
-
-  Pupil Information:
-  - Academic Performance: {{{academicPerformance}}}
-  - Attendance: {{{attendance}}}
-
-  Generate a concise and informative soft skills assessment and a general remark.`,
-});
-
-const generateSoftSkillsFlow = ai.defineFlow(
-  {
-    name: 'generateSoftSkillsFlow',
-    inputSchema: GenerateSoftSkillsInputSchema,
-    outputSchema: GenerateSoftSkillsOutputSchema,
-  },
-  async input => {
-    const {output} = await prompt(input);
-    return output!;
+  const validatedInput = GenerateSoftSkillsInputSchema.safeParse(input);
+  if (!validatedInput.success) {
+    throw new Error('Invalid input for generateSoftSkills');
   }
-);
+
+  try {
+    const completion = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [
+        {
+          role: "system",
+          content: `You are an API that generates pupil assessments. Based on the data provided, return a JSON object with two keys: "softSkillsAssessment" and "remarks". Generate a concise and informative soft skills assessment and a general remark. The output must be a valid JSON object.`
+        },
+        {
+          role: "user",
+          content: `Pupil Information:\n- Academic Performance: ${validatedInput.data.academicPerformance}\n- Attendance: ${validatedInput.data.attendance}`
+        }
+      ],
+      response_format: { type: "json_object" },
+    });
+
+    const resultJson = completion.choices[0].message.content;
+    if (!resultJson) {
+      throw new Error('OpenAI returned an empty response.');
+    }
+    
+    const parsedResult = JSON.parse(resultJson);
+    const validatedOutput = GenerateSoftSkillsOutputSchema.safeParse(parsedResult);
+
+    if (!validatedOutput.success) {
+        console.error("OpenAI response did not match schema:", validatedOutput.error);
+        throw new Error('AI response did not match the expected format.');
+    }
+
+    return validatedOutput.data;
+
+  } catch (error) {
+    console.error("Error calling OpenAI for soft skills:", error);
+    throw new Error('Failed to generate soft skills from OpenAI.');
+  }
+}
