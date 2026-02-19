@@ -48,7 +48,7 @@ const prompt = ai.definePrompt({
   input: {schema: GenerateRemarksInputSchema},
   output: {schema: GenerateRemarksOutputSchema},
   tools: [getHeadTeacherRemarks],
-  model: 'gemini-1.0-pro',
+  model: 'googleai/gemini-1.0-pro',
   prompt: `You are an experienced educator tasked with writing report card remarks.
   
   Student Name: {{{studentName}}}
