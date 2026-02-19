@@ -15,7 +15,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Wand2, Loader2, Save } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { generateRemarks, GenerateRemarksInput } from '@/ai/flows/generate-remarks';
+import { generateRemark, generateHeadTeacherRemark } from '@/lib/remarks';
 import { DocumentReference } from 'firebase/firestore';
 import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 
@@ -46,22 +46,27 @@ export function RemarkGenerator({
   }, [initialTeacherRemark, initialHeadTeacherRemark]);
 
 
-  const handleGenerate = async () => {
+  const handleGenerate = () => {
     setIsGenerating(true);
-    toast({ title: 'Generating Remarks...', description: 'The AI is crafting personalized remarks.' });
+    toast({ title: 'Generating Remarks...', description: 'Picking the best remarks for this score.' });
 
-    try {
-      const input: GenerateRemarksInput = { studentName: studentName, overallAverage };
-      const result = await generateRemarks(input);
-      setTeacherRemark(result.teacherRemark);
-      setHeadTeacherRemark(result.headTeacherRemark);
-      toast({ title: 'Remarks Generated!', description: 'You can now review and save the remarks.' });
-    } catch (error) {
-      console.error(error);
-      toast({ variant: 'destructive', title: 'Generation Failed', description: 'Could not generate AI remarks.' });
-    } finally {
-      setIsGenerating(false);
-    }
+    // Simulate a short delay for better UX
+    setTimeout(() => {
+      try {
+        const newTeacherRemark = generateRemark(overallAverage);
+        const newHeadTeacherRemark = generateHeadTeacherRemark(overallAverage);
+        
+        setTeacherRemark(newTeacherRemark);
+        setHeadTeacherRemark(newHeadTeacherRemark);
+
+        toast({ title: 'Remarks Generated!', description: 'You can now review and save the remarks.' });
+      } catch (error) {
+        console.error(error);
+        toast({ variant: 'destructive', title: 'Generation Failed', description: 'Could not generate remarks.' });
+      } finally {
+        setIsGenerating(false);
+      }
+    }, 500); // 500ms delay
   };
   
   const handleSave = () => {
@@ -86,9 +91,9 @@ export function RemarkGenerator({
   return (
     <Card className="mt-6">
       <CardHeader>
-        <CardTitle>AI-Powered Remarks</CardTitle>
+        <CardTitle>Remark Generator</CardTitle>
         <CardDescription>
-          Generate personalized teacher and head teacher remarks based on the student&apos;s overall performance.
+          Generate teacher and head teacher remarks based on the student&apos;s overall performance.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -137,5 +142,3 @@ export function RemarkGenerator({
     </Card>
   );
 }
-
-    
