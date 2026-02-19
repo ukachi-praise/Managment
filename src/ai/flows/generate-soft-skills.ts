@@ -35,6 +35,7 @@ const prompt = ai.definePrompt({
   name: 'generateSoftSkillsPrompt',
   input: {schema: GenerateSoftSkillsInputSchema},
   output: {schema: GenerateSoftSkillsOutputSchema},
+  model: 'gemini-1.0-pro',
   prompt: `You are an API that generates pupil assessments. Based on the data provided, return a JSON object with two keys: "softSkillsAssessment" and "remarks".
 
   Pupil Information:
