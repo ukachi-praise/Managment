@@ -9,7 +9,6 @@
  */
 
 import {ai} from '@/ai/genkit';
-import {googleAI} from '@genkit-ai/google-genai';
 import {z} from 'genkit';
 
 const GradeSoftSkillInputSchema = z.object({
@@ -32,7 +31,6 @@ export async function gradeSoftSkill(input: GradeSoftSkillInput): Promise<GradeS
 
 const prompt = ai.definePrompt({
   name: 'gradeSoftSkillPrompt',
-  model: googleAI.model('gemini-pro'),
   input: {schema: GradeSoftSkillInputSchema},
   output: {schema: GradeSoftSkillOutputSchema},
   prompt: `You are an experienced educator providing a brief remark for a pupil's report card.

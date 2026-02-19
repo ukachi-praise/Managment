@@ -11,7 +11,6 @@
  */
 
 import {ai} from '@/ai/genkit';
-import {googleAI} from '@genkit-ai/google-genai';
 import {z} from 'genkit';
 
 const GenerateSoftSkillsInputSchema = z.object({
@@ -34,7 +33,6 @@ export async function generateSoftSkills(input: GenerateSoftSkillsInput): Promis
 
 const prompt = ai.definePrompt({
   name: 'generateSoftSkillsPrompt',
-  model: googleAI.model('gemini-pro'),
   input: {schema: GenerateSoftSkillsInputSchema},
   output: {schema: GenerateSoftSkillsOutputSchema},
   prompt: `You are an API that generates pupil assessments. Based on the data provided, return a JSON object with two keys: "softSkillsAssessment" and "remarks".
