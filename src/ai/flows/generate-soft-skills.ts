@@ -34,7 +34,7 @@ export async function generateSoftSkills(input: GenerateSoftSkillsInput): Promis
 
 const prompt = ai.definePrompt({
   name: 'generateSoftSkillsPrompt',
-  model: googleAI.model('gemini-1.5-flash-latest'),
+  model: googleAI.model('gemini-pro'),
   input: {schema: GenerateSoftSkillsInputSchema},
   output: {schema: GenerateSoftSkillsOutputSchema},
   prompt: `You are an API that generates pupil assessments. Based on the data provided, return a JSON object with two keys: "softSkillsAssessment" and "remarks".
