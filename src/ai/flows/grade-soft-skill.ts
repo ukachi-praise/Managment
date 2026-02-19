@@ -33,7 +33,7 @@ const prompt = ai.definePrompt({
   name: 'gradeSoftSkillPrompt',
   input: {schema: GradeSoftSkillInputSchema},
   output: {schema: GradeSoftSkillOutputSchema},
-  model: 'googleai/gemini-1.0-pro',
+  model: 'googleai/gemini-1.5-pro',
   prompt: `You are an experienced educator providing a brief remark for a pupil's report card.
   
   Skill: {{{skillName}}}
