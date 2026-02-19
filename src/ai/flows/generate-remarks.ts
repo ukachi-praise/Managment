@@ -1,3 +1,4 @@
+
 // src/ai/flows/generate-remarks.ts
 'use server';
 
@@ -48,7 +49,6 @@ const prompt = ai.definePrompt({
   input: {schema: GenerateRemarksInputSchema},
   output: {schema: GenerateRemarksOutputSchema},
   tools: [getHeadTeacherRemarks],
-  model: 'gemini-1.5-flash-preview-0514',
   prompt: `You are an experienced educator tasked with writing report card remarks.
   
   Pupil Name: {{{pupilName}}}
