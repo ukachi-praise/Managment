@@ -7,9 +7,9 @@ import { Firestore, doc, getDoc } from 'firebase/firestore';
 import { Auth, User, onAuthStateChanged } from 'firebase/auth';
 import { FirebaseErrorListener } from '@/components/FirebaseErrorListener';
 import { initializeFirebase } from '@/firebase'; // SAFE IMPORT
+import { AlertCircle } from 'lucide-react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
-// Get the singleton instances of Firebase services
-const { firebaseApp, auth, firestore } = initializeFirebase();
 
 // --- PROFILE TYPE ---
 export type UserProfile = {
@@ -23,9 +23,9 @@ export type AppUser = User & UserProfile;
 
 // --- CONTEXT STATE ---
 interface FirebaseContextState {
-  app: FirebaseApp;
-  auth: Auth;
-  firestore: Firestore;
+  app: FirebaseApp | null;
+  auth: Auth | null;
+  firestore: Firestore | null;
   user: AppUser | null;
   isLoading: boolean;
 }
@@ -33,14 +33,56 @@ interface FirebaseContextState {
 // --- CONTEXT ---
 const FirebaseContext = createContext<FirebaseContextState | undefined>(undefined);
 
+
+const MissingConfigErrorDisplay = () => (
+    <div className="flex min-h-screen items-center justify-center bg-muted p-4">
+        <Card className="w-full max-w-lg border-destructive">
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-destructive">
+                    <AlertCircle className="h-6 w-6" />
+                    Firebase Configuration Error
+                </CardTitle>
+                <CardDescription className="text-destructive/90">
+                    Your Firebase credentials are not configured correctly.
+                </CardDescription>
+            </CardHeader>
+            <CardContent>
+                <p className="text-sm">
+                    The application cannot connect to Firebase because the required environment variables are missing. Please add the following keys to your <code className="bg-muted-foreground/20 p-1 rounded-sm text-xs">.env</code> file:
+                </p>
+                <pre className="mt-4 w-full overflow-x-auto rounded-md bg-slate-950 p-4">
+                    <code className="text-white text-xs">
+                        NEXT_PUBLIC_FIREBASE_API_KEY=...<br />
+                        NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=...<br />
+                        NEXT_PUBLIC_FIREBASE_PROJECT_ID=...<br />
+                        NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=...<br />
+                        NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=...<br />
+                        NEXT_PUBLIC_FIREBASE_APP_ID=...<br />
+                        GEMINI_API_KEY=...
+                    </code>
+                </pre>
+                 <p className="mt-4 text-xs text-muted-foreground">
+                    After adding the variables, you may need to restart the development server for the changes to take effect.
+                </p>
+            </CardContent>
+        </Card>
+    </div>
+);
+
+
 // --- PROVIDER COMPONENT ---
 export function FirebaseProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AppUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   
-  const services = { app: firebaseApp, auth, firestore };
+  const services = useMemo(() => initializeFirebase(), []);
 
   useEffect(() => {
+    if (!services) {
+      setIsLoading(false);
+      return;
+    }
+
     const { auth, firestore } = services;
 
     const unsubscribe = onAuthStateChanged(
@@ -48,7 +90,6 @@ export function FirebaseProvider({ children }: { children: ReactNode }) {
       async (authUser) => {
         if (authUser) {
           try {
-            // This is the base profile from hardcoded values, containing the essential role.
             let baseProfile: UserProfile = {};
             if (authUser.uid === 'GOpbb9SsavhpATk1p0KNmPGGQ0S2') {
                 baseProfile = { role: 'Admin', name: 'Admin User', email: authUser.email || 'admin@example.com' };
@@ -76,7 +117,6 @@ export function FirebaseProvider({ children }: { children: ReactNode }) {
                 baseProfile = { role: 'Teacher', name: 'Primary 5 Teacher', email: authUser.email, assignedClassroomId: 'nrmeHRqY7TtrkDxLAGnB' };
             }
             
-            // Now, fetch the user's document from Firestore to get any updates.
             const userDocRef = doc(firestore, 'users', authUser.uid);
             const userDoc = await getDoc(userDocRef);
             let firestoreProfile: UserProfile = {};
@@ -84,7 +124,6 @@ export function FirebaseProvider({ children }: { children: ReactNode }) {
               firestoreProfile = userDoc.data() as UserProfile;
             }
 
-            // Merge the profiles: Firestore updates overwrite hardcoded defaults, but the role from hardcoded data is preserved if not in Firestore.
             const finalProfile = { ...baseProfile, ...firestoreProfile };
             
             setUser({ ...authUser, ...finalProfile });
@@ -94,10 +133,8 @@ export function FirebaseProvider({ children }: { children: ReactNode }) {
             setUser(authUser as AppUser); // Fallback to authUser without profile
           }
         } else {
-          // User is signed out
           setUser(null);
         }
-        // This is the key: loading is false only after all auth logic is complete.
         setIsLoading(false);
       },
       (error) => {
@@ -108,11 +145,14 @@ export function FirebaseProvider({ children }: { children: ReactNode }) {
     );
 
     return () => unsubscribe();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); 
+  }, [services]); 
+
+  if (!services) {
+    return <MissingConfigErrorDisplay />;
+  }
 
   const value = {
-    app: services.app,
+    app: services.firebaseApp,
     auth: services.auth,
     firestore: services.firestore,
     user,
@@ -129,10 +169,13 @@ export function FirebaseProvider({ children }: { children: ReactNode }) {
 
 
 // --- HOOKS ---
-export const useFirebase = (): Omit<FirebaseContextState, 'user' | 'isLoading' > => {
+export const useFirebase = (): { app: FirebaseApp; auth: Auth; firestore: Firestore; } => {
   const context = useContext(FirebaseContext);
   if (context === undefined) {
     throw new Error('useFirebase must be used within a FirebaseProvider.');
+  }
+  if (!context.app || !context.auth || !context.firestore) {
+    throw new Error('Firebase has not been initialized. Please check your environment variables in the .env file.');
   }
   return { 
     app: context.app, 
@@ -152,7 +195,7 @@ export const useUser = (): { user: AppUser | null, isLoading: boolean, isLoggedI
 export const useAuth = (): Auth => {
     const context = useContext(FirebaseContext);
     if (context === undefined || !context.auth) {
-        throw new Error('useAuth must be used within a FirebaseProvider and Auth must be initialized.');
+        throw new Error('useAuth must be used within a FirebaseProvider and Auth must be initialized. Check your .env file.');
     }
     return context.auth;
 }
@@ -160,7 +203,7 @@ export const useAuth = (): Auth => {
 export const useFirestore = (): Firestore => {
     const context = useContext(FirebaseContext);
     if (context === undefined || !context.firestore) {
-        throw new Error('useFirestore must be used within a FirebaseProvider and Firestore must be initialized.');
+        throw new Error('useFirestore must be used within a FirebaseProvider and Firestore must be initialized. Check your .env file.');
     }
     return context.firestore;
 }
@@ -168,7 +211,7 @@ export const useFirestore = (): Firestore => {
 export const useFirebaseApp = (): FirebaseApp => {
     const context = useContext(FirebaseContext);
     if (context === undefined || !context.app) {
-        throw new Error('useFirebaseApp must be used within a FirebaseProvider and Firebase App must be initialized.');
+        throw new Error('useFirebaseApp must be used within a FirebaseProvider and Firebase App must be initialized. Check your .env file.');
     }
     return context.app;
 }

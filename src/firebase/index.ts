@@ -14,32 +14,51 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
-// This function ensures Firebase is initialized only once.
-function initializeFirebase() {
-  // Check for missing credentials and throw a clear error.
-  if (!firebaseConfig.apiKey || !firebaseConfig.projectId) {
-    throw new Error(
-      'Firebase config is missing. Please add your Firebase credentials to your .env file.'
-    );
-  }
-
-  const apps = getApps();
-  if (apps.length > 0) {
-    return {
-      firebaseApp: apps[0],
-      auth: getAuth(apps[0]),
-      firestore: getFirestore(apps[0]),
-    };
-  }
-  
-  const firebaseApp = initializeApp(firebaseConfig);
-  const auth = getAuth(firebaseApp);
-  const firestore = getFirestore(firebaseApp);
-  
-  return { firebaseApp, auth, firestore };
+type FirebaseServices = {
+    firebaseApp: FirebaseApp;
+    auth: Auth;
+    firestore: Firestore;
 }
 
-// Export the singleton instances for use throughout the app
+let services: FirebaseServices | null = null;
+let initializationFailed = false;
+
+// This function ensures Firebase is initialized only once.
+function initializeFirebase(): FirebaseServices | null {
+  // If we already tried and failed, don't try again.
+  if (initializationFailed) {
+      return null;
+  }
+  // If we already succeeded, return the services.
+  if (services) {
+    return services;
+  }
+  
+  // Check for missing credentials.
+  if (!firebaseConfig.apiKey || !firebaseConfig.projectId) {
+    console.warn(
+      'Firebase config is missing. Please add your Firebase credentials to your .env file.'
+    );
+    initializationFailed = true;
+    return null;
+  }
+
+  try {
+    const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
+    services = { 
+      firebaseApp: app, 
+      auth: getAuth(app), 
+      firestore: getFirestore(app) 
+    };
+    return services;
+  } catch (e) {
+    console.error("Error initializing Firebase:", e);
+    initializationFailed = true;
+    return null;
+  }
+}
+
+// Export the function for use in the provider
 export { initializeFirebase };
 
 // The barrel file exports can remain if they are used elsewhere,
