@@ -1,5 +1,3 @@
-
-// src/ai/flows/generate-remarks.ts
 'use server';
 
 /**
@@ -11,6 +9,7 @@
  */
 
 import {ai} from '@/ai/genkit';
+import { googleAI } from '@genkit-ai/google-genai';
 import {z} from 'genkit';
 import { headTeacherRemarks } from '@/lib/data';
 
@@ -46,6 +45,7 @@ export async function generateRemarks(input: GenerateRemarksInput): Promise<Gene
 
 const prompt = ai.definePrompt({
   name: 'generateRemarksPrompt',
+  model: googleAI.model('gemini-1.5-flash-latest'),
   input: {schema: GenerateRemarksInputSchema},
   output: {schema: GenerateRemarksOutputSchema},
   tools: [getHeadTeacherRemarks],
