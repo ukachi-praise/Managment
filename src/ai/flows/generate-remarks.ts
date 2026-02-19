@@ -1,4 +1,3 @@
-
 // src/ai/flows/generate-remarks.ts
 'use server';
 
@@ -11,7 +10,6 @@
  */
 
 import {ai} from '@/ai/genkit';
-import {googleAI} from '@genkit-ai/google-genai';
 import {z} from 'genkit';
 import { headTeacherRemarks } from '@/lib/data';
 
@@ -51,18 +49,6 @@ const prompt = ai.definePrompt({
   output: {schema: GenerateRemarksOutputSchema},
   tools: [getHeadTeacherRemarks],
   model: 'gemini-1.5-flash-preview-0514',
-  config: {
-    safetySettings: [
-      {
-        category: 'HARM_CATEGORY_DANGEROUS_CONTENT',
-        threshold: 'BLOCK_NONE',
-      },
-       {
-        category: 'HARM_CATEGORY_HARASSMENT',
-        threshold: 'BLOCK_NONE',
-      },
-    ]
-  },
   prompt: `You are an experienced educator tasked with writing report card remarks.
   
   Pupil Name: {{{pupilName}}}
@@ -99,5 +85,3 @@ const generateRemarksFlow = ai.defineFlow(
     return output!;
   }
 );
-
-    
