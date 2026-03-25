@@ -9,6 +9,7 @@ import { generateReportCardHtml } from '@/lib/render-result-template';
 async function generatePupilPDF(pupilData: any) {
     const html = await generateReportCardHtml(pupilData);
     
+    // The fix is to add the --no-sandbox argument for compatibility with the environment.
     const browser = await puppeteer.launch({ headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox'] });
     const page = await browser.newPage();
     
