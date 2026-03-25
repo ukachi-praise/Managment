@@ -183,6 +183,7 @@ export default function ResultSheetPage() {
       </div>
       <div className="max-w-4xl mx-auto space-y-4">
          <ResultSheet 
+            ref={resultSheetRef}
             student={student} 
             classroom={classroom} 
             teacherName={teacher?.name} 
