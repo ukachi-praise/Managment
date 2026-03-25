@@ -4,7 +4,6 @@ export const runtime = "nodejs"; // IMPORTANT: Force Node.js runtime
 import { NextRequest, NextResponse } from 'next/server';
 import JSZip from 'jszip';
 import puppeteer from 'puppeteer';
-import { generatePupilExcel } from '@/lib/generateExcel';
 import { generateReportCardHtml } from '@/lib/render-result-template';
 
 async function generatePupilPDF(pupilData: any) {
@@ -30,42 +29,40 @@ export async function POST(req: NextRequest) {
             return new NextResponse(JSON.stringify({ error: 'No pupil data provided.' }), { status: 400 });
         }
         
-        const { classroom } = body;
+        const { classroom, schoolSettings, templateData } = body;
         const validPupils = body.pupils.filter(Boolean); // Filter out any null/undefined entries
 
         const zip = new JSZip();
         
+        // Create one folder for the class
+        const classFolder = zip.folder(classroom.name.replace(/[^a-z0-9]/gi, "_"));
+        if (!classFolder) {
+            throw new Error('Could not create zip folder for the class.');
+        }
+
         for (const pupilData of validPupils) {
-            const { pupil, scores, overall } = pupilData;
+            const { pupil } = pupilData;
             
-            if (!pupil || !pupil.name || !scores) {
+            if (!pupil || !pupil.name) {
                 console.warn("Skipping invalid pupil entry:", pupilData);
                 continue;
             }
 
-            const pupilFolder = zip.folder(pupil.name.replace(/[^a-z0-9]/gi, "_"));
-            if(!pupilFolder) continue;
-
             // Generate PDF
             try {
-                // Pass the whole pupilData object to the PDF generator
-                const pdfBuffer = await generatePupilPDF(pupilData);
-                pupilFolder.file(`${pupil.name.replace(/ /g, '_')}_Report.pdf`, pdfBuffer);
+                // Construct the full payload required by the HTML generator
+                const fullPupilPayload = {
+                    ...pupilData,
+                    schoolSettings,
+                    templateData,
+                };
+                const pdfBuffer = await generatePupilPDF(fullPupilPayload);
+                // Add the PDF to the single class folder
+                classFolder.file(`${pupil.name.replace(/ /g, '_')}_Report.pdf`, pdfBuffer);
             } catch(err: any) {
                 console.error(`PDF generation failed for ${pupil.name}:`, err.message);
-                 // Optionally add a text file indicating the error
-                pupilFolder.file('PDF_GENERATION_FAILED.txt', err.message);
-            }
-            
-            // Generate Excel
-            try {
-                const excelBuffer = await generatePupilExcel(
-                    pupil, classroom, scores, overall, body.schoolSettings
-                );
-                pupilFolder.file(`${pupil.name.replace(/ /g, '_')}_Report.xlsx`, excelBuffer);
-            } catch (err: any) {
-                 console.error(`Excel generation failed for ${pupil.name}:`, err.message);
-                 pupilFolder.file('EXCEL_GENERATION_FAILED.txt', err.message);
+                 // Add a text file indicating the error for this specific pupil
+                classFolder.file(`${pupil.name}_PDF_GENERATION_FAILED.txt`, err.message);
             }
         }
 
