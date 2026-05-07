@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -39,8 +38,8 @@ import { Badge } from '@/components/ui/badge';
 import { useFirestore, useMemoFirebase } from '@/firebase/provider';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { useDoc } from '@/firebase/firestore/use-doc';
-import { collection, query, doc, getDocs, onSnapshot, setDoc, Timestamp, where } from 'firebase/firestore';
-import { Search, PlusCircle, History, WalletCards, Loader2, ArrowLeft } from 'lucide-react';
+import { collection, query, doc, onSnapshot, setDoc, Timestamp, where } from 'firebase/firestore';
+import { Search, PlusCircle, History, WalletCards, Loader2, ArrowLeft, ReceiptText } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
@@ -63,6 +62,7 @@ type TermPayment = {
     expectedAmount: number;
     installments: Installment[];
     totalPaid: number;
+    balance: number;
 };
 
 export default function LedgerPage() {
@@ -74,7 +74,6 @@ export default function LedgerPage() {
   const [selectedClassId, setSelectedClassId] = useState<string>('all');
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [paymentHistoryStudent, setPaymentHistoryStudent] = useState<Student | null>(null);
-  const [isAddingPayment, setIsAddingPayment] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // --- Data Fetching ---
@@ -159,9 +158,10 @@ export default function LedgerPage() {
     const paymentId = `${selectedStudent.id}_${settings.currentSessionId}_${settings.currentTermId}`;
     const existingPayment = payments[selectedStudent.id];
 
+    // AUTOMATIC DATE LOGGING
     const newInstallment: Installment = {
         amount,
-        date: Timestamp.now(),
+        date: Timestamp.now(), 
         note
     };
 
@@ -180,8 +180,7 @@ export default function LedgerPage() {
             balance: expected - totalPaid
         });
 
-        toast({ title: "Payment Recorded", description: `Successfully added ${amount} to ${selectedStudent.name}'s account.` });
-        setIsAddingPayment(false);
+        toast({ title: "Payment Recorded", description: `Successfully added ₦${amount.toLocaleString()} to ${selectedStudent.name}'s account.` });
         setSelectedStudent(null);
     } catch (error: any) {
         toast({ variant: 'destructive', title: "Error", description: error.message });
@@ -196,8 +195,8 @@ export default function LedgerPage() {
     const expected = classroom?.fees || 0;
 
     if (!payment || payment.totalPaid === 0) return <Badge variant="destructive">Owing</Badge>;
-    if (payment.totalPaid >= expected) return <Badge className="bg-green-600">Paid</Badge>;
-    return <Badge variant="secondary" className="bg-yellow-500 text-white">Partial</Badge>;
+    if (payment.totalPaid >= expected) return <Badge className="bg-green-600 hover:bg-green-700">Paid</Badge>;
+    return <Badge variant="secondary" className="bg-yellow-500 text-white hover:bg-yellow-600">Partial</Badge>;
   };
 
   return (
@@ -212,7 +211,7 @@ export default function LedgerPage() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card className="md:col-span-2">
+          <Card className="md:col-span-2 shadow-sm">
               <CardContent className="pt-6">
                   <div className="relative">
                       <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
@@ -225,7 +224,7 @@ export default function LedgerPage() {
                   </div>
               </CardContent>
           </Card>
-          <Card>
+          <Card className="shadow-sm">
               <CardContent className="pt-6">
                   <Select value={selectedClassId} onValueChange={setSelectedClassId}>
                       <SelectTrigger>
@@ -233,25 +232,28 @@ export default function LedgerPage() {
                       </SelectTrigger>
                       <SelectContent>
                           <SelectItem value="all">All Classes</SelectItem>
-                          {classrooms?.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                          {classrooms?.sort((a,b) => a.name.localeCompare(b.name)).map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
                       </SelectContent>
                   </Select>
               </CardContent>
           </Card>
-          <Card className="bg-primary/5 border-primary/20">
+          <Card className="bg-primary/10 border-primary/20 shadow-sm">
               <CardContent className="pt-6">
-                  <div className="flex items-center gap-2 text-primary font-semibold">
-                      <WalletCards className="h-5 w-5" />
-                      <span>{filteredStudents.length} Students List</span>
+                  <div className="flex items-center gap-2 text-primary-foreground font-semibold">
+                      <WalletCards className="h-5 w-5 text-primary" />
+                      <span className="text-foreground">{filteredStudents.length} Students listed</span>
                   </div>
               </CardContent>
           </Card>
       </div>
 
-      <Card>
+      <Card className="shadow-md">
         <CardHeader>
-          <CardTitle>Fee Tracking - {settings ? 'Current Term' : 'Loading...'}</CardTitle>
-          <CardDescription>Update and analyze student fee payments for the current term.</CardDescription>
+          <CardTitle className="flex items-center gap-2">
+            <ReceiptText className="h-5 w-5 text-muted-foreground" />
+            Fee Tracking
+          </CardTitle>
+          <CardDescription>Manage and review student fee payments for the current academic term.</CardDescription>
         </CardHeader>
         <CardContent>
           {isLoading ? (
@@ -281,7 +283,7 @@ export default function LedgerPage() {
                         const balance = expected - paid;
 
                         return (
-                        <TableRow key={s.id}>
+                        <TableRow key={s.id} className="hover:bg-muted/50 transition-colors">
                             <TableCell className="font-medium">
                                 <div>{s.name}</div>
                                 <div className="text-xs text-muted-foreground">{s.admissionNumber}</div>
@@ -297,7 +299,14 @@ export default function LedgerPage() {
                                 <Button variant="outline" size="sm" onClick={() => setSelectedStudent(s)}>
                                     <PlusCircle className="mr-1 h-3 w-3" /> Pay
                                 </Button>
-                                <Button variant="ghost" size="sm" onClick={() => setPaymentHistoryStudent(s)} disabled={!payment}>
+                                <Button 
+                                    variant="ghost" 
+                                    size="sm" 
+                                    onClick={() => setPaymentHistoryStudent(s)} 
+                                    disabled={!payment}
+                                    className="text-muted-foreground hover:text-primary"
+                                    title="View Payment History"
+                                >
                                     <History className="h-4 w-4" />
                                 </Button>
                             </TableCell>
@@ -316,31 +325,31 @@ export default function LedgerPage() {
         <DialogContent className="sm:max-w-md">
             <DialogHeader>
                 <DialogTitle>Add Fee Payment</DialogTitle>
-                <DialogDescription>Recording batch payment for <span className="font-semibold text-primary">{selectedStudent?.name}</span>.</DialogDescription>
+                <DialogDescription>Recording a new payment entry for <span className="font-bold text-primary">{selectedStudent?.name}</span>.</DialogDescription>
             </DialogHeader>
             <form onSubmit={handleAddPayment} className="space-y-4 py-4">
                 <div className="space-y-2">
                     <Label htmlFor="amount">Payment Amount (₦)</Label>
-                    <Input id="amount" name="amount" type="number" placeholder="e.g. 50000" required />
+                    <Input id="amount" name="amount" type="number" placeholder="e.g. 50000" required autoFocus />
                 </div>
                 <div className="space-y-2">
-                    <Label htmlFor="note">Note / Ref (Optional)</Label>
-                    <Input id="note" name="note" placeholder="e.g. Cash payment / 1st Batch" />
+                    <Label htmlFor="note">Note / Reference (Optional)</Label>
+                    <Input id="note" name="note" placeholder="e.g. Cash / Bank Transfer Ref / Part Payment" />
                 </div>
-                <div className="rounded-lg bg-muted p-3 text-sm">
-                    <div className="flex justify-between">
-                        <span>Total Fees:</span>
-                        <span className="font-semibold">₦{(classroomMap[selectedStudent?.classroomId || '']?.fees || 0).toLocaleString()}</span>
+                <div className="rounded-lg bg-muted p-4 text-sm border">
+                    <div className="flex justify-between items-center mb-1">
+                        <span className="text-muted-foreground">Class Fees:</span>
+                        <span className="font-bold">₦{(classroomMap[selectedStudent?.classroomId || '']?.fees || 0).toLocaleString()}</span>
                     </div>
-                    <div className="flex justify-between mt-1">
-                        <span>Current Paid:</span>
-                        <span className="text-green-600 font-semibold">₦{(payments[selectedStudent?.id || '']?.totalPaid || 0).toLocaleString()}</span>
+                    <div className="flex justify-between items-center">
+                        <span className="text-muted-foreground">Already Paid:</span>
+                        <span className="text-green-600 font-bold">₦{(payments[selectedStudent?.id || '']?.totalPaid || 0).toLocaleString()}</span>
                     </div>
                 </div>
-                <DialogFooter>
+                <DialogFooter className="gap-2">
                     <Button type="button" variant="outline" onClick={() => setSelectedStudent(null)}>Cancel</Button>
                     <Button type="submit" disabled={isSubmitting}>
-                        {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <PlusCircle className="mr-2 h-4 w-4" />}
                         Record Payment
                     </Button>
                 </DialogFooter>
@@ -350,36 +359,59 @@ export default function LedgerPage() {
 
       {/* Payment History Dialog */}
       <Dialog open={!!paymentHistoryStudent} onOpenChange={(open) => !open && setPaymentHistoryStudent(null)}>
-        <DialogContent className="sm:max-w-lg">
+        <DialogContent className="sm:max-w-2xl max-h-[80vh] flex flex-col">
             <DialogHeader>
-                <DialogTitle>Payment History</DialogTitle>
-                <DialogDescription>Recent installments for {paymentHistoryStudent?.name}.</DialogDescription>
+                <DialogTitle className="flex items-center gap-2">
+                    <History className="h-5 w-5 text-primary" />
+                    Payment History
+                </DialogTitle>
+                <DialogDescription>
+                    Detailed breakdown of all installments recorded for <span className="font-semibold text-foreground">{paymentHistoryStudent?.name}</span> during the current term.
+                </DialogDescription>
             </DialogHeader>
-            <div className="py-4">
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead>Date</TableHead>
-                            <TableHead>Amount</TableHead>
-                            <TableHead>Note</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {paymentHistoryStudent && payments[paymentHistoryStudent.id]?.installments.map((inst, i) => (
-                            <TableRow key={i}>
-                                <TableCell className="text-xs">
-                                    {inst.date?.toDate ? format(inst.date.toDate(), 'PPP p') : 'N/A'}
-                                </TableCell>
-                                <TableCell className="font-medium">₦{inst.amount.toLocaleString()}</TableCell>
-                                <TableCell className="text-xs text-muted-foreground">{inst.note || '--'}</TableCell>
+            <div className="py-4 flex-1 overflow-auto">
+                {paymentHistoryStudent && payments[paymentHistoryStudent.id]?.installments.length > 0 ? (
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead className="w-[180px]">Date & Time</TableHead>
+                                <TableHead>Amount</TableHead>
+                                <TableHead>Note / Reference</TableHead>
                             </TableRow>
-                        ))}
-                    </TableBody>
-                </Table>
+                        </TableHeader>
+                        <TableBody>
+                            {payments[paymentHistoryStudent.id].installments.map((inst, i) => (
+                                <TableRow key={i}>
+                                    <TableCell className="text-xs font-mono text-muted-foreground">
+                                        {inst.date?.toDate ? format(inst.date.toDate(), 'PPP p') : 'N/A'}
+                                    </TableCell>
+                                    <TableCell className="font-bold text-green-700">₦{inst.amount.toLocaleString()}</TableCell>
+                                    <TableCell className="text-sm italic">{inst.note || <span className="text-muted-foreground opacity-50">—</span>}</TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                ) : (
+                    <div className="text-center py-12 text-muted-foreground">
+                        No payment history found for this student.
+                    </div>
+                )}
             </div>
-            <DialogFooter>
-                <Button onClick={() => setPaymentHistoryStudent(null)}>Close</Button>
-            </DialogFooter>
+            <div className="border-t pt-4 mt-2">
+                 <div className="flex justify-between items-center text-sm px-2 mb-4">
+                    <div className="flex flex-col">
+                        <span className="text-muted-foreground text-xs uppercase tracking-wider font-bold">Total Expected</span>
+                        <span className="text-lg font-bold">₦{(payments[paymentHistoryStudent?.id || '']?.expectedAmount || 0).toLocaleString()}</span>
+                    </div>
+                    <div className="flex flex-col text-right">
+                        <span className="text-muted-foreground text-xs uppercase tracking-wider font-bold">Outstanding Balance</span>
+                        <span className="text-lg font-bold text-destructive">₦{(payments[paymentHistoryStudent?.id || '']?.balance || 0).toLocaleString()}</span>
+                    </div>
+                </div>
+                <DialogFooter>
+                    <Button onClick={() => setPaymentHistoryStudent(null)} className="w-full sm:w-auto">Close History</Button>
+                </DialogFooter>
+            </div>
         </DialogContent>
       </Dialog>
     </div>
