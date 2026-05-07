@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useParams } from 'next/navigation';
@@ -88,11 +87,11 @@ export default function AdminStudentResultEntryPage() {
   );
   const { data: enrollments, isLoading: enrollmentsLoading } = useCollection<Enrollment>(enrollmentsQuery);
 
-  const classroomId = useMemo(() => enrollments?.[0]?.classroomId, [enrollments]);
+  const currentEnrollmentClassId = useMemo(() => enrollments?.[0]?.classroomId, [enrollments]);
 
   const classroomSubjectsQuery = useMemoFirebase(() =>
-      classroomId && firestore ? query(collection(firestore, 'classroomSubjects'), where('classroomId', '==', classroomId)) : null
-  , [firestore, classroomId]);
+      currentEnrollmentClassId && firestore ? query(collection(firestore, 'classroomSubjects'), where('classroomId', '==', currentEnrollmentClassId)) : null
+  , [firestore, currentEnrollmentClassId]);
   const { data: classroomSubjects, isLoading: classSubjectsLoading } = useCollection(classroomSubjectsQuery);
 
   const subjectsQuery = useMemoFirebase(() => (firestore ? collection(firestore, 'subjects') : null), [firestore]);
@@ -130,14 +129,13 @@ export default function AdminStudentResultEntryPage() {
 
   const termResultRef = useMemoFirebase(() => {
       if (!firestore || !studentId || !schoolSettings) return null;
-      // CRITICAL FIX: Use stable IDs, not names, for the document path.
       const termResultId = `${schoolSettings.currentSessionId}-${schoolSettings.currentTermId}`;
       return doc(firestore, 'students', studentId, 'results', termResultId);
   }, [firestore, studentId, schoolSettings]);
 
   // --- REAL-TIME DATA SUBSCRIPTION ---
   useEffect(() => {
-    if (!termResultRef || !classroomId || !schoolSettings) return;
+    if (!termResultRef || !currentEnrollmentClassId || !schoolSettings) return;
 
     const unsubscribe = onSnapshot(termResultRef, (snap) => {
       const existingData = snap.exists() ? snap.data() : null;
@@ -156,7 +154,9 @@ export default function AdminStudentResultEntryPage() {
           studentId,
           termId: schoolSettings.currentTermId,
           sessionId: schoolSettings.currentSessionId,
-          classroomId,
+          // CRITICAL FIX: Prefer existing classroomId if result already exists.
+          // This ensures that promoted students' old results keep their old class name.
+          classroomId: existingData?.classroomId || currentEnrollmentClassId,
           teacherRemark: existingData?.teacherRemark,
           headTeacherRemark: existingData?.headTeacherRemark,
           daysAttended: existingData?.daysAttended,
@@ -168,7 +168,7 @@ export default function AdminStudentResultEntryPage() {
     });
 
     return () => unsubscribe();
-  }, [termResultRef, subjectsForClass, classroomId, studentId, schoolSettings, toast]);
+  }, [termResultRef, subjectsForClass, currentEnrollmentClassId, studentId, schoolSettings, toast]);
 
 
   const handleScoreChange = (
@@ -204,10 +204,9 @@ export default function AdminStudentResultEntryPage() {
 
     setIsSaving(true);
     
-    // Create a clean data object for Firestore, ensuring no 'undefined' values
     const dataToSave = {
         ...termResult,
-        daysAttended: termResult.daysAttended ?? null, // Convert undefined to null
+        daysAttended: termResult.daysAttended ?? null,
         teacherRemark: termResult.teacherRemark ?? '',
         headTeacherRemark: termResult.headTeacherRemark ?? '',
         scores: Object.entries(termResult.scores).reduce((acc, [key, value]) => {
@@ -396,7 +395,3 @@ export default function AdminStudentResultEntryPage() {
     </div>
   );
 }
-
-    
-
-    
