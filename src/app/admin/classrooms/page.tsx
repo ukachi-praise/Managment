@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState } from 'react';
@@ -39,7 +38,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { PlusCircle, Edit, Trash2, Loader2, ArrowLeft, Users, MoreVertical } from 'lucide-react';
+import { PlusCircle, Edit, Trash2, Loader2, ArrowLeft, Users, MoreVertical, Presentation } from 'lucide-react';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { addDocumentNonBlocking, setDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { useFirestore, useMemoFirebase } from '@/firebase/provider';
@@ -47,7 +46,7 @@ import { collection, query, doc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 
 
 type Classroom = {
@@ -121,39 +120,42 @@ export default function ClassroomsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-6xl mx-auto">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
-            <Button onClick={() => router.back()} variant="outline" size="icon">
+            <Button onClick={() => router.back()} variant="outline" size="icon" className="shrink-0">
                 <ArrowLeft className="h-4 w-4" />
             </Button>
-            <h1 className="text-3xl font-bold tracking-tight">Classrooms</h1>
+            <div>
+                <h1 className="text-3xl font-bold tracking-tight">Classrooms</h1>
+                <p className="text-muted-foreground hidden sm:block">Manage school sections and tuition fees.</p>
+            </div>
         </div>
         <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
           <DialogTrigger asChild>
-            <Button className="w-full sm:w-auto">
+            <Button className="w-full sm:w-auto shadow-md">
               <PlusCircle className="mr-2 h-4 w-4" />
-              Add Classroom
+              New Classroom
             </Button>
           </DialogTrigger>
           <DialogContent className="sm:max-w-[425px]">
             <DialogHeader>
               <DialogTitle>Add New Classroom</DialogTitle>
               <DialogDescription>
-                Enter the details and set the term fees for the new classroom.
+                Create a new section and set its term fees.
               </DialogDescription>
             </DialogHeader>
             <form onSubmit={handleAddClassroom} className="grid gap-4 py-4">
               <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="name" className="text-right">Name</Label>
-                <Input id="name" name="name" placeholder="e.g. Primary 3" className="col-span-3" required />
+                <Input id="name" name="name" placeholder="e.g. Nursery 1" className="col-span-3 h-11" required />
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="fees" className="text-right">Fees (₦)</Label>
-                <Input id="fees" name="fees" type="number" placeholder="e.g. 85000" className="col-span-3" required />
+                <Input id="fees" name="fees" type="number" placeholder="e.g. 50000" className="col-span-3 h-11" required />
               </div>
               <DialogFooter>
-                <Button type="submit">Save Classroom</Button>
+                <Button type="submit" className="w-full h-11">Create Classroom</Button>
               </DialogFooter>
             </form>
           </DialogContent>
@@ -164,19 +166,19 @@ export default function ClassroomsPage() {
         <DialogContent className="sm:max-w-[425px]">
             <DialogHeader>
               <DialogTitle>Edit Classroom</DialogTitle>
-              <DialogDescription>Update the classroom name and fees.</DialogDescription>
+              <DialogDescription>Update settings for {editingClassroom?.name}.</DialogDescription>
             </DialogHeader>
             <form onSubmit={handleUpdateClassroom} className="grid gap-4 py-4">
               <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="name" className="text-right">Name</Label>
-                <Input id="name" name="name" defaultValue={editingClassroom?.name} className="col-span-3" required />
+                <Input id="name" name="name" defaultValue={editingClassroom?.name} className="col-span-3 h-11" required />
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="fees" className="text-right">Fees (₦)</Label>
-                <Input id="fees" name="fees" type="number" defaultValue={editingClassroom?.fees} className="col-span-3" required />
+                <Input id="fees" name="fees" type="number" defaultValue={editingClassroom?.fees} className="col-span-3 h-11" required />
               </div>
               <DialogFooter>
-                <Button type="submit">Save Changes</Button>
+                <Button type="submit" className="w-full h-11">Save Changes</Button>
               </DialogFooter>
             </form>
           </DialogContent>
@@ -185,66 +187,86 @@ export default function ClassroomsPage() {
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
             <AlertDialogHeader>
-                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                 <AlertDialogDescription>
-                    This will permanently delete <span className="font-semibold">{classroomToDelete?.name}</span>.
+                    This will permanently remove <span className="font-bold text-foreground">{classroomToDelete?.name}</span> from the system. This action cannot be undone.
                 </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
                 <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction onClick={handleDeleteClassroom} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Delete</AlertDialogAction>
+                <AlertDialogAction onClick={handleDeleteClassroom} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Confirm Delete</AlertDialogAction>
             </AlertDialogFooter>
         </AlertDialogContent>
     </AlertDialog>
 
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Existing Classrooms</CardTitle>
-          <CardDescription>A list of all classrooms and their corresponding fees.</CardDescription>
+      <Card className="shadow-lg border-none overflow-hidden">
+        <CardHeader className="bg-muted/30 border-b">
+          <CardTitle className="flex items-center gap-2">
+            <Presentation className="h-5 w-5 text-primary" />
+            Class List
+          </CardTitle>
+          <CardDescription>A complete list of registered classrooms and assigned fees.</CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-0">
           {isLoading ? (
             <div className="flex h-64 items-center justify-center">
-              <Loader2 className="h-12 w-12 animate-spin text-primary" />
+              <Loader2 className="h-10 w-10 animate-spin text-primary" />
             </div>
           ) : (
             <Table>
-              <TableHeader>
+              <TableHeader className="bg-muted/50">
                 <TableRow>
-                  <TableHead>Class Name</TableHead>
-                  <TableHead>Fees (₦)</TableHead>
-                  <TableHead>Class Teacher</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
+                  <TableHead className="pl-6">Class Name</TableHead>
+                  <TableHead>Term Fees</TableHead>
+                  <TableHead>Teacher Assigned</TableHead>
+                  <TableHead className="text-right pr-6">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {classrooms?.sort((a,b) => a.name.localeCompare(b.name)).map((classroom) => (
-                    <TableRow key={classroom.id}>
-                      <TableCell className="font-medium">{classroom.name}</TableCell>
-                      <TableCell className="font-semibold">₦{(classroom.fees || 0).toLocaleString()}</TableCell>
-                      <TableCell>{classroom.teacherName || 'N/A'}</TableCell>
-                      <TableCell className="text-right">
+                    <TableRow key={classroom.id} className="hover:bg-muted/20">
+                      <TableCell className="font-bold pl-6 text-base">{classroom.name}</TableCell>
+                      <TableCell>
+                        <span className="font-black text-green-600">₦{(classroom.fees || 0).toLocaleString()}</span>
+                      </TableCell>
+                      <TableCell>
+                        {classroom.teacherName ? (
+                            <Badge variant="secondary" className="font-medium px-2 py-0.5">{classroom.teacherName}</Badge>
+                        ) : (
+                            <span className="text-muted-foreground text-xs italic">Unassigned</span>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-right pr-6">
                          <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon">
+                            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full hover:bg-primary/10">
                               <MoreVertical className="h-4 w-4" />
                             </Button>
                           </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
+                          <DropdownMenuContent align="end" className="w-48 shadow-xl border-none p-1">
                             <DropdownMenuItem asChild>
-                               <Link href={`/admin/enrollments/${classroom.id}`} className="cursor-pointer">
-                                    <Users className="mr-2 h-4 w-4" /> View Enrollments
+                               <Link href={`/admin/enrollments/${classroom.id}`} className="cursor-pointer flex items-center p-2 rounded-sm hover:bg-muted">
+                                    <Users className="mr-2 h-4 w-4 text-primary" /> Enrollments
                                </Link>
                             </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => openEditDialog(classroom)} className="cursor-pointer">
-                              <Edit className="mr-2 h-4 w-4" /> Edit
+                            <DropdownMenuItem onClick={() => openEditDialog(classroom)} className="cursor-pointer flex items-center p-2 rounded-sm hover:bg-muted">
+                              <Edit className="mr-2 h-4 w-4 text-primary" /> Edit Class
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onClick={() => { setClassroomToDelete(classroom); setDeleteDialogOpen(true); }} className="cursor-pointer flex items-center p-2 rounded-sm text-destructive hover:bg-destructive/10">
+                                <Trash2 className="mr-2 h-4 w-4" /> Delete Class
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </TableCell>
                     </TableRow>
                   ))}
+                  {classrooms?.length === 0 && (
+                      <TableRow>
+                          <TableCell colSpan={4} className="h-32 text-center text-muted-foreground italic">No classrooms registered yet.</TableCell>
+                      </TableRow>
+                  )}
               </TableBody>
             </Table>
           )}

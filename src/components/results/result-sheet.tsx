@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useMemo, useEffect, forwardRef } from 'react';
@@ -75,9 +74,9 @@ const initialSettings: TemplateSettings = { studentInfo: { fontSize: 12, visible
 
 // --- HELPER COMPONENTS ---
 const StudentInfoDetail = ({ label, value, isLoading = false }: { label: string, value?: string | React.ReactNode, isLoading?: boolean }) => (
-    <div className="flex text-xs">
-        <span className="font-semibold w-[90px] shrink-0">{label}:</span>
-        <span className="flex-1 border-b border-dotted border-black">
+    <div className="flex text-xs items-center gap-1 min-h-[1.5rem]">
+        <span className="font-bold text-[10px] uppercase text-zinc-500 w-[85px] shrink-0">{label}:</span>
+        <span className="flex-1 border-b border-black font-semibold text-black overflow-hidden truncate">
             {isLoading ? <Skeleton className="h-4 w-24" /> : value}
         </span>
     </div>
@@ -88,10 +87,8 @@ interface ResultSheetProps {
   classroom: Classroom;
   teacherName?: string;
   classPopulation?: number | null;
-  // New props for historical data
   sessionId: string | null;
   termId: string | null;
-  // Props for template builder
   templateData?: SavedTemplateData; 
   isForTemplateBuilder?: boolean; 
   resultEntries?: ResultEntry[];
@@ -265,53 +262,56 @@ export const ResultSheet = forwardRef<HTMLDivElement, ResultSheetProps>(({
   }
   
   if (!isForTemplateBuilder && !student) {
-      return <div className="rounded-lg border bg-card p-8">Student data could not be loaded.</div>
+      return <div className="rounded-lg border bg-card p-8 text-center text-destructive font-bold">Student data could not be loaded.</div>
   }
   
   const allSoftSkillsList = ["Punctuality", "Neatness", "Creativity", "Honesty", "Communication", "Teamwork", "Attentiveness", "Self Control", "Leadership", "Initiative"];
   const softSkillsMap = new Map(softSkillScores.map(s => [s.skillName, s.score]));
-  const softSkillsCol1 = allSoftSkillsList.slice(0, 6);
-  const softSkillsCol2 = allSoftSkillsList.slice(6);
+  const softSkillsCol1 = allSoftSkillsList.slice(0, 5);
+  const softSkillsCol2 = allSoftSkillsList.slice(5);
 
 
   return (
-    <div ref={ref} className="relative w-full max-w-[794px] mx-auto min-h-[1250px] scale-[0.3] sm:scale-[0.5] md:scale-[0.7] lg:scale-100 origin-top-left sm:origin-top bg-white text-black print:shadow-none print:m-0 print:p-0 print:w-full print:h-auto print:scale-100 flex flex-col p-6 border-4 border-black">
-        <div className="absolute inset-0 z-0 flex items-center justify-center pointer-events-none">
-            <Image src="/Logo.jpg" alt="School Watermark" width={500} height={500} className="opacity-15" />
+    <div className="w-full flex justify-center bg-zinc-200 py-10 print:bg-white print:p-0 no-print">
+    <div ref={ref} className="relative w-full max-w-[794px] min-h-[1123px] bg-white text-black shadow-2xl print:shadow-none print:m-0 print:p-0 print:w-full print:h-auto flex flex-col p-8 border-[6px] border-black">
+        <div className="absolute inset-0 z-0 flex items-center justify-center pointer-events-none overflow-hidden">
+            <Image src="/Logo.jpg" alt="School Watermark" width={600} height={600} className="opacity-[0.03] scale-150 rotate-[-25deg]" />
         </div>
-        <div className="relative z-10 flex flex-col h-full">
+        <div className="relative z-10 flex flex-col h-full flex-1">
             {settings.header.visible && (
-                <header className="mb-4 p-2 border-2 border-black">
+                <header className="mb-6 p-4 border-2 border-black bg-zinc-50">
                     <div className="flex items-start justify-between">
-                        <div className="flex items-center gap-4">
-                            <div className="relative h-24 w-24"><Image src="/Logo.jpg" alt="School Logo" layout="fill" objectFit="contain" /></div>
+                        <div className="flex items-center gap-6">
+                            <div className="relative h-28 w-28 drop-shadow-sm"><Image src="/Logo.jpg" alt="School Logo" layout="fill" objectFit="contain" /></div>
                             <div className="text-black">
-                                <h1 className="text-2xl font-bold text-black">{schoolName}</h1>
-                                <p className="text-base text-black">Katampe 2 Mpape Abuja</p>
-                                <p className="text-base font-semibold text-black">Motto: Exceeding Great</p>
+                                <h1 className="text-3xl font-black text-black leading-tight uppercase tracking-tighter">{schoolName}</h1>
+                                <p className="text-base font-bold text-zinc-700">Katampe 2 Mpape Abuja</p>
+                                <p className="text-base font-black text-primary mt-1">Motto: Exceeding Great</p>
                             </div>
                         </div>
-                        <div className="text-right">
-                            <h2 className="font-bold text-xl text-black">Pupil Report Card</h2>
-                            <p className="text-base text-zinc-600">
-                                {reportTermName}, {reportSession}
+                        <div className="text-right border-l-2 border-black pl-6 flex flex-col justify-center">
+                            <h2 className="font-black text-2xl text-black uppercase tracking-widest">Report Card</h2>
+                            <p className="text-lg font-bold text-zinc-600 italic">
+                                {reportTermName}
+                            </p>
+                            <p className="text-sm font-black text-zinc-900">
+                                {reportSession} SESSION
                             </p>
                         </div>
                     </div>
-                    <Separator className="my-2 bg-black" />
                 </header>
             )}
 
-            <div className="flex-grow overflow-hidden flex flex-col">
+            <div className="flex-grow flex flex-col">
                 {settings.studentInfo.visible && (
-                    <div className="mb-4 p-2 border border-black" style={{ fontSize: `12px` }}>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-y-1 gap-x-4">
-                            <StudentInfoDetail label="Student Name" value={student.name} />
+                    <div className="mb-6 p-4 border border-black bg-white" style={{ fontSize: `12px` }}>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-y-3 gap-x-8">
+                            <StudentInfoDetail label="Name" value={student.name.toUpperCase()} />
                             <StudentInfoDetail label="Admission No" value={student.admissionNumber} />
                             <StudentInfoDetail label="Class" value={classroom?.name} />
-                            <StudentInfoDetail label="No. in class" value={classPopulation ? classPopulation.toString() : 'N/A'} />
+                            <StudentInfoDetail label="Roll No." value={classPopulation ? classPopulation.toString() : 'N/A'} />
                             <StudentInfoDetail label="Days Absent" value={daysAbsent} />
-                            <StudentInfoDetail label="Days Attended" value={isForTemplateBuilder ? '--' : termResult?.daysAttended?.toString() || '--'} />
+                            <StudentInfoDetail label="Attendance" value={isForTemplateBuilder ? '--' : termResult?.daysAttended?.toString() || '--'} />
                             <StudentInfoDetail label="School Open" value={isForTemplateBuilder ? '65' : schoolSettings?.daysSchoolOpened?.toString()} />
                             <StudentInfoDetail label="Term Ending" value={formattedTermEndingDate} />
                             <StudentInfoDetail label="Resumption" value={formattedResumptionDate} />
@@ -320,130 +320,128 @@ export const ResultSheet = forwardRef<HTMLDivElement, ResultSheetProps>(({
                 )}
                 
                 {settings.subjectsTable.visible && (
-                    <div className="border border-black overflow-auto">
+                    <div className="border-[2px] border-black shadow-sm mb-4">
                         <Table>
                             <TableHeader>
-                                <TableRow>
-                                    <TableHead className="border border-black p-1 h-auto text-lg text-black">Subject</TableHead>
-                                    <TableHead className="text-center border border-black p-1 h-auto text-lg text-black">CA1 (20)</TableHead>
-                                    <TableHead className="text-center border border-black p-1 h-auto text-lg text-black">CA2 (20)</TableHead>
-                                    <TableHead className="text-center border border-black p-1 h-auto text-lg text-black">Exam (60)</TableHead>
-                                    <TableHead className="text-center border border-black p-1 h-auto text-lg text-black">Total (100)</TableHead>
-                                    <TableHead className="border border-black p-1 h-auto text-lg text-black">Remark</TableHead>
+                                <TableRow className="hover:bg-transparent bg-zinc-900">
+                                    <TableHead className="border border-black p-2 h-auto text-sm font-bold text-white uppercase tracking-wider">Subject</TableHead>
+                                    <TableHead className="text-center border border-black p-2 h-auto text-sm font-bold text-white uppercase tracking-wider">CA1</TableHead>
+                                    <TableHead className="text-center border border-black p-2 h-auto text-sm font-bold text-white uppercase tracking-wider">CA2</TableHead>
+                                    <TableHead className="text-center border border-black p-2 h-auto text-sm font-bold text-white uppercase tracking-wider">Exam</TableHead>
+                                    <TableHead className="text-center border border-black p-2 h-auto text-sm font-bold text-white uppercase tracking-wider">Total</TableHead>
+                                    <TableHead className="border border-black p-2 h-auto text-sm font-bold text-white uppercase tracking-wider">Grade</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
                             {resultEntries && resultEntries.length > 0 ? (
                                     resultEntries.map((entry, index) => (
-                                        <TableRow key={entry.subjectName + index}>
-                                            <TableCell className="border-b border-r border-black p-1 text-lg font-semibold">
-                                                <div className="font-semibold">{entry.subjectName}</div>
+                                        <TableRow key={entry.subjectName + index} className="hover:bg-transparent transition-none">
+                                            <TableCell className="border-b border-r border-black p-2 text-sm font-bold">
+                                                <div className="font-bold">{entry.subjectName}</div>
                                                 {entry.subSubjects && entry.subSubjects.length > 0 && (
-                                                    <div className="pl-2 text-xs text-gray-800">
-                                                        {entry.subSubjects.map((sub, i) => (
-                                                            <div key={i}>{sub}</div>
-                                                        ))}
+                                                    <div className="pl-3 text-[10px] text-zinc-600 italic">
+                                                        {entry.subSubjects.join(', ')}
                                                     </div>
                                                 )}
                                             </TableCell>
-                                            <TableCell className="text-center border-b border-r border-black p-1 text-lg">{entry.ca1 ?? '--'}</TableCell>
-                                            <TableCell className="text-center border-b border-r border-black p-1 text-lg">{entry.ca2 ?? '--'}</TableCell>
-                                            <TableCell className="text-center border-b border-r border-black p-1 text-lg">{entry.exam ?? '--'}</TableCell>
-                                            <TableCell className="text-center border-b border-r border-black p-1 text-lg font-semibold">{entry.total}</TableCell>
-                                            <TableCell className="border-b border-black p-1 text-lg">{entry.remark}</TableCell>
+                                            <TableCell className="text-center border-b border-r border-black p-2 text-base font-medium tabular-nums">{entry.ca1 ?? '--'}</TableCell>
+                                            <TableCell className="text-center border-b border-r border-black p-2 text-base font-medium tabular-nums">{entry.ca2 ?? '--'}</TableCell>
+                                            <TableCell className="text-center border-b border-r border-black p-2 text-base font-medium tabular-nums">{entry.exam ?? '--'}</TableCell>
+                                            <TableCell className="text-center border-b border-r border-black p-2 text-base font-black tabular-nums">{entry.total}</TableCell>
+                                            <TableCell className="border-b border-black p-2 text-base font-black text-center">{entry.grade}</TableCell>
                                         </TableRow>
                                     ))
                                 ) : (
                                     <TableRow>
-                                      <TableCell colSpan={6} className="h-24 text-center border-b border-black p-1 text-base">
-                                        {isForTemplateBuilder ? 'Subjects will be shown here.' : 'No scores entered for this term.'}
+                                      <TableCell colSpan={6} className="h-48 text-center border-b border-black p-2 text-lg italic text-zinc-400">
+                                        {isForTemplateBuilder ? 'Subjects will be shown here.' : 'No scores recorded for this term yet.'}
                                       </TableCell>
                                     </TableRow>
                                 )}
                             </TableBody>
                              <TableFooter>
-                                <TableRow>
-                                  <TableCell className="border-b border-r border-black p-1 text-sm font-bold">Total</TableCell>
-                                  <TableCell className="text-center border-b border-r border-black p-1 text-sm font-bold">{scoreTotals.ca1}</TableCell>
-                                  <TableCell className="text-center border-b border-r border-black p-1 text-sm font-bold">{scoreTotals.ca2}</TableCell>
-                                  <TableCell className="text-center border-b border-r border-black p-1 text-sm font-bold">{scoreTotals.exam}</TableCell>
-                                  <TableCell className="text-center border-b border-r border-black p-1 text-sm font-bold">{scoreTotals.total}</TableCell>
-                                  <TableCell className="border-b border-black p-1 text-sm"></TableCell>
+                                <TableRow className="bg-zinc-50">
+                                  <TableCell className="border-b border-r border-black p-2 text-sm font-black uppercase">Grand Total</TableCell>
+                                  <TableCell className="text-center border-b border-r border-black p-2 text-sm font-black tabular-nums">{scoreTotals.ca1}</TableCell>
+                                  <TableCell className="text-center border-b border-r border-black p-2 text-sm font-black tabular-nums">{scoreTotals.ca2}</TableCell>
+                                  <TableCell className="text-center border-b border-r border-black p-2 text-sm font-black tabular-nums">{scoreTotals.exam}</TableCell>
+                                  <TableCell className="text-center border-b border-r border-black p-2 text-base font-black tabular-nums">{scoreTotals.total}</TableCell>
+                                  <TableCell className="border-b border-black p-2 text-sm bg-black"></TableCell>
                                 </TableRow>
                               </TableFooter>
                         </Table>
                     </div>
                 )}
                 {settings.summary.visible && (
-                    <div className="mt-1 flex justify-end">
-                        <div className="w-1/2 rounded-md border border-black p-1 text-sm space-y-1">
-                            <div className="flex justify-between"><span className="font-semibold text-black">Overall Average:</span><span className="text-black">{(templateOverall || overall)?.average}%</span></div>
-                            <div className="flex justify-between"><span className="font-semibold text-black">Overall Grade:</span><span className="text-black">{(templateOverall || overall)?.grade}</span></div>
+                    <div className="mt-2 flex justify-end">
+                        <div className="w-[300px] border-4 border-black p-4 bg-zinc-900 text-white space-y-2 rounded-sm shadow-md">
+                            <div className="flex justify-between items-center border-b border-white/20 pb-1">
+                                <span className="font-bold text-xs uppercase tracking-widest text-zinc-400">Overall Average</span>
+                                <span className="text-2xl font-black tabular-nums">{(templateOverall || overall)?.average}%</span>
+                            </div>
+                            <div className="flex justify-between items-center">
+                                <span className="font-bold text-xs uppercase tracking-widest text-zinc-400">Overall Grade</span>
+                                <span className="text-3xl font-black">{(templateOverall || overall)?.grade}</span>
+                            </div>
                         </div>
                     </div>
                 )}
                  <div className="flex-grow min-h-0"></div>
                 
-                 {/* This footer acts as the second page content */}
-                <footer className="text-base print:break-before-page" style={{ pageBreakBefore: 'always' }}>
-                    <section className='border border-black p-1 flex flex-col gap-1'>
-                        <div className="grid grid-cols-[1fr_1fr_2fr] gap-x-2 pt-1">
+                 {/* Second Page Content Style */}
+                <footer className="mt-8 text-base print:break-before-page">
+                    <section className='border-[2px] border-black p-4 flex flex-col gap-4 bg-zinc-50/30'>
+                        <div className="grid grid-cols-[1.5fr_1.5fr_3fr] gap-x-6">
                             {settings.gradingKey.visible && (
-                                <div className="space-y-1">
-                                <h3 className="font-bold text-black text-sm">Grading Key</h3>
+                                <div className="space-y-2">
+                                <h3 className="font-black text-black text-xs uppercase tracking-widest border-b border-black pb-1">Grading Key</h3>
                                 <Table>
-                                    <TableHeader>
-                                        <TableRow><TableHead className="p-0.5 h-auto text-xs border border-black text-black">Score</TableHead><TableHead className="p-0.5 h-auto text-xs border border-black text-black">Grade</TableHead><TableHead className="p-0.5 h-auto text-xs border border-black text-black">Remark</TableHead></TableRow>
-                                    </TableHeader>
                                     <TableBody>
-                                        <TableRow><TableCell className="p-0.5 h-auto text-xs border border-black">80 – 100</TableCell><TableCell className="p-0.5 h-auto text-xs border border-black">A</TableCell><TableCell className="p-0.5 h-auto text-xs border border-black">Excellent</TableCell></TableRow>
-                                        <TableRow><TableCell className="p-0.5 h-auto text-xs border border-black">70 – 79</TableCell><TableCell className="p-0.5 h-auto text-xs border border-black">B</TableCell><TableCell className="p-0.5 h-auto text-xs border border-black">Very Good</TableCell></TableRow>
-                                        <TableRow><TableCell className="p-0.5 h-auto text-xs border border-black">60 – 69</TableCell><TableCell className="p-0.5 h-auto text-xs border border-black">C</TableCell><TableCell className="p-0.5 h-auto text-xs border border-black">Good</TableCell></TableRow>
-                                        <TableRow><TableCell className="p-0.5 h-auto text-xs border border-black">50 – 59</TableCell><TableCell className="p-0.5 h-auto text-xs border border-black">D</TableCell><TableCell className="p-0.5 h-auto text-xs border border-black">Fair</TableCell></TableRow>
-                                        <TableRow><TableCell className="p-0.5 h-auto text-xs border border-black">0 – 49</TableCell><TableCell className="p-0.5 h-auto text-xs border border-black">F</TableCell><TableCell className="p-0.5 h-auto text-xs border border-black">Fail</TableCell></TableRow>
+                                        <TableRow className="h-6"><TableCell className="p-1 text-[10px] font-bold border border-black uppercase bg-zinc-100">80 – 100</TableCell><TableCell className="p-1 text-[10px] font-black border border-black text-center">A</TableCell></TableRow>
+                                        <TableRow className="h-6"><TableCell className="p-1 text-[10px] font-bold border border-black uppercase bg-zinc-100">70 – 79</TableCell><TableCell className="p-1 text-[10px] font-black border border-black text-center">B</TableCell></TableRow>
+                                        <TableRow className="h-6"><TableCell className="p-1 text-[10px] font-bold border border-black uppercase bg-zinc-100">60 – 69</TableCell><TableCell className="p-1 text-[10px] font-black border border-black text-center">C</TableCell></TableRow>
+                                        <TableRow className="h-6"><TableCell className="p-1 text-[10px] font-bold border border-black uppercase bg-zinc-100">50 – 59</TableCell><TableCell className="p-1 text-[10px] font-black border border-black text-center">D</TableCell></TableRow>
+                                        <TableRow className="h-6"><TableCell className="p-1 text-[10px] font-bold border border-black uppercase bg-zinc-100">0 – 49</TableCell><TableCell className="p-1 text-[10px] font-black border border-black text-center">F</TableCell></TableRow>
                                     </TableBody>
                                 </Table>
                                 </div>
                             )}
                             
                             {settings.softSkills.visible && (
-                                <div className="space-y-1">
-                                    <h3 className="font-bold text-black text-sm">Skill Score Rating</h3>
+                                <div className="space-y-2">
+                                    <h3 className="font-black text-black text-xs uppercase tracking-widest border-b border-black pb-1">Skill Rating</h3>
                                     <Table>
-                                        <TableHeader>
-                                            <TableRow><TableHead className="p-0.5 h-auto text-xs border border-black text-black">Score</TableHead><TableHead className="p-0.5 h-auto text-xs border border-black text-black">Remark</TableHead></TableRow>
-                                        </TableHeader>
                                         <TableBody>
-                                            <TableRow><TableCell className="p-0.5 h-auto text-xs border border-black">5</TableCell><TableCell className="p-0.5 h-auto text-xs border border-black">Excellent</TableCell></TableRow>
-                                            <TableRow><TableCell className="p-0.5 h-auto text-xs border border-black">4</TableCell><TableCell className="p-0.5 h-auto text-xs border border-black">Very Good</TableCell></TableRow>
-                                            <TableRow><TableCell className="p-0.5 h-auto text-xs border border-black">3</TableCell><TableCell className="p-0.5 h-auto text-xs border border-black">Good</TableCell></TableRow>
-                                            <TableRow><TableCell className="p-0.5 h-auto text-xs border border-black">2</TableCell><TableCell className="p-0.5 h-auto text-xs border border-black">Fair</TableCell></TableRow>
-                                            <TableRow><TableCell className="p-0.5 h-auto text-xs border border-black">1</TableCell><TableCell className="p-0.5 h-auto text-xs border border-black">Poor</TableCell></TableRow>
+                                            <TableRow className="h-6"><TableCell className="p-1 text-[10px] font-black border border-black text-center">5</TableCell><TableCell className="p-1 text-[10px] font-bold border border-black uppercase bg-zinc-100">Excellent</TableCell></TableRow>
+                                            <TableRow className="h-6"><TableCell className="p-1 text-[10px] font-black border border-black text-center">4</TableCell><TableCell className="p-1 text-[10px] font-bold border border-black uppercase bg-zinc-100">V. Good</TableCell></TableRow>
+                                            <TableRow className="h-6"><TableCell className="p-1 text-[10px] font-black border border-black text-center">3</TableCell><TableCell className="p-1 text-[10px] font-bold border border-black uppercase bg-zinc-100">Good</TableCell></TableRow>
+                                            <TableRow className="h-6"><TableCell className="p-1 text-[10px] font-black border border-black text-center">2</TableCell><TableCell className="p-1 text-[10px] font-bold border border-black uppercase bg-zinc-100">Fair</TableCell></TableRow>
+                                            <TableRow className="h-6"><TableCell className="p-1 text-[10px] font-black border border-black text-center">1</TableCell><TableCell className="p-1 text-[10px] font-bold border border-black uppercase bg-zinc-100">Poor</TableCell></TableRow>
                                         </TableBody>
                                     </Table>
                                 </div>
                             )}
 
                             {settings.softSkills.visible && (
-                               <div className="space-y-1 p-1 border border-black">
-                                    <h3 className="font-bold text-black text-sm">Soft Skills Assessment</h3>
-                                    <div className="grid grid-cols-2 gap-x-2">
+                               <div className="space-y-2 p-2 border-2 border-black bg-white shadow-sm">
+                                    <h3 className="font-black text-black text-xs uppercase tracking-tighter">Behavioral Assessment</h3>
+                                    <div className="grid grid-cols-2 gap-x-4">
                                         <Table>
                                             <TableBody>
-                                                {softSkillsCol1.map((skill, skillIndex) => (
-                                                    <TableRow key={skillIndex}>
-                                                        <TableCell className="font-medium p-0.5 h-auto text-xs border border-black text-black">{skill}</TableCell>
-                                                        <TableCell className="text-right p-0.5 h-auto text-xs border border-black w-[20px]">{softSkillsMap.get(skill) || '--'}</TableCell>
+                                                {softSkillsCol1.map((skill, index) => (
+                                                    <TableRow key={index} className="h-6">
+                                                        <TableCell className="font-bold p-1 text-[10px] border border-black text-black uppercase tracking-tighter">{skill}</TableCell>
+                                                        <TableCell className="text-center p-1 text-xs font-black border border-black w-[25px] bg-zinc-50">{softSkillsMap.get(skill) || '--'}</TableCell>
                                                     </TableRow>
                                                 ))}
                                             </TableBody>
                                         </Table>
                                         <Table>
                                             <TableBody>
-                                                {softSkillsCol2.map((skill, skillIndex) => (
-                                                    <TableRow key={skillIndex}>
-                                                        <TableCell className="font-medium p-0.5 h-auto text-xs border border-black text-black">{skill}</TableCell>
-                                                        <TableCell className="text-right p-0.5 h-auto text-xs border border-black w-[20px]">{softSkillsMap.get(skill) || '--'}</TableCell>
+                                                {softSkillsCol2.map((skill, index) => (
+                                                    <TableRow key={index} className="h-6">
+                                                        <TableCell className="font-bold p-1 text-[10px] border border-black text-black uppercase tracking-tighter">{skill}</TableCell>
+                                                        <TableCell className="text-center p-1 text-xs font-black border border-black w-[25px] bg-zinc-50">{softSkillsMap.get(skill) || '--'}</TableCell>
                                                     </TableRow>
                                                 ))}
                                             </TableBody>
@@ -454,22 +452,45 @@ export const ResultSheet = forwardRef<HTMLDivElement, ResultSheetProps>(({
                         </div>
 
                         {settings.remarks.visible && (
-                             <div className="pt-2 space-y-1">
-                                <div><h3 className="font-bold text-black text-sm">Class Teacher's Name:</h3><p className="min-h-[20px] rounded-md border-b border-black p-1 text-sm">{teacherName || ' '}</p></div>
-                                <div><h3 className="font-bold text-black text-sm">Teacher's Remarks:</h3><p className="min-h-[20px] rounded-md border-b border-black p-1 text-sm">{termResult?.teacherRemark || ' '}</p></div>
-                                <div><h3 className="font-bold text-black text-sm">Head Teacher's Remarks:</h3><p className="min-h-[20px] rounded-md border-b border-black p-1 text-sm">{termResult?.headTeacherRemark || ' '}</p></div>
+                             <div className="pt-2 grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="space-y-1">
+                                    <h3 className="font-black text-black text-[10px] uppercase tracking-widest">Class Teacher's Remarks</h3>
+                                    <p className="min-h-[50px] border-2 border-black p-3 text-sm font-bold bg-white italic italic leading-relaxed">
+                                        "{termResult?.teacherRemark || 'No remark recorded.'}"
+                                    </p>
+                                    <p className="text-[10px] font-black uppercase text-zinc-500 mt-1">Signed: {teacherName || 'CLASS TEACHER'}</p>
+                                </div>
+                                <div className="space-y-1">
+                                    <h3 className="font-black text-black text-[10px] uppercase tracking-widest">Head Teacher's Remarks</h3>
+                                     <p className="min-h-[50px] border-2 border-black p-3 text-sm font-bold bg-white italic leading-relaxed">
+                                        "{termResult?.headTeacherRemark || 'No remark recorded.'}"
+                                    </p>
+                                    <p className="text-[10px] font-black uppercase text-zinc-500 mt-1">Signed: SCHOOL PROPRIETOR</p>
+                                </div>
                             </div>
                         )}
+                        
                         {settings.signatures.visible && (
-                            <div className="flex justify-between items-end pt-4">
-                                <div className="text-center w-36"><div className="border-t border-black pt-1 text-sm">Class Teacher's Signature</div></div>
-                                <div className="text-center w-36"><div className="border-t border-black pt-1 text-sm">Head Teacher's Signature</div></div>
+                            <div className="flex justify-between items-end pt-8 mt-4">
+                                <div className="text-center w-52 flex flex-col items-center">
+                                    <div className="h-10 w-full mb-1 flex items-center justify-center">
+                                        <span className="text-[10px] uppercase font-black text-zinc-300">STAMP HERE</span>
+                                    </div>
+                                    <div className="w-full border-t-2 border-black pt-1 text-[10px] font-black uppercase">Teacher Signature</div>
+                                </div>
+                                <div className="text-center w-52 flex flex-col items-center">
+                                     <div className="h-10 w-full mb-1 flex items-center justify-center">
+                                        <span className="text-[10px] uppercase font-black text-zinc-300">STAMP HERE</span>
+                                    </div>
+                                    <div className="w-full border-t-2 border-black pt-1 text-[10px] font-black uppercase">Principal Signature</div>
+                                </div>
                             </div>
                         )}
                     </section>
                 </footer>
             </div>
         </div>
+    </div>
     </div>
   );
 });

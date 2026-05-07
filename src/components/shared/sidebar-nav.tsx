@@ -1,4 +1,3 @@
-
 'use client';
 
 import Link from 'next/link';
@@ -33,6 +32,7 @@ import { Button } from '../ui/button';
 import { useUser, useFirestore } from '@/firebase/provider';
 import { useState, useEffect } from 'react';
 import { doc, getDoc } from 'firebase/firestore';
+import { cn } from '@/lib/utils';
 
 type NavItem = {
   href: (params: { classroomId?: string }) => string;
@@ -44,20 +44,19 @@ type NavItem = {
 
 const adminNavItems: NavItem[] = [
   { href: () => '/admin/dashboard', label: 'Dashboard', icon: Home },
-  { href: () => '/admin/ledger', label: 'Ledger', icon: WalletCards, roles: ["SuperAdmin", "Admin"] },
-  { href: () => '/admin/students', label: 'Pupils', icon: Users, roles: ["SuperAdmin", "Admin"] },
-  { href: () => '/admin/results', label: 'Results', icon: ClipboardList, roles: ["SuperAdmin", "Admin"] },
-  { href: () => '/admin/classrooms', label: 'Classrooms', icon: Presentation, roles: ["SuperAdmin", "Admin"] },
-  { href: () => '/admin/subjects', label: 'Subjects', icon: BookCopy, roles: ["SuperAdmin", "Admin"] },
+  { href: () => '/admin/ledger', label: 'Fee Ledger', icon: WalletCards, roles: ["SuperAdmin", "Admin"] },
+  { href: () => '/admin/students', label: 'Pupil List', icon: Users, roles: ["SuperAdmin", "Admin"] },
+  { href: () => '/admin/results', label: 'View Results', icon: ClipboardList, roles: ["SuperAdmin", "Admin"] },
+  { href: () => '/admin/classrooms', label: 'Manage Classes', icon: Presentation, roles: ["SuperAdmin", "Admin"] },
+  { href: () => '/admin/subjects', label: 'Subject Manager', icon: BookCopy, roles: ["SuperAdmin", "Admin"] },
   
   { href: () => '/admin/promotions', label: 'Promotions', icon: ArrowUpCircle, roles: ["SuperAdmin"] },
-  { href: () => '/admin/staff', label: 'Staff', icon: Users2, roles: ["SuperAdmin"] },
-  { href: () => '/admin/sessions', label: 'Sessions', icon: Building, roles: ["SuperAdmin"] },
-  { href: () => '/admin/info', label: 'School Info', icon: Info, roles: ["SuperAdmin"] },
-  { href: () => '/admin/remarks', label: 'Remarks', icon: MessageSquareQuote, roles: ["SuperAdmin"] },
-  { href: () => '/admin/templates', label: 'Templates', icon: LayoutTemplate, roles: ["SuperAdmin"] },
+  { href: () => '/admin/staff', label: 'Staff Accounts', icon: Users2, roles: ["SuperAdmin"] },
+  { href: () => '/admin/sessions', label: 'Academic Sessions', icon: Building, roles: ["SuperAdmin"] },
+  { href: () => '/admin/info', label: 'School Settings', icon: Info, roles: ["SuperAdmin"] },
+  { href: () => '/admin/remarks', label: 'Predefined Remarks', icon: MessageSquareQuote, roles: ["SuperAdmin"] },
+  { href: () => '/admin/templates', label: 'Report Templates', icon: LayoutTemplate, roles: ["SuperAdmin"] },
   { href: () => '/admin/students/deleted', label: 'Recycle Bin', icon: Trash2, roles: ["SuperAdmin"] },
-  { href: () => '/admin/settings', label: 'Settings', icon: Settings, roles: ["SuperAdmin"] },
 ];
 
 export function SidebarNav({ role }: { role: 'admin' | 'teacher' }) {
@@ -86,20 +85,19 @@ export function SidebarNav({ role }: { role: 'admin' | 'teacher' }) {
 
   const teacherNavItems: NavItem[] = [
     { href: ({classroomId}) => classroomId ? `/teacher/class/${classroomId}` : '/teacher/dashboard', label: 'My Class', icon: Presentation, exact: true },
-    { href: ({classroomId}) => classroomId ? `/teacher/class/${classroomId}/profile` : '/teacher/dashboard', label: 'Profile', icon: UserIcon },
+    { href: ({classroomId}) => classroomId ? `/teacher/class/${classroomId}/profile` : '/teacher/dashboard', label: 'My Profile', icon: UserIcon },
   ];
 
   const allItems = role === 'admin' ? adminNavItems : teacherNavItems;
+  
   const navItems = allItems.filter(item => {
     if (!item.roles) return true;
     return item.roles.includes(user?.role as any);
   });
 
   const isActive = (href: string, exact?: boolean) => {
-    if (pathname.includes('/profile') && href.includes('/profile')) return true;
-    if (href.startsWith('/teacher/class/')) return pathname === href;
-    if (href === '/teacher/dashboard' && classroomIdForNav) return pathname === `/teacher/class/${classroomIdForNav}`;
-    return exact ? pathname === href : pathname.startsWith(href);
+    if (exact) return pathname === href;
+    return pathname.startsWith(href);
   }
 
   const handleLinkClick = () => {
@@ -107,25 +105,35 @@ export function SidebarNav({ role }: { role: 'admin' | 'teacher' }) {
   }
 
   return (
-    <Sidebar>
-      <SidebarHeader>
-        <Logo />
+    <Sidebar className="border-r shadow-sm">
+      <SidebarHeader className="border-b px-4 py-6 bg-muted/20">
+        <Logo className="text-xl" />
+        {user?.role && (
+            <div className="mt-2 flex items-center gap-1.5 px-1">
+                <div className={cn("h-1.5 w-1.5 rounded-full animate-pulse", user.role === 'SuperAdmin' ? "bg-red-500" : "bg-blue-500")} />
+                <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">{user.role} ACCESS</span>
+            </div>
+        )}
       </SidebarHeader>
-      <SidebarContent>
-        <SidebarMenu>
+      <SidebarContent className="p-3">
+        <SidebarMenu className="space-y-1">
           {navItems.map((item) => {
             const href = item.href({ classroomId: classroomIdForNav ?? undefined });
+            const active = isActive(href, item.exact);
             return (
                 <SidebarMenuItem key={item.label}>
                 <Button
                     asChild
-                    variant={isActive(href, item.exact) ? 'secondary' : 'ghost'}
-                    className="w-full justify-start"
+                    variant={active ? 'secondary' : 'ghost'}
+                    className={cn(
+                        "w-full justify-start transition-all duration-200",
+                        active ? "font-bold shadow-sm" : "text-muted-foreground hover:translate-x-1"
+                    )}
                     onClick={handleLinkClick}
                 >
                     <Link href={href}>
-                    <item.icon className="mr-2 h-4 w-4" />
-                    {item.label}
+                        <item.icon className={cn("mr-3 h-4 w-4", active ? "text-primary" : "")} />
+                        {item.label}
                     </Link>
                 </Button>
                 </SidebarMenuItem>

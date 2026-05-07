@@ -39,7 +39,7 @@ import { useFirestore, useMemoFirebase } from '@/firebase/provider';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { useDoc } from '@/firebase/firestore/use-doc';
 import { collection, query, doc, onSnapshot, setDoc, Timestamp, where } from 'firebase/firestore';
-import { Search, PlusCircle, History, WalletCards, Loader2, ArrowLeft, ReceiptText, Download } from 'lucide-react';
+import { Search, PlusCircle, History, WalletCards, Loader2, ArrowLeft, ReceiptText, Download, Filter } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
@@ -93,7 +93,6 @@ export default function LedgerPage() {
   const [payments, setPayments] = useState<Record<string, TermPayment>>({});
   const [isLoading, setIsLoading] = useState(true);
 
-  // 1. Fetch Students and their Enrollments
   useEffect(() => {
     if (!firestore) return;
 
@@ -114,7 +113,6 @@ export default function LedgerPage() {
     return () => { unsubStudents(); unsubEnrollments(); };
   }, [firestore]);
 
-  // 2. Fetch Payments for Current Session/Term
   useEffect(() => {
     if (!firestore || !settings) return;
 
@@ -216,12 +214,10 @@ export default function LedgerPage() {
         const workbook = new ExcelJS.Workbook();
         const sheet = workbook.addWorksheet('Fee Ledger');
 
-        // Header
         sheet.addRow(['JustVision Kiddies School - Fee Ledger']);
         sheet.addRow([`Report Date: ${format(new Date(), 'PPP')}`]);
         sheet.addRow([]);
 
-        // Table Header
         const headerRow = sheet.addRow(['S/N', 'Student Name', 'Admission No', 'Class', 'Expected Fee', 'Total Paid', 'Balance', 'Status']);
         headerRow.font = { bold: true };
         headerRow.eachCell(cell => {
@@ -229,7 +225,6 @@ export default function LedgerPage() {
             cell.border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
         });
 
-        // Rows
         filteredStudents.forEach((s, index) => {
             const classroom = classroomMap[s.classroomId || ''];
             const payment = payments[s.id];
@@ -257,7 +252,6 @@ export default function LedgerPage() {
             });
         });
 
-        // Formatting
         sheet.getColumn(2).width = 30;
         sheet.getColumn(3).width = 20;
         sheet.getColumn(4).width = 15;
@@ -288,97 +282,94 @@ export default function LedgerPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-7xl mx-auto pb-12">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
-            <Button onClick={() => router.back()} variant="outline" size="icon">
+            <Button onClick={() => router.back()} variant="outline" size="icon" className="shrink-0">
                 <ArrowLeft className="h-4 w-4" />
             </Button>
-            <h1 className="text-3xl font-bold tracking-tight">Fee Ledger</h1>
+            <div>
+                <h1 className="text-3xl font-bold tracking-tight">Fee Ledger</h1>
+                <p className="text-muted-foreground hidden sm:block">Track and manage student school fees for the current term.</p>
+            </div>
         </div>
-        <Button onClick={handleExportToExcel} disabled={isExporting} variant="outline" className="w-full sm:w-auto">
+        <Button onClick={handleExportToExcel} disabled={isExporting} variant="outline" className="w-full sm:w-auto shadow-sm">
             {isExporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
             Export to Excel
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
-          <Card className="md:col-span-3 shadow-sm">
-              <CardContent className="pt-6">
-                  <div className="relative">
-                      <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                      <Input 
-                        placeholder="Search student name or admission number..." 
-                        className="pl-10" 
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                      />
-                  </div>
-              </CardContent>
-          </Card>
-          <Card className="shadow-sm">
-              <CardContent className="pt-6">
-                  <Select value={selectedClassId} onValueChange={setSelectedClassId}>
-                      <SelectTrigger>
-                          <SelectValue placeholder="All Classes" />
-                      </SelectTrigger>
-                      <SelectContent>
-                          <SelectItem value="all">All Classes</SelectItem>
-                          {classrooms?.sort((a,b) => a.name.localeCompare(b.name)).map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
-                      </SelectContent>
-                  </Select>
-              </CardContent>
-          </Card>
-          <Card className="shadow-sm">
-              <CardContent className="pt-6">
-                  <Select value={selectedStatus} onValueChange={(val: any) => setSelectedStatus(val)}>
-                      <SelectTrigger>
-                          <SelectValue placeholder="All Status" />
-                      </SelectTrigger>
-                      <SelectContent>
-                          <SelectItem value="all">All Status</SelectItem>
-                          <SelectItem value="paid">Paid (Full)</SelectItem>
-                          <SelectItem value="partial">Partial</SelectItem>
-                          <SelectItem value="owing">Owing</SelectItem>
-                      </SelectContent>
-                  </Select>
-              </CardContent>
-          </Card>
-          <Card className="bg-primary/10 border-primary/20 shadow-sm">
-              <CardContent className="pt-6">
-                  <div className="flex items-center gap-2 text-primary-foreground font-semibold">
-                      <WalletCards className="h-5 w-5 text-primary" />
-                      <span className="text-foreground">{filteredStudents.length} Listed</span>
-                  </div>
-              </CardContent>
-          </Card>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-4">
+          <div className="lg:col-span-6 relative">
+              <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+              <Input 
+                placeholder="Search name or admission number..." 
+                className="pl-10 h-11 shadow-sm" 
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+          </div>
+          <div className="lg:col-span-3">
+              <Select value={selectedClassId} onValueChange={setSelectedClassId}>
+                  <SelectTrigger className="h-11 shadow-sm">
+                      <SelectValue placeholder="All Classes" />
+                  </SelectTrigger>
+                  <SelectContent>
+                      <SelectItem value="all">All Classes</SelectItem>
+                      {classrooms?.sort((a,b) => a.name.localeCompare(b.name)).map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                  </SelectContent>
+              </Select>
+          </div>
+          <div className="lg:col-span-3">
+              <Select value={selectedStatus} onValueChange={(val: any) => setSelectedStatus(val)}>
+                  <SelectTrigger className="h-11 shadow-sm">
+                      <div className="flex items-center gap-2">
+                        <Filter className="h-4 w-4 opacity-50" />
+                        <SelectValue placeholder="All Status" />
+                      </div>
+                  </SelectTrigger>
+                  <SelectContent>
+                      <SelectItem value="all">All Status</SelectItem>
+                      <SelectItem value="paid">Paid (Full)</SelectItem>
+                      <SelectItem value="partial">Partial</SelectItem>
+                      <SelectItem value="owing">Owing</SelectItem>
+                  </SelectContent>
+              </Select>
+          </div>
       </div>
 
-      <Card className="shadow-md">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <ReceiptText className="h-5 w-5 text-muted-foreground" />
-            Fee Tracking
-          </CardTitle>
-          <CardDescription>Manage and review student fee payments for the current academic term.</CardDescription>
+      <Card className="shadow-lg border-none">
+        <CardHeader className="border-b bg-muted/20 px-6 py-4">
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2 text-xl font-bold">
+                <ReceiptText className="h-5 w-5 text-primary" />
+                Enrollment Ledger
+            </CardTitle>
+            <div className="text-sm font-medium text-muted-foreground">
+                Displaying {filteredStudents.length} Students
+            </div>
+          </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-0">
           {isLoading ? (
-            <div className="flex h-64 items-center justify-center">
-              <Loader2 className="h-12 w-12 animate-spin text-primary" />
+            <div className="flex h-96 items-center justify-center">
+              <div className="text-center">
+                <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto mb-4" />
+                <p className="text-muted-foreground font-medium">Loading ledger data...</p>
+              </div>
             </div>
           ) : (
             <div className="overflow-x-auto">
                 <Table>
-                <TableHeader>
+                <TableHeader className="bg-muted/50">
                     <TableRow>
-                    <TableHead>Student</TableHead>
+                    <TableHead className="w-[30%]">Student</TableHead>
                     <TableHead>Class</TableHead>
                     <TableHead>Expected</TableHead>
                     <TableHead>Total Paid</TableHead>
                     <TableHead>Balance</TableHead>
                     <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
+                    <TableHead className="text-right pr-6">Actions</TableHead>
                     </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -390,27 +381,29 @@ export default function LedgerPage() {
                         const balance = expected - paid;
 
                         return (
-                        <TableRow key={s.id} className="hover:bg-muted/50 transition-colors">
-                            <TableCell className="font-medium">
-                                <div>{s.name}</div>
-                                <div className="text-xs text-muted-foreground">{s.admissionNumber}</div>
+                        <TableRow key={s.id} className="hover:bg-muted/30 transition-colors">
+                            <TableCell className="font-medium pl-6">
+                                <div className="text-base">{s.name}</div>
+                                <div className="text-xs text-muted-foreground tracking-wide">{s.admissionNumber}</div>
                             </TableCell>
-                            <TableCell>{classroom?.name || 'N/A'}</TableCell>
-                            <TableCell>₦{expected.toLocaleString()}</TableCell>
-                            <TableCell className="text-green-600 font-medium">₦{paid.toLocaleString()}</TableCell>
-                            <TableCell className={balance > 0 ? "text-destructive font-medium" : "text-muted-foreground"}>
+                            <TableCell>
+                                <Badge variant="outline" className="font-normal">{classroom?.name || 'N/A'}</Badge>
+                            </TableCell>
+                            <TableCell className="font-semibold tabular-nums">₦{expected.toLocaleString()}</TableCell>
+                            <TableCell className="text-green-600 font-bold tabular-nums">₦{paid.toLocaleString()}</TableCell>
+                            <TableCell className={balance > 0 ? "text-destructive font-bold tabular-nums" : "text-muted-foreground tabular-nums opacity-40"}>
                                 ₦{balance.toLocaleString()}
                             </TableCell>
                             <TableCell>{getStatusBadge(s.id, s.classroomId)}</TableCell>
-                            <TableCell className="text-right space-x-2">
-                                <Button variant="outline" size="sm" onClick={() => setSelectedStudent(s)}>
-                                    <PlusCircle className="mr-1 h-3 w-3" /> Pay
+                            <TableCell className="text-right pr-6 space-x-2">
+                                <Button size="sm" onClick={() => setSelectedStudent(s)} className="h-8 shadow-sm">
+                                    <PlusCircle className="mr-1 h-3.5 w-3.5" /> Pay
                                 </Button>
                                 <Button 
                                     variant="ghost" 
-                                    size="sm" 
+                                    size="icon" 
                                     onClick={() => setPaymentHistoryStudent(s)} 
-                                    className="text-muted-foreground hover:text-primary"
+                                    className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/10"
                                     title="View Payment History"
                                 >
                                     <History className="h-4 w-4" />
@@ -421,8 +414,8 @@ export default function LedgerPage() {
                     })}
                     {filteredStudents.length === 0 && (
                         <TableRow>
-                            <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
-                                No students match your filters.
+                            <TableCell colSpan={7} className="h-48 text-center text-muted-foreground italic">
+                                No records found matching your filters.
                             </TableCell>
                         </TableRow>
                     )}
@@ -435,35 +428,35 @@ export default function LedgerPage() {
 
       {/* Add Payment Dialog */}
       <Dialog open={!!selectedStudent} onOpenChange={(open) => !open && setSelectedStudent(null)}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md border-none shadow-2xl">
             <DialogHeader>
-                <DialogTitle>Add Fee Payment</DialogTitle>
-                <DialogDescription>Recording a new payment entry for <span className="font-bold text-primary">{selectedStudent?.name}</span>.</DialogDescription>
+                <DialogTitle className="text-2xl">Record Payment</DialogTitle>
+                <DialogDescription>Add a new installment for <span className="font-bold text-foreground">{selectedStudent?.name}</span>.</DialogDescription>
             </DialogHeader>
-            <form onSubmit={handleAddPayment} className="space-y-4 py-4">
+            <form onSubmit={handleAddPayment} className="space-y-6 py-4">
                 <div className="space-y-2">
-                    <Label htmlFor="amount">Payment Amount (₦)</Label>
-                    <Input id="amount" name="amount" type="number" placeholder="e.g. 50000" required autoFocus />
+                    <Label htmlFor="amount" className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Payment Amount (₦)</Label>
+                    <Input id="amount" name="amount" type="number" placeholder="0.00" required autoFocus className="h-12 text-lg font-bold" />
                 </div>
                 <div className="space-y-2">
-                    <Label htmlFor="note">Note / Reference (Optional)</Label>
-                    <Input id="note" name="note" placeholder="e.g. Cash / Bank Transfer Ref / Part Payment" />
+                    <Label htmlFor="note" className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Note / Reference</Label>
+                    <Input id="note" name="note" placeholder="e.g. Bank Transfer, Cash, etc." className="h-10" />
                 </div>
-                <div className="rounded-lg bg-muted p-4 text-sm border">
-                    <div className="flex justify-between items-center mb-1">
-                        <span className="text-muted-foreground">Class Fees:</span>
+                <div className="rounded-xl bg-muted/40 p-4 space-y-3 border">
+                    <div className="flex justify-between items-center">
+                        <span className="text-sm text-muted-foreground">Term Fees:</span>
                         <span className="font-bold">₦{(classroomMap[selectedStudent?.classroomId || '']?.fees || 0).toLocaleString()}</span>
                     </div>
                     <div className="flex justify-between items-center">
-                        <span className="text-muted-foreground">Already Paid:</span>
+                        <span className="text-sm text-muted-foreground">Total Paid to Date:</span>
                         <span className="text-green-600 font-bold">₦{(payments[selectedStudent?.id || '']?.totalPaid || 0).toLocaleString()}</span>
                     </div>
                 </div>
-                <DialogFooter className="gap-2">
-                    <Button type="button" variant="outline" onClick={() => setSelectedStudent(null)}>Cancel</Button>
-                    <Button type="submit" disabled={isSubmitting}>
+                <DialogFooter className="gap-2 sm:gap-0">
+                    <Button type="button" variant="ghost" onClick={() => setSelectedStudent(null)} className="flex-1">Cancel</Button>
+                    <Button type="submit" disabled={isSubmitting} className="flex-1">
                         {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <PlusCircle className="mr-2 h-4 w-4" />}
-                        Record Payment
+                        Record Transaction
                     </Button>
                 </DialogFooter>
             </form>
@@ -472,59 +465,64 @@ export default function LedgerPage() {
 
       {/* Payment History Dialog */}
       <Dialog open={!!paymentHistoryStudent} onOpenChange={(open) => !open && setPaymentHistoryStudent(null)}>
-        <DialogContent className="sm:max-w-2xl max-h-[80vh] flex flex-col">
-            <DialogHeader>
-                <DialogTitle className="flex items-center gap-2">
-                    <History className="h-5 w-5 text-primary" />
-                    Payment History
-                </DialogTitle>
-                <DialogDescription>
-                    Detailed breakdown of all installments recorded for <span className="font-semibold text-foreground">{paymentHistoryStudent?.name}</span> during the current term.
+        <DialogContent className="sm:max-w-2xl max-h-[85vh] flex flex-col border-none shadow-2xl p-0">
+            <DialogHeader className="p-6 pb-0">
+                <div className="flex items-center gap-3 mb-2">
+                    <div className="rounded-full bg-primary/10 p-2">
+                        <History className="h-6 w-6 text-primary" />
+                    </div>
+                    <DialogTitle className="text-2xl font-bold">Payment History</DialogTitle>
+                </div>
+                <DialogDescription className="text-base">
+                    Transaction breakdown for <span className="font-bold text-foreground">{paymentHistoryStudent?.name}</span>
                 </DialogDescription>
             </DialogHeader>
-            <div className="py-4 flex-1 overflow-auto">
+            <div className="flex-1 overflow-auto px-6 py-4">
                 {paymentHistoryStudent && payments[paymentHistoryStudent.id]?.installments.length > 0 ? (
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead className="w-[180px]">Date & Time</TableHead>
-                                <TableHead>Amount</TableHead>
-                                <TableHead>Note / Reference</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {payments[paymentHistoryStudent.id].installments.map((inst, i) => (
-                                <TableRow key={i}>
-                                    <TableCell className="text-xs font-mono text-muted-foreground">
-                                        {inst.date?.toDate ? format(inst.date.toDate(), 'PPP p') : 'N/A'}
-                                    </TableCell>
-                                    <TableCell className="font-bold text-green-700">₦{inst.amount.toLocaleString()}</TableCell>
-                                    <TableCell className="text-sm italic">{inst.note || <span className="text-muted-foreground opacity-50">—</span>}</TableCell>
+                    <div className="border rounded-lg overflow-hidden">
+                        <Table>
+                            <TableHeader className="bg-muted/50">
+                                <TableRow>
+                                    <TableHead>Date & Time</TableHead>
+                                    <TableHead>Amount</TableHead>
+                                    <TableHead>Reference</TableHead>
                                 </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
+                            </TableHeader>
+                            <TableBody>
+                                {payments[paymentHistoryStudent.id].installments.map((inst, i) => (
+                                    <TableRow key={i} className="hover:bg-muted/20">
+                                        <TableCell className="text-xs font-medium text-muted-foreground whitespace-nowrap">
+                                            {inst.date?.toDate ? format(inst.date.toDate(), 'PPP p') : 'N/A'}
+                                        </TableCell>
+                                        <TableCell className="font-bold text-green-700">₦{inst.amount.toLocaleString()}</TableCell>
+                                        <TableCell className="text-sm italic">{inst.note || <span className="text-muted-foreground opacity-30">—</span>}</TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    </div>
                 ) : (
-                    <div className="text-center py-12 text-muted-foreground">
-                        No payment history found for this student.
+                    <div className="text-center py-20 bg-muted/20 rounded-lg border-2 border-dashed">
+                        <WalletCards className="h-12 w-12 text-muted-foreground/30 mx-auto mb-3" />
+                        <p className="text-muted-foreground font-medium">No payment history found for this pupil.</p>
                     </div>
                 )}
             </div>
-            <div className="border-t pt-4 mt-2">
-                 <div className="flex justify-between items-center text-sm px-2 mb-4">
-                    <div className="flex flex-col">
-                        <span className="text-muted-foreground text-xs uppercase tracking-wider font-bold">Total Expected</span>
-                        <span className="text-lg font-bold">₦{((paymentHistoryStudent && classroomMap[paymentHistoryStudent.classroomId || '']?.fees) || (paymentHistoryStudent && payments[paymentHistoryStudent.id]?.expectedAmount) || 0).toLocaleString()}</span>
+            <div className="p-6 pt-2 border-t bg-muted/10">
+                 <div className="grid grid-cols-2 gap-4 mb-6">
+                    <div className="p-3 rounded-lg bg-background border shadow-sm">
+                        <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest block mb-1">Total Expected</span>
+                        <span className="text-xl font-black">₦{((paymentHistoryStudent && classroomMap[paymentHistoryStudent.classroomId || '']?.fees) || (paymentHistoryStudent && payments[paymentHistoryStudent.id]?.expectedAmount) || 0).toLocaleString()}</span>
                     </div>
-                    <div className="flex flex-col text-right">
-                        <span className="text-muted-foreground text-xs uppercase tracking-wider font-bold">Outstanding Balance</span>
-                        <span className="text-lg font-bold text-destructive">₦{(paymentHistoryStudent ? (
+                    <div className="p-3 rounded-lg bg-background border shadow-sm">
+                        <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest block mb-1">Outstanding</span>
+                        <span className="text-xl font-black text-destructive">₦{(paymentHistoryStudent ? (
                             (classroomMap[paymentHistoryStudent.classroomId || '']?.fees || payments[paymentHistoryStudent.id]?.expectedAmount || 0) - (payments[paymentHistoryStudent.id]?.totalPaid || 0)
                         ) : 0).toLocaleString()}</span>
                     </div>
                 </div>
                 <DialogFooter>
-                    <Button onClick={() => setPaymentHistoryStudent(null)} className="w-full sm:w-auto">Close History</Button>
+                    <Button onClick={() => setPaymentHistoryStudent(null)} className="w-full sm:w-auto h-11">Close Report</Button>
                 </DialogFooter>
             </div>
         </DialogContent>
