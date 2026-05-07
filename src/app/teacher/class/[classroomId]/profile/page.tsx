@@ -1,4 +1,3 @@
-
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -84,7 +83,7 @@ export default function ProfilePage() {
 
   // --- Form Submission ---
   const onSubmit = async (values: FormValues) => {
-    if (!userRef) {
+    if (!userRef || !firestore) {
         toast({
             variant: 'destructive',
             title: 'Error',
@@ -95,7 +94,14 @@ export default function ProfilePage() {
 
     const { email, ...updateData } = values; // Exclude email from the update
 
+    // 1. Update the user document
     setDocumentNonBlocking(userRef, updateData, { merge: true });
+
+    // 2. Sync name to assigned classroom if it exists
+    if (user?.assignedClassroomId) {
+        const classroomRef = doc(firestore, 'classrooms', user.assignedClassroomId);
+        setDocumentNonBlocking(classroomRef, { teacherName: values.name }, { merge: true });
+    }
 
     toast({
       title: 'Profile Updated',

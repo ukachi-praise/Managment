@@ -1,9 +1,8 @@
-
 'use client';
 
 import React, { createContext, useContext, ReactNode, useState, useEffect, useMemo, DependencyList } from 'react';
 import { FirebaseApp } from 'firebase/app';
-import { Firestore, doc, getDoc } from 'firebase/firestore';
+import { Firestore, doc, getDoc, onSnapshot } from 'firebase/firestore';
 import { Auth, User, onAuthStateChanged } from 'firebase/auth';
 import { FirebaseErrorListener } from '@/components/FirebaseErrorListener';
 import { initializeFirebase } from '@/firebase'; // SAFE IMPORT
@@ -85,60 +84,63 @@ export function FirebaseProvider({ children }: { children: ReactNode }) {
 
     const { auth, firestore } = services;
 
-    const unsubscribe = onAuthStateChanged(
+    // Outer listener for Auth state
+    const unsubscribeAuth = onAuthStateChanged(
       auth,
       async (authUser) => {
         if (authUser) {
-          try {
-            let baseProfile: UserProfile = {};
-            // --- Hardcoded Access Logic ---
-            if (authUser.uid === 'GOpbb9SsavhpATk1p0KNmPGGQ0S2') {
-                baseProfile = { role: 'SuperAdmin', name: 'Super Admin', email: authUser.email || 'admin@example.com' };
-            } else if (authUser.uid === 'WRbg0T3XA7eIpFFb9amDgvii12x1') {
-                baseProfile = { role: 'Admin', name: 'School Admin', email: authUser.email || 'staff@example.com' };
-            } else if (authUser.uid === 'u3krP4g02DgPJ6Avv1XhVNvvb8R2') {
-                baseProfile = { role: 'Teacher', name: 'Primary 4 Teacher', email: authUser.email, assignedClassroomId: '9C0VNAZOmArOqXUrK7M1' };
-            } else if (authUser.uid === 'YAemjwMFEAOnvp6RL6STw3GJK0I2') {
-                baseProfile = { role: 'Teacher', name: 'Pre-Nursery Teacher', email: authUser.email, assignedClassroomId: 'VSR3ERyCrmmCxGrgBMjp' };
-            } else if (authUser.uid === 'VEjzC6td3HNfWBg4CjNnCtSlC7g1') {
-                baseProfile = { role: 'Teacher', name: 'Nursery 1b Teacher', email: authUser.email, assignedClassroomId: '65H3TTmH4qnrASE28Vhr' };
-            } else if (authUser.uid === 'vhyAkcnmE2OD9cheoDeXdsdUL1a2') {
-                baseProfile = { role: 'Teacher', name: 'Nursery 1a Teacher', email: authUser.email, assignedClassroomId: 'v96bogkVQBnAc8MRkQ03' };
-            } else if (authUser.uid === 'UJ71VwEZhhVclFS8FdeVEL1jH1C3') {
-                baseProfile = { role: 'Teacher', name: 'Primary 1a Teacher', email: authUser.email, assignedClassroomId: 'zpSkbUkTvjLCKgqtq2ty' };
-            } else if (authUser.uid === 'lqMDWRYrbugIlhVBA083OVpJO3p1') {
-                baseProfile = { role: 'Teacher', name: 'Primary 1b Teacher', email: authUser.email, assignedClassroomId: 'j10edcHHi18zdtbFLmPd' };
-            } else if (authUser.uid === 'Z1yDssDNRshnMOcnKlxK7wSmhpE3') {
-                baseProfile = { role: 'Teacher', name: 'Nursery 2 Teacher', email: authUser.email, assignedClassroomId: 'eTjWpIGq67tOAQkf4ErA' };
-            } else if (authUser.uid === '0wYNrCqR0ZTJgEykZ9R1mqvDO5o2') {
-                baseProfile = { role: 'Teacher', name: 'Primary 3 Teacher', email: authUser.email, assignedClassroomId: 'ZLq6vszAGuUbLKhwADAJ' };
-            } else if (authUser.uid === 'vzT4PhW7g5SipKPScj89DGodBZF2') {
-                baseProfile = { role: 'Teacher', name: 'Creche Teacher', email: authUser.email, assignedClassroomId: 'BNy5qe8cbkes4dfKRZLv' };
-            } else if (authUser.uid === 'pRcRHW1mSsT49pB5EXjTaB6ID002') {
-                baseProfile = { role: 'Teacher', name: 'Primary 2 Teacher', email: 'anitahemba@gmail.com', assignedClassroomId: 'uljYiyQYSZa5acHFakRB' };
-            } else if (authUser.uid === 'xM6L5fJj7vUMbT3p4qN2rWcZ8yG2') {
-                baseProfile = { role: 'Teacher', name: 'Primary 5 Teacher', email: authUser.email, assignedClassroomId: 'nrmeHRqY7TtrkDxLAGnB' };
-            }
-            
-            const userDocRef = doc(firestore, 'users', authUser.uid);
-            const userDoc = await getDoc(userDocRef);
-            let firestoreProfile: UserProfile = {};
-            if (userDoc.exists()) {
-              firestoreProfile = userDoc.data() as UserProfile;
-            }
-
-            const finalProfile = { ...baseProfile, ...firestoreProfile };
-            
-            setUser({ ...authUser, ...finalProfile });
-
-          } catch (e) {
-            console.error("Error fetching user profile:", e);
-            setUser(authUser as AppUser); // Fallback to authUser without profile
+          // Hardcoded fallback logic
+          let baseProfile: UserProfile = {};
+          if (authUser.uid === 'GOpbb9SsavhpATk1p0KNmPGGQ0S2') {
+              baseProfile = { role: 'SuperAdmin', name: 'Super Admin', email: authUser.email || 'admin@example.com' };
+          } else if (authUser.uid === 'WRbg0T3XA7eIpFFb9amDgvii12x1') {
+              baseProfile = { role: 'Admin', name: 'School Admin', email: authUser.email || 'staff@example.com' };
+          } else if (authUser.uid === 'u3krP4g02DgPJ6Avv1XhVNvvb8R2') {
+              baseProfile = { role: 'Teacher', name: 'Primary 4 Teacher', email: authUser.email, assignedClassroomId: '9C0VNAZOmArOqXUrK7M1' };
+          } else if (authUser.uid === 'YAemjwMFEAOnvp6RL6STw3GJK0I2') {
+              baseProfile = { role: 'Teacher', name: 'Pre-Nursery Teacher', email: authUser.email, assignedClassroomId: 'VSR3ERyCrmmCxGrgBMjp' };
+          } else if (authUser.uid === 'VEjzC6td3HNfWBg4CjNnCtSlC7g1') {
+              baseProfile = { role: 'Teacher', name: 'Nursery 1b Teacher', email: authUser.email, assignedClassroomId: '65H3TTmH4qnrASE28Vhr' };
+          } else if (authUser.uid === 'vhyAkcnmE2OD9cheoDeXdsdUL1a2') {
+              baseProfile = { role: 'Teacher', name: 'Nursery 1a Teacher', email: authUser.email, assignedClassroomId: 'v96bogkVQBnAc8MRkQ03' };
+          } else if (authUser.uid === 'UJ71VwEZhhVclFS8FdeVEL1jH1C3') {
+              baseProfile = { role: 'Teacher', name: 'Primary 1a Teacher', email: authUser.email, assignedClassroomId: 'zpSkbUkTvjLCKgqtq2ty' };
+          } else if (authUser.uid === 'lqMDWRYrbugIlhVBA083OVpJO3p1') {
+              baseProfile = { role: 'Teacher', name: 'Primary 1b Teacher', email: authUser.email, assignedClassroomId: 'j10edcHHi18zdtbFLmPd' };
+          } else if (authUser.uid === 'Z1yDssDNRshnMOcnKlxK7wSmhpE3') {
+              baseProfile = { role: 'Teacher', name: 'Nursery 2 Teacher', email: authUser.email, assignedClassroomId: 'eTjWpIGq67tOAQkf4ErA' };
+          } else if (authUser.uid === '0wYNrCqR0ZTJgEykZ9R1mqvDO5o2') {
+              baseProfile = { role: 'Teacher', name: 'Primary 3 Teacher', email: authUser.email, assignedClassroomId: 'ZLq6vszAGuUbLKhwADAJ' };
+          } else if (authUser.uid === 'vzT4PhW7g5SipKPScj89DGodBZF2') {
+              baseProfile = { role: 'Teacher', name: 'Creche Teacher', email: authUser.email, assignedClassroomId: 'BNy5qe8cbkes4dfKRZLv' };
+          } else if (authUser.uid === 'pRcRHW1mSsT49pB5EXjTaB6ID002') {
+              baseProfile = { role: 'Teacher', name: 'Primary 2 Teacher', email: 'anitahemba@gmail.com', assignedClassroomId: 'uljYiyQYSZa5acHFakRB' };
+          } else if (authUser.uid === 'xM6L5fJj7vUMbT3p4qN2rWcZ8yG2') {
+              baseProfile = { role: 'Teacher', name: 'Primary 5 Teacher', email: authUser.email, assignedClassroomId: 'nrmeHRqY7TtrkDxLAGnB' };
           }
+
+          // Inner real-time listener for Firestore Profile
+          const userDocRef = doc(firestore, 'users', authUser.uid);
+          const unsubscribeProfile = onSnapshot(userDocRef, (snap) => {
+            let firestoreProfile: UserProfile = {};
+            if (snap.exists()) {
+                firestoreProfile = snap.data() as UserProfile;
+            }
+            const finalProfile = { ...baseProfile, ...firestoreProfile };
+            setUser({ ...authUser, ...finalProfile });
+            setIsLoading(false);
+          }, (err) => {
+            console.error("Error listening to user profile:", err);
+            // Fallback to static user state if profile fetch fails
+            setUser({ ...authUser, ...baseProfile });
+            setIsLoading(false);
+          });
+
+          return () => unsubscribeProfile();
         } else {
           setUser(null);
+          setIsLoading(false);
         }
-        setIsLoading(false);
       },
       (error) => {
         console.error("Auth State Error:", error);
@@ -147,7 +149,7 @@ export function FirebaseProvider({ children }: { children: ReactNode }) {
       }
     );
 
-    return () => unsubscribe();
+    return () => unsubscribeAuth();
   }, [services]); 
 
   if (!services) {

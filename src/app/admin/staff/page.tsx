@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -151,6 +150,13 @@ export default function StaffPage() {
     };
     
     setDocumentNonBlocking(userDocRef, updatedData, { merge: true });
+
+    // Sync to classroom
+    if (role === 'Teacher' && assignedClassroomId && assignedClassroomId !== 'unassigned') {
+        const classroomDocRef = doc(firestore, 'classrooms', assignedClassroomId);
+        setDocumentNonBlocking(classroomDocRef, { teacherId: editingUser.id, teacherName: name }, { merge: true });
+    }
+
     toast({ title: 'Staff Updated', description: `${name} has been updated.` });
     setEditDialogOpen(false);
     setIsSubmitting(false);
