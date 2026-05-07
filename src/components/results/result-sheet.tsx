@@ -28,6 +28,7 @@ import { calculateGrade } from '@/lib/utils';
 import Image from 'next/image';
 import { format } from 'date-fns';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Separator } from '@/components/ui/separator';
 
 // --- TYPE DEFINITIONS ---
 export type PupilData = { id: string; name: string; admissionNumber: string; isDeleted?: boolean; };
@@ -40,9 +41,16 @@ type Subject = { id:string; name: string; subSubjects?: string[] };
 type AcademicSession = { id: string; name: string; };
 type Term = { id: string; name: "1st" | "2nd" | "3rd"; };
 
+// Represents a single subject's scores within the main result document
+type SubjectScore = {
+  ca1: number | null;
+  ca2: number | null;
+  exam: number | null;
+};
+
 // Represents the entire result document for a term
 export type TermResult = {
-  scores: Record<string, { ca1: number | null; ca2: number | null; exam: number | null }>;
+  scores: Record<string, SubjectScore>; // subjectId -> SubjectScore
   studentId: string;
   termId: string;
   sessionId: string;
@@ -52,25 +60,21 @@ export type TermResult = {
   headTeacherRemark?: string;
 };
 
-const termNames: Record<string, string> = { "1st": '1st Term', "2nd": '2nd Term', "3rd": '3rd Term' };
-
-const initialSettings: TemplateSettings = { 
-    studentInfo: { fontSize: 12, visible: true }, 
-    header: { visible: true }, 
-    subjectsTable: { visible: true }, 
-    summary: { visible: true }, 
-    softSkills: { visible: true }, 
-    gradingKey: { visible: true }, 
-    remarks: { visible: true }, 
-    signatures: { visible: true } 
+type SoftSkillScore = {
+    skillName: string;
+    score: number;
 };
 
+const termNames: Record<string, string> = { "1st": '1st Term', "2nd": '2nd Term', "3rd": '3rd Term' };
+
+const initialSettings: TemplateSettings = { studentInfo: { fontSize: 12, visible: true }, header: { visible: true }, subjectsTable: { visible: true }, summary: { visible: true }, softSkills: { visible: true }, gradingKey: { visible: true }, remarks: { visible: true }, signatures: { visible: true } };
+
 // --- HELPER COMPONENTS ---
-const StudentInfoDetail = ({ label, value, isLoading = false }: { label: string, value?: string, isLoading?: boolean }) => (
-    <div className="flex text-xs items-center gap-2">
-        <span className="font-bold text-[11px] uppercase text-muted-foreground w-[90px] shrink-0">{label}:</span>
-        <span className="flex-1 border-b border-black font-semibold min-h-[1.2rem]">
-            {isLoading ? <Skeleton className="h-3 w-20" /> : value}
+const StudentInfoDetail = ({ label, value, isLoading = false }: { label: string, value?: string | React.ReactNode, isLoading?: boolean }) => (
+    <div className="flex text-xs">
+        <span className="font-semibold w-[90px] shrink-0">{label}:</span>
+        <span className="flex-1 border-b border-dotted border-black">
+            {isLoading ? <Skeleton className="h-4 w-24" /> : value}
         </span>
     </div>
 );
@@ -88,6 +92,7 @@ interface ResultSheetProps {
   overall?: { average: string, grade: string };
 }
 
+// --- MAIN COMPONENT ---
 export const ResultSheet = forwardRef<HTMLDivElement, ResultSheetProps>(({ 
   student, 
   classroom,
@@ -104,6 +109,7 @@ export const ResultSheet = forwardRef<HTMLDivElement, ResultSheetProps>(({
   const studentId = student.id;
   
   const [termResult, setTermResult] = useState<TermResult | null>(null);
+  const [softSkillScores, setSoftSkillScores] = useState<SoftSkillScore[]>([]);
   const [termResultLoading, setTermResultLoading] = useState(true);
 
   // --- DATA FETCHING ---
@@ -150,8 +156,7 @@ export const ResultSheet = forwardRef<HTMLDivElement, ResultSheetProps>(({
     return () => unsubscribe();
   }, [termResultRef, isForTemplateBuilder]);
 
-
-  // --- DATA PROCESSING ---
+  // --- DATA PROCESSING & MEMOIZATION ---
   const finalTemplateData = templateData || savedTemplateData;
   const settings = finalTemplateData?.settings || initialSettings;
   const schoolName = finalTemplateData?.schoolName || 'JustVision Kiddies School';
@@ -172,7 +177,13 @@ export const ResultSheet = forwardRef<HTMLDivElement, ResultSheetProps>(({
         return { subjectName: subject.name, subSubjects: subject.subSubjects, ca1: score.ca1, ca2: score.ca2, exam: score.exam, total, grade, remark };
       })
       .filter((r): r is ResultEntry => r !== null)
-      .sort((a, b) => a.subjectName.localeCompare(b.subjectName));
+      .sort((a, b) => {
+        const aHasSub = a.subSubjects && a.subSubjects.length > 0;
+        const bHasSub = b.subSubjects && b.subSubjects.length > 0;
+        if (aHasSub && !bHasSub) return -1;
+        if (!aHasSub && bHasSub) return 1;
+        return a.subjectName.localeCompare(b.subjectName);
+      });
   }, [termResult, allSubjectsMap, isForTemplateBuilder]);
   
   const resultEntries = isForTemplateBuilder ? templateResultEntries : liveResultEntries;
@@ -185,6 +196,17 @@ export const ResultSheet = forwardRef<HTMLDivElement, ResultSheetProps>(({
     return { average: average.toFixed(2), grade };
   }, [resultEntries]);
 
+  useEffect(() => {
+    const allSoftSkills = ["Punctuality", "Neatness", "Creativity", "Honesty", "Communication", "Teamwork", "Attentiveness", "Self Control", "Leadership", "Initiative"];
+    if (isForTemplateBuilder) {
+      setSoftSkillScores(allSoftSkills.map(skill => ({ skillName: skill, score: 5 })));
+      return;
+    }
+    const scores = [3, 4, 5];
+    const generatedScores = allSoftSkills.map(skill => ({ skillName: skill, score: scores[Math.floor(Math.random() * scores.length)] }));
+    setSoftSkillScores(generatedScores);
+  }, [isForTemplateBuilder, student.id]);
+  
   const scoreTotals = useMemo(() => {
     if (!resultEntries || resultEntries.length === 0) return { ca1: 0, ca2: 0, exam: 0, total: 0 };
     return resultEntries.reduce((acc, entry) => {
@@ -213,178 +235,230 @@ export const ResultSheet = forwardRef<HTMLDivElement, ResultSheetProps>(({
     return parseAndFormatDate(schoolSettings?.termEndingDate);
   }, [schoolSettings, isForTemplateBuilder]);
 
-  const reportSession = isForTemplateBuilder ? '2024/2025' : (sessionDoc?.name || '...');
+  const reportSession = isForTemplateBuilder ? '2023/2024' : (sessionDoc?.name || '...');
   const reportTermName = isForTemplateBuilder ? '1st Term' : (termDoc ? termNames[termDoc.name] : 'N/A');
 
   const isLoading = !isForTemplateBuilder && (settingsLoading || templateLoading || subjectsLoading || sessionLoading || termLoading || termResultLoading);
+  
+  const daysAbsent = useMemo(() => {
+    if (isForTemplateBuilder) return '--';
+    const attended = termResult?.daysAttended;
+    const opened = schoolSettings?.daysSchoolOpened;
+    if (typeof attended === 'number' && typeof opened === 'number' && attended >= 0 && opened >= 0) {
+      const absent = opened - attended;
+      return absent >= 0 ? absent.toString() : 'N/A';
+    }
+    return '--';
+  }, [isForTemplateBuilder, termResult, schoolSettings]);
 
   if (isLoading && !isForTemplateBuilder) {
-    return (
-      <div className="relative mx-auto w-full max-w-[794px] aspect-[210/297] bg-white p-8 shadow-lg">
-        <Skeleton className="h-full w-full" />
-      </div>
-    );
+    return <div className="relative mx-auto w-full max-w-[794px] aspect-[210/297] bg-white p-6 shadow-lg"><Skeleton className="h-full w-full" /></div>;
   }
+  
+  if (!isForTemplateBuilder && !student) {
+      return <div className="rounded-lg border bg-card p-8">Student data could not be loaded.</div>
+  }
+  
+  const allSoftSkillsList = ["Punctuality", "Neatness", "Creativity", "Honesty", "Communication", "Teamwork", "Attentiveness", "Self Control", "Leadership", "Initiative"];
+  const softSkillsMap = new Map(softSkillScores.map(s => [s.skillName, s.score]));
+  const softSkillsCol1 = allSoftSkillsList.slice(0, 6);
+  const softSkillsCol2 = allSoftSkillsList.slice(6);
 
   return (
-    <div className="w-full flex justify-center bg-muted py-8 print:p-0 no-print">
-      <div ref={ref} className="relative w-[210mm] min-h-[297mm] bg-white text-black shadow-lg print:shadow-none p-8 flex flex-col border border-zinc-300">
-        <div className="absolute inset-0 z-0 flex items-center justify-center pointer-events-none opacity-5">
-            <Image src="/Logo.jpg" alt="School Watermark" width={400} height={400} />
+    <div ref={ref} className="relative w-full max-w-[794px] mx-auto min-h-[1250px] bg-white text-black print:shadow-none print:m-0 print:p-0 print:w-full print:h-auto flex flex-col p-6 border-4 border-black">
+        <div className="absolute inset-0 z-0 flex items-center justify-center pointer-events-none">
+            <Image src="/Logo.jpg" alt="School Watermark" width={500} height={500} className="opacity-15" />
         </div>
-        
-        <div className="relative z-10 flex flex-col h-full flex-1">
+        <div className="relative z-10 flex flex-col h-full">
             {settings.header.visible && (
-                <header className="mb-6 p-4 border-2 border-black flex items-center gap-6">
-                    <div className="relative h-24 w-24"><Image src="/Logo.jpg" alt="School Logo" layout="fill" objectFit="contain" /></div>
-                    <div className="flex-1">
-                        <h1 className="text-2xl font-bold uppercase tracking-tight">{schoolName}</h1>
-                        <p className="text-sm">Katampe 2 Mpape Abuja</p>
-                        <p className="text-sm font-semibold text-primary">Motto: Exceeding Great</p>
+                <header className="mb-4 p-2 border-2 border-black">
+                    <div className="flex items-start justify-between">
+                        <div className="flex items-center gap-4">
+                            <div className="relative h-24 w-24"><Image src="/Logo.jpg" alt="School Logo" layout="fill" objectFit="contain" /></div>
+                            <div className="text-black">
+                                <h1 className="text-2xl font-bold text-black">{schoolName}</h1>
+                                <p className="text-base text-black">Katampe 2 Mpape Abuja</p>
+                                <p className="text-base font-semibold text-black">Motto: Exceeding Great</p>
+                            </div>
+                        </div>
+                        <div className="text-right">
+                            <h2 className="font-bold text-xl text-black">Pupil Report Card</h2>
+                            <p className="text-base text-zinc-600">
+                                {reportTermName}, {reportSession}
+                            </p>
+                        </div>
                     </div>
-                    <div className="text-right border-l-2 border-black pl-6">
-                        <h2 className="font-bold text-xl uppercase">Report Card</h2>
-                        <p className="text-sm font-medium">{reportTermName}</p>
-                        <p className="text-xs font-bold">{reportSession} SESSION</p>
-                    </div>
+                    <Separator className="my-2 bg-black" />
                 </header>
             )}
 
-            <div className="flex-grow flex flex-col">
+            <div className="flex-grow overflow-hidden flex flex-col">
                 {settings.studentInfo.visible && (
-                    <div className="mb-6 p-4 border border-black bg-zinc-50/30">
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-y-2 gap-x-6">
-                            <StudentInfoDetail label="Pupil Name" value={student.name.toUpperCase()} />
+                    <div className="mb-4 p-2 border border-black" style={{ fontSize: `12px` }}>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-y-1 gap-x-4">
+                            <StudentInfoDetail label="Student Name" value={student.name} />
                             <StudentInfoDetail label="Admission No" value={student.admissionNumber} />
                             <StudentInfoDetail label="Class" value={classroom?.name} />
-                            <StudentInfoDetail label="Class Size" value={classPopulation ? classPopulation.toString() : 'N/A'} />
+                            <StudentInfoDetail label="No. in class" value={classPopulation ? classPopulation.toString() : 'N/A'} />
+                            <StudentInfoDetail label="Days Absent" value={daysAbsent} />
+                            <StudentInfoDetail label="Days Attended" value={isForTemplateBuilder ? '--' : termResult?.daysAttended?.toString() || '--'} />
                             <StudentInfoDetail label="School Open" value={isForTemplateBuilder ? '65' : schoolSettings?.daysSchoolOpened?.toString()} />
-                            <StudentInfoDetail label="Days Present" value={isForTemplateBuilder ? '--' : termResult?.daysAttended?.toString() || '--'} />
-                            <StudentInfoDetail label="Term Ends" value={formattedTermEndingDate} />
-                            <StudentInfoDetail label="Next Term" value={formattedResumptionDate} />
-                            <StudentInfoDetail label="Teacher" value={teacherName || '...'} />
+                            <StudentInfoDetail label="Term Ending" value={formattedTermEndingDate} />
+                            <StudentInfoDetail label="Resumption" value={formattedResumptionDate} />
                         </div>
                     </div>
                 )}
                 
                 {settings.subjectsTable.visible && (
-                    <div className="border border-black mb-6">
+                    <div className="border border-black overflow-auto">
                         <Table>
                             <TableHeader>
-                                <TableRow className="hover:bg-transparent bg-zinc-100">
-                                    <TableHead className="border border-black p-2 h-auto text-xs font-bold text-black uppercase">Subject</TableHead>
-                                    <TableHead className="text-center border border-black p-2 h-auto text-xs font-bold text-black uppercase">CA1</TableHead>
-                                    <TableHead className="text-center border border-black p-2 h-auto text-xs font-bold text-black uppercase">CA2</TableHead>
-                                    <TableHead className="text-center border border-black p-2 h-auto text-xs font-bold text-black uppercase">Exam</TableHead>
-                                    <TableHead className="text-center border border-black p-2 h-auto text-xs font-bold text-black uppercase">Total</TableHead>
-                                    <TableHead className="border border-black p-2 h-auto text-xs font-bold text-black uppercase">Grade</TableHead>
+                                <TableRow>
+                                    <TableHead className="border border-black p-1 h-auto text-lg text-black">Subject</TableHead>
+                                    <TableHead className="text-center border border-black p-1 h-auto text-lg text-black">CA1 (20)</TableHead>
+                                    <TableHead className="text-center border border-black p-1 h-auto text-lg text-black">CA2 (20)</TableHead>
+                                    <TableHead className="text-center border border-black p-1 h-auto text-lg text-black">Exam (60)</TableHead>
+                                    <TableHead className="text-center border border-black p-1 h-auto text-lg text-black">Total (100)</TableHead>
+                                    <TableHead className="border border-black p-1 h-auto text-lg text-black">Remark</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
                             {resultEntries && resultEntries.length > 0 ? (
                                     resultEntries.map((entry, index) => (
-                                        <TableRow key={index} className="hover:bg-transparent h-8">
-                                            <TableCell className="border border-black p-2 text-xs font-medium">
-                                                {entry.subjectName}
+                                        <TableRow key={entry.subjectName + index}>
+                                            <TableCell className="border-b border-r border-black p-1 text-lg font-semibold">
+                                                <div className="font-semibold">{entry.subjectName}</div>
                                                 {entry.subSubjects && entry.subSubjects.length > 0 && (
-                                                    <span className="text-[9px] block text-muted-foreground italic">({entry.subSubjects.join(', ')})</span>
+                                                    <div className="pl-2 text-xs text-gray-800">
+                                                        {entry.subSubjects.map((sub, i) => (
+                                                            <div key={i}>{sub}</div>
+                                                        ))}
+                                                    </div>
                                                 )}
                                             </TableCell>
-                                            <TableCell className="text-center border border-black p-2 text-xs">{entry.ca1 ?? '--'}</TableCell>
-                                            <TableCell className="text-center border border-black p-2 text-xs">{entry.ca2 ?? '--'}</TableCell>
-                                            <TableCell className="text-center border border-black p-2 text-xs">{entry.exam ?? '--'}</TableCell>
-                                            <TableCell className="text-center border border-black p-2 text-xs font-bold">{entry.total}</TableCell>
-                                            <TableCell className="border border-black p-2 text-xs font-bold text-center">{entry.grade}</TableCell>
+                                            <TableCell className="text-center border-b border-r border-black p-1 text-lg">{entry.ca1 ?? '--'}</TableCell>
+                                            <TableCell className="text-center border-b border-r border-black p-1 text-lg">{entry.ca2 ?? '--'}</TableCell>
+                                            <TableCell className="text-center border-b border-r border-black p-1 text-lg">{entry.exam ?? '--'}</TableCell>
+                                            <TableCell className="text-center border-b border-r border-black p-1 text-lg font-semibold">{entry.total}</TableCell>
+                                            <TableCell className="border-b border-black p-1 text-lg">{entry.remark}</TableCell>
                                         </TableRow>
                                     ))
                                 ) : (
                                     <TableRow>
-                                      <TableCell colSpan={6} className="h-48 text-center border border-black p-2 text-muted-foreground italic">
-                                        No results recorded for this term.
+                                      <TableCell colSpan={6} className="h-24 text-center border-b border-black p-1 text-base">
+                                        {isForTemplateBuilder ? 'Subjects will be shown here.' : 'No scores entered for this term.'}
                                       </TableCell>
                                     </TableRow>
                                 )}
                             </TableBody>
                              <TableFooter>
-                                <TableRow className="bg-zinc-50 font-bold">
-                                  <TableCell className="border border-black p-2 text-xs uppercase">Totals</TableCell>
-                                  <TableCell className="text-center border border-black p-2 text-xs">{scoreTotals.ca1}</TableCell>
-                                  <TableCell className="text-center border border-black p-2 text-xs">{scoreTotals.ca2}</TableCell>
-                                  <TableCell className="text-center border border-black p-2 text-xs">{scoreTotals.exam}</TableCell>
-                                  <TableCell className="text-center border border-black p-2 text-xs">{scoreTotals.total}</TableCell>
-                                  <TableCell className="border border-black bg-zinc-100"></TableCell>
+                                <TableRow>
+                                  <TableCell className="border-b border-r border-black p-1 text-sm font-bold">Total</TableCell>
+                                  <TableCell className="text-center border-b border-r border-black p-1 text-sm font-bold">{scoreTotals.ca1}</TableCell>
+                                  <TableCell className="text-center border-b border-r border-black p-1 text-sm font-bold">{scoreTotals.ca2}</TableCell>
+                                  <TableCell className="text-center border-b border-r border-black p-1 text-sm font-bold">{scoreTotals.exam}</TableCell>
+                                  <TableCell className="text-center border-b border-r border-black p-1 text-sm font-bold">{scoreTotals.total}</TableCell>
+                                  <TableCell className="border-b border-black p-1 text-sm"></TableCell>
                                 </TableRow>
                               </TableFooter>
                         </Table>
                     </div>
                 )}
-
                 {settings.summary.visible && (
-                    <div className="flex justify-end mb-6">
-                        <div className="w-64 border border-black p-3 space-y-1 bg-zinc-50">
-                            <div className="flex justify-between items-center border-b border-black/10 pb-1">
-                                <span className="text-[10px] font-bold uppercase text-muted-foreground">Average</span>
-                                <span className="font-bold">{(templateOverall || overall)?.average}%</span>
-                            </div>
-                            <div className="flex justify-between items-center">
-                                <span className="text-[10px] font-bold uppercase text-muted-foreground">Overall Grade</span>
-                                <span className="text-xl font-black">{(templateOverall || overall)?.grade}</span>
-                            </div>
+                    <div className="mt-1 flex justify-end">
+                        <div className="w-1/2 rounded-md border border-black p-1 text-sm space-y-1">
+                            <div className="flex justify-between"><span className="font-semibold text-black">Overall Average:</span><span className="text-black">{(templateOverall || overall)?.average}%</span></div>
+                            <div className="flex justify-between"><span className="font-semibold text-black">Overall Grade:</span><span className="text-black">{(templateOverall || overall)?.grade}</span></div>
                         </div>
                     </div>
                 )}
+                 <div className="flex-grow min-h-0"></div>
                 
-                <footer className="mt-auto">
-                    <div className="grid grid-cols-2 gap-8 mb-6">
-                        {settings.remarks.visible && (
-                            <div className="space-y-4">
-                                <div>
-                                    <h3 className="text-[10px] font-bold uppercase text-muted-foreground mb-1">Teacher's Remark</h3>
-                                    <p className="border-b border-black p-2 text-sm italic min-h-[40px]">
-                                        "{termResult?.teacherRemark || 'No remark recorded.'}"
-                                    </p>
+                <footer className="text-base" style={{ pageBreakBefore: 'always' }}>
+                    <section className='border border-black p-1 flex flex-col gap-1'>
+                        <div className="grid grid-cols-[1fr_1fr_2fr] gap-x-2 pt-1">
+                            {settings.gradingKey.visible && (
+                                <div className="space-y-1">
+                                <h3 className="font-bold text-black text-sm">Grading Key</h3>
+                                <Table>
+                                    <TableHeader>
+                                        <TableRow><TableHead className="p-0.5 h-auto text-xs border border-black text-black">Score</TableHead><TableHead className="p-0.5 h-auto text-xs border border-black text-black">Grade</TableHead><TableHead className="p-0.5 h-auto text-xs border border-black text-black">Remark</TableHead></TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        <TableRow><TableCell className="p-0.5 h-auto text-xs border border-black">80 – 100</TableCell><TableCell className="p-0.5 h-auto text-xs border border-black">A</TableCell><TableCell className="p-0.5 h-auto text-xs border border-black">Excellent</TableCell></TableRow>
+                                        <TableRow><TableCell className="p-0.5 h-auto text-xs border border-black">70 – 79</TableCell><TableCell className="p-0.5 h-auto text-xs border border-black">B</TableCell><TableCell className="p-0.5 h-auto text-xs border border-black">Very Good</TableCell></TableRow>
+                                        <TableRow><TableCell className="p-0.5 h-auto text-xs border border-black">60 – 69</TableCell><TableCell className="p-0.5 h-auto text-xs border border-black">C</TableCell><TableCell className="p-0.5 h-auto text-xs border border-black">Good</TableCell></TableRow>
+                                        <TableRow><TableCell className="p-0.5 h-auto text-xs border border-black">50 – 59</TableCell><TableCell className="p-0.5 h-auto text-xs border border-black">D</TableCell><TableCell className="p-0.5 h-auto text-xs border border-black">Fair</TableCell></TableRow>
+                                        <TableRow><TableCell className="p-0.5 h-auto text-xs border border-black">0 – 49</TableCell><TableCell className="p-0.5 h-auto text-xs border border-black">F</TableCell><TableCell className="p-0.5 h-auto text-xs border border-black">Fail</TableCell></TableRow>
+                                    </TableBody>
+                                </Table>
                                 </div>
-                                <div>
-                                    <h3 className="text-[10px] font-bold uppercase text-muted-foreground mb-1">Head Teacher's Remark</h3>
-                                    <p className="border-b border-black p-2 text-sm italic min-h-[40px]">
-                                        "{termResult?.headTeacherRemark || 'No remark recorded.'}"
-                                    </p>
+                            )}
+                            
+                            {settings.softSkills.visible && (
+                                <div className="space-y-1">
+                                    <h3 className="font-bold text-black text-sm">Skill Score Rating</h3>
+                                    <Table>
+                                        <TableHeader>
+                                            <TableRow><TableHead className="p-0.5 h-auto text-xs border border-black text-black">Score</TableHead><TableHead className="p-0.5 h-auto text-xs border border-black text-black">Remark</TableHead></TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            <TableRow><TableCell className="p-0.5 h-auto text-xs border border-black">5</TableCell><TableCell className="p-0.5 h-auto text-xs border border-black">Excellent</TableCell></TableRow>
+                                            <TableRow><TableCell className="p-0.5 h-auto text-xs border border-black">4</TableCell><TableCell className="p-0.5 h-auto text-xs border border-black">Very Good</TableCell></TableRow>
+                                            <TableRow><TableCell className="p-0.5 h-auto text-xs border border-black">3</TableCell><TableCell className="p-0.5 h-auto text-xs border border-black">Good</TableCell></TableRow>
+                                            <TableRow><TableCell className="p-0.5 h-auto text-xs border border-black">2</TableCell><TableCell className="p-0.5 h-auto text-xs border border-black">Fair</TableCell></TableRow>
+                                            <TableRow><TableCell className="p-0.5 h-auto text-xs border border-black">1</TableCell><TableCell className="p-0.5 h-auto text-xs border border-black">Poor</TableCell></TableRow>
+                                        </TableBody>
+                                    </Table>
                                 </div>
-                            </div>
-                        )}
-                        
-                        {settings.gradingKey.visible && (
-                             <div className="border border-black p-3 text-[10px] bg-zinc-50/50">
-                                <h3 className="font-bold uppercase mb-2 border-b border-black pb-1">Grading Key</h3>
-                                <div className="grid grid-cols-2 gap-x-4">
-                                    <div className="space-y-0.5">
-                                        <div className="flex justify-between"><span>80 – 100</span><span className="font-bold">A (Excellent)</span></div>
-                                        <div className="flex justify-between"><span>70 – 79</span><span className="font-bold">B (V. Good)</span></div>
-                                        <div className="flex justify-between"><span>60 – 69</span><span className="font-bold">C (Good)</span></div>
-                                    </div>
-                                    <div className="space-y-0.5">
-                                        <div className="flex justify-between"><span>50 – 59</span><span className="font-bold">D (Fair)</span></div>
-                                        <div className="flex justify-between"><span>0 – 49</span><span className="font-bold">F (Fail)</span></div>
-                                    </div>
-                                </div>
-                             </div>
-                        )}
-                    </div>
+                            )}
 
-                    {settings.signatures.visible && (
-                        <div className="flex justify-between pt-8 border-t border-black/10">
-                            <div className="text-center w-48">
-                                <div className="border-t border-black pt-1 text-[10px] font-bold uppercase">Class Teacher</div>
-                            </div>
-                            <div className="text-center w-48">
-                                <div className="border-t border-black pt-1 text-[10px] font-bold uppercase">Principal / Proprietor</div>
-                            </div>
+                            {settings.softSkills.visible && (
+                               <div className="space-y-1 p-1 border border-black">
+                                    <h3 className="font-bold text-black text-sm">Soft Skills Assessment</h3>
+                                    <div className="grid grid-cols-2 gap-x-2">
+                                        <Table>
+                                            <TableBody>
+                                                {softSkillsCol1.map((skill, skillIndex) => (
+                                                    <TableRow key={skillIndex}>
+                                                        <TableCell className="font-medium p-0.5 h-auto text-xs border border-black text-black">{skill}</TableCell>
+                                                        <TableCell className="text-right p-0.5 h-auto text-xs border border-black w-[20px]">{softSkillsMap.get(skill) || '--'}</TableCell>
+                                                    </TableRow>
+                                                ))}
+                                            </TableBody>
+                                        </Table>
+                                        <Table>
+                                            <TableBody>
+                                                {softSkillsCol2.map((skill, skillIndex) => (
+                                                    <TableRow key={skillIndex}>
+                                                        <TableCell className="font-medium p-0.5 h-auto text-xs border border-black text-black">{skill}</TableCell>
+                                                        <TableCell className="text-right p-0.5 h-auto text-xs border border-black w-[20px]">{softSkillsMap.get(skill) || '--'}</TableCell>
+                                                    </TableRow>
+                                                ))}
+                                            </TableBody>
+                                        </Table>
+                                    </div>
+                                </div>
+                            )}
                         </div>
-                    )}
+
+                        {settings.remarks.visible && (
+                             <div className="pt-2 space-y-1">
+                                <div><h3 className="font-bold text-black text-sm">Class Teacher's Name:</h3><p className="min-h-[20px] rounded-md border-b border-black p-1 text-sm">{teacherName || ' '}</p></div>
+                                <div><h3 className="font-bold text-black text-sm">Teacher's Remarks:</h3><p className="min-h-[20px] rounded-md border-b border-black p-1 text-sm">{termResult?.teacherRemark || ' '}</p></div>
+                                <div><h3 className="font-bold text-black text-sm">Head Teacher's Remarks:</h3><p className="min-h-[20px] rounded-md border-b border-black p-1 text-sm">{termResult?.headTeacherRemark || ' '}</p></div>
+                            </div>
+                        )}
+                        {settings.signatures.visible && (
+                            <div className="flex justify-between items-end pt-4">
+                                <div className="text-center w-36"><div className="border-t border-black pt-1 text-sm">Class Teacher's Signature</div></div>
+                                <div className="text-center w-36"><div className="border-t border-black pt-1 text-sm">Head Teacher's Signature</div></div>
+                            </div>
+                        )}
+                    </section>
                 </footer>
             </div>
         </div>
-      </div>
     </div>
   );
 });
