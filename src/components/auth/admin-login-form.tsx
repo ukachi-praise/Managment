@@ -45,8 +45,8 @@ export function AdminLoginForm() {
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
-    if (!auth) {
-        toast({ variant: 'destructive', title: 'Firebase not initialized.' });
+    if (!auth || !firestore) {
+        toast({ variant: 'destructive', title: 'System not ready.' });
         setIsLoading(false);
         return;
     }
@@ -57,20 +57,20 @@ export function AdminLoginForm() {
         const userDocRef = doc(firestore, 'users', user.uid);
         const userDoc = await getDoc(userDocRef);
 
-        const isHardcodedAdmin = user.uid === 'GOpbb9SsavhpATk1p0KNmPGGQ0S2';
-        const isFirestoreAdmin = userDoc.exists() && userDoc.data().role === 'Admin';
+        const isHardcodedAdmin = user.uid === 'GOpbb9SsavhpATk1p0KNmPGGQ0S2' || user.uid === 'WRbg0T3XA7eIpFFb9amDgvii12x1';
+        const isFirestoreAdmin = userDoc.exists() && (userDoc.data().role === 'Admin' || userDoc.data().role === 'SuperAdmin');
 
         if (isHardcodedAdmin || isFirestoreAdmin) {
             toast({
                 title: 'Login Successful',
-                description: 'Welcome, Admin! Redirecting...',
+                description: 'Welcome to the control panel! Redirecting...',
             });
             router.push('/admin/dashboard');
         } else {
              toast({
                 variant: 'destructive',
                 title: 'Permission Denied',
-                description: 'You do not have admin privileges.',
+                description: 'This area is restricted to administrative staff only.',
             });
             await auth.signOut();
         }

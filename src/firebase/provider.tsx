@@ -91,9 +91,11 @@ export function FirebaseProvider({ children }: { children: ReactNode }) {
         if (authUser) {
           try {
             let baseProfile: UserProfile = {};
-            // Updated hardcoded SuperAdmin UID
+            // --- Hardcoded Access Logic ---
             if (authUser.uid === 'GOpbb9SsavhpATk1p0KNmPGGQ0S2') {
-                baseProfile = { role: 'SuperAdmin', name: 'Admin User', email: authUser.email || 'admin@example.com' };
+                baseProfile = { role: 'SuperAdmin', name: 'Super Admin', email: authUser.email || 'admin@example.com' };
+            } else if (authUser.uid === 'WRbg0T3XA7eIpFFb9amDgvii12x1') {
+                baseProfile = { role: 'Admin', name: 'School Admin', email: authUser.email || 'staff@example.com' };
             } else if (authUser.uid === 'u3krP4g02DgPJ6Avv1XhVNvvb8R2') {
                 baseProfile = { role: 'Teacher', name: 'Primary 4 Teacher', email: authUser.email, assignedClassroomId: '9C0VNAZOmArOqXUrK7M1' };
             } else if (authUser.uid === 'YAemjwMFEAOnvp6RL6STw3GJK0I2') {
