@@ -43,7 +43,7 @@ type Subject = { id: string; name: string; subSubjects?: string[] };
 type Enrollment = { id: string; studentId: string; classroomId: string };
 type AcademicSession = { id: string, name: string };
 type Term = { id: string, name: string };
-type SchoolSettings = { currentSessionId: string; currentTermId: string; }
+type SchoolSettings = { currentSessionId: string; currentTermId: string; daysSchoolOpened: number; }
 
 // Represents a single subject's scores within the main result document
 type SubjectScore = {
@@ -175,7 +175,14 @@ export default function StudentResultEntryPage() {
     field: 'ca1' | 'ca2' | 'exam',
     value: string
   ) => {
-    const numericValue = value === '' ? null : Number(value);
+    const cleanValue = value.replace(/[^0-9]/g, '');
+    let numericValue = cleanValue === '' ? null : Number(cleanValue);
+
+    // Enforce constraints
+    const max = field === 'exam' ? 60 : 20;
+    if (numericValue !== null && numericValue > max) {
+        numericValue = max;
+    }
 
     setTermResult(prevResult => {
       if (!prevResult) return null;
@@ -191,7 +198,15 @@ export default function StudentResultEntryPage() {
   };
 
   const handleDaysAttendedChange = (value: string) => {
-    const numericValue = value === '' ? undefined : Number(value);
+    const cleanValue = value.replace(/[^0-9]/g, '');
+    let numericValue = cleanValue === '' ? undefined : Number(cleanValue);
+    
+    // Enforce constraint based on school settings
+    const maxDays = schoolSettings?.daysSchoolOpened || 365;
+    if (numericValue !== undefined && numericValue > maxDays) {
+        numericValue = maxDays;
+    }
+
     setTermResult(prev => (prev ? { ...prev, daysAttended: numericValue } : null));
   }
   
@@ -315,35 +330,32 @@ export default function StudentResultEntryPage() {
                           </TableCell>
                           <TableCell>
                             <Input
-                              type="text"
-                              inputMode="numeric"
-                              pattern="[0-9]*"
+                              type="number"
+                              min={0}
+                              max={20}
                               className="h-8 w-20 text-sm"
                               value={score.ca1 ?? ''}
                               onChange={(e) => handleScoreChange(subject.id, 'ca1', e.target.value)}
-                              max={20}
                             />
                           </TableCell>
                            <TableCell>
                             <Input
-                              type="text"
-                              inputMode="numeric"
-                              pattern="[0-9]*"
+                              type="number"
+                              min={0}
+                              max={20}
                               className="h-8 w-20 text-sm"
                               value={score.ca2 ?? ''}
                               onChange={(e) => handleScoreChange(subject.id, 'ca2', e.target.value)}
-                              max={20}
                             />
                           </TableCell>
                           <TableCell>
                             <Input
-                              type="text"
-                              inputMode="numeric"
-                              pattern="[0-9]*"
+                              type="number"
+                              min={0}
+                              max={60}
                               className="h-8 w-20 text-sm"
                               value={score.exam ?? ''}
                               onChange={(e) => handleScoreChange(subject.id, 'exam', e.target.value)}
-                              max={60}
                             />
                           </TableCell>
                           <TableCell className="font-semibold">{total}</TableCell>
@@ -360,9 +372,9 @@ export default function StudentResultEntryPage() {
                     <Label htmlFor="daysAttended" className="font-semibold">Days Attended by Student</Label>
                      <Input
                         id="daysAttended"
-                        type="text"
-                        inputMode="numeric"
-                        pattern="[0-9]*"
+                        type="number"
+                        min={0}
+                        max={schoolSettings?.daysSchoolOpened || 365}
                         placeholder="e.g. 60"
                         value={termResult?.daysAttended ?? ''}
                         onChange={(e) => handleDaysAttendedChange(e.target.value)}
