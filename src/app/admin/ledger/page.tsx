@@ -303,7 +303,6 @@ export default function LedgerPage() {
                                     variant="ghost" 
                                     size="sm" 
                                     onClick={() => setPaymentHistoryStudent(s)} 
-                                    disabled={!payment}
                                     className="text-muted-foreground hover:text-primary"
                                     title="View Payment History"
                                 >
@@ -401,11 +400,13 @@ export default function LedgerPage() {
                  <div className="flex justify-between items-center text-sm px-2 mb-4">
                     <div className="flex flex-col">
                         <span className="text-muted-foreground text-xs uppercase tracking-wider font-bold">Total Expected</span>
-                        <span className="text-lg font-bold">₦{(payments[paymentHistoryStudent?.id || '']?.expectedAmount || 0).toLocaleString()}</span>
+                        <span className="text-lg font-bold">₦{((paymentHistoryStudent && classroomMap[paymentHistoryStudent.classroomId || '']?.fees) || (paymentHistoryStudent && payments[paymentHistoryStudent.id]?.expectedAmount) || 0).toLocaleString()}</span>
                     </div>
                     <div className="flex flex-col text-right">
                         <span className="text-muted-foreground text-xs uppercase tracking-wider font-bold">Outstanding Balance</span>
-                        <span className="text-lg font-bold text-destructive">₦{(payments[paymentHistoryStudent?.id || '']?.balance || 0).toLocaleString()}</span>
+                        <span className="text-lg font-bold text-destructive">₦{(paymentHistoryStudent ? (
+                            (classroomMap[paymentHistoryStudent.classroomId || '']?.fees || payments[paymentHistoryStudent.id]?.expectedAmount || 0) - (payments[paymentHistoryStudent.id]?.totalPaid || 0)
+                        ) : 0).toLocaleString()}</span>
                     </div>
                 </div>
                 <DialogFooter>
