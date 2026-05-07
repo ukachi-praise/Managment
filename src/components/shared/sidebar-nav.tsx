@@ -19,6 +19,7 @@ import {
   Trash2,
   Sheet,
   Building,
+  ArrowUpCircle,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -49,6 +50,7 @@ const adminNavItems: NavItem[] = [
   { href: () => '/admin/subjects', label: 'Subjects', icon: BookCopy },
   { href: () => '/admin/sessions', label: 'Sessions', icon: Building },
   { href: () => '/admin/enrollments', label: 'Enrollments', icon: Users },
+  { href: () => '/admin/promotions', label: 'Promotions', icon: ArrowUpCircle },
   { href: () => '/admin/info', label: 'Info', icon: Info },
   { href: () => '/admin/remarks', label: 'Remarks', icon: MessageSquareQuote },
   { href: () => '/admin/results', label: 'Results', icon: ClipboardList },
