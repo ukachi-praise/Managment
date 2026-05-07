@@ -54,6 +54,7 @@ type Classroom = {
   id: string;
   name: string;
   teacherName?: string;
+  fees?: number;
 };
 
 export default function ClassroomsPage() {
@@ -81,6 +82,7 @@ export default function ClassroomsPage() {
     const formData = new FormData(event.currentTarget);
     const newClassroom = {
       name: formData.get('name') as string,
+      fees: Number(formData.get('fees')) || 0,
     };
     
     addDocumentNonBlocking(collection(firestore, 'classrooms'), newClassroom);
@@ -94,10 +96,13 @@ export default function ClassroomsPage() {
     if (!firestore || !editingClassroom) return;
 
     const formData = new FormData(event.currentTarget);
-    const updatedName = formData.get('name') as string;
+    const updatedData = { 
+        name: formData.get('name') as string,
+        fees: Number(formData.get('fees')) || 0
+    };
     
-    setDocumentNonBlocking(doc(firestore, 'classrooms', editingClassroom.id), { name: updatedName }, { merge: true });
-    toast({ title: "Classroom Updated", description: `Classroom name has been changed to ${updatedName}.` });
+    setDocumentNonBlocking(doc(firestore, 'classrooms', editingClassroom.id), updatedData, { merge: true });
+    toast({ title: "Classroom Updated", description: `${updatedData.name} details have been changed.` });
     setEditDialogOpen(false);
     setEditingClassroom(null);
   }
@@ -114,12 +119,6 @@ export default function ClassroomsPage() {
     setEditingClassroom(classroom);
     setEditDialogOpen(true);
   }
-
-  const openDeleteDialog = (classroom: Classroom) => {
-    setClassroomToDelete(classroom);
-    setDeleteDialogOpen(true);
-  }
-
 
   return (
     <div className="space-y-6">
@@ -141,21 +140,17 @@ export default function ClassroomsPage() {
             <DialogHeader>
               <DialogTitle>Add New Classroom</DialogTitle>
               <DialogDescription>
-                Enter the details for the new classroom.
+                Enter the details and set the term fees for the new classroom.
               </DialogDescription>
             </DialogHeader>
             <form onSubmit={handleAddClassroom} className="grid gap-4 py-4">
               <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="name" className="text-right">
-                  Name
-                </Label>
-                <Input
-                  id="name"
-                  name="name"
-                  placeholder="e.g. Primary 3"
-                  className="col-span-3"
-                  required
-                />
+                <Label htmlFor="name" className="text-right">Name</Label>
+                <Input id="name" name="name" placeholder="e.g. Primary 3" className="col-span-3" required />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="fees" className="text-right">Fees (₦)</Label>
+                <Input id="fees" name="fees" type="number" placeholder="e.g. 85000" className="col-span-3" required />
               </div>
               <DialogFooter>
                 <Button type="submit">Save Classroom</Button>
@@ -165,27 +160,20 @@ export default function ClassroomsPage() {
         </Dialog>
       </div>
 
-       {/* Edit Dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
         <DialogContent className="sm:max-w-[425px]">
             <DialogHeader>
               <DialogTitle>Edit Classroom</DialogTitle>
-              <DialogDescription>
-                Update the classroom name.
-              </DialogDescription>
+              <DialogDescription>Update the classroom name and fees.</DialogDescription>
             </DialogHeader>
             <form onSubmit={handleUpdateClassroom} className="grid gap-4 py-4">
               <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="name" className="text-right">
-                  Name
-                </Label>
-                <Input
-                  id="name"
-                  name="name"
-                  defaultValue={editingClassroom?.name}
-                  className="col-span-3"
-                  required
-                />
+                <Label htmlFor="name" className="text-right">Name</Label>
+                <Input id="name" name="name" defaultValue={editingClassroom?.name} className="col-span-3" required />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="fees" className="text-right">Fees (₦)</Label>
+                <Input id="fees" name="fees" type="number" defaultValue={editingClassroom?.fees} className="col-span-3" required />
               </div>
               <DialogFooter>
                 <Button type="submit">Save Changes</Button>
@@ -194,13 +182,12 @@ export default function ClassroomsPage() {
           </DialogContent>
       </Dialog>
       
-      {/* Delete Confirmation Dialog */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
             <AlertDialogHeader>
                 <AlertDialogTitle>Are you sure?</AlertDialogTitle>
                 <AlertDialogDescription>
-                    This action cannot be undone. This will permanently delete the classroom <span className="font-semibold">{classroomToDelete?.name}</span>.
+                    This will permanently delete <span className="font-semibold">{classroomToDelete?.name}</span>.
                 </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
@@ -214,9 +201,7 @@ export default function ClassroomsPage() {
       <Card>
         <CardHeader>
           <CardTitle>Existing Classrooms</CardTitle>
-          <CardDescription>
-            A list of all classrooms in the school.
-          </CardDescription>
+          <CardDescription>A list of all classrooms and their corresponding fees.</CardDescription>
         </CardHeader>
         <CardContent>
           {isLoading ? (
@@ -228,15 +213,16 @@ export default function ClassroomsPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Class Name</TableHead>
+                  <TableHead>Fees (₦)</TableHead>
                   <TableHead>Class Teacher</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {classrooms && classrooms.length > 0 ? (
-                  classrooms.map((classroom) => (
+                {classrooms?.sort((a,b) => a.name.localeCompare(b.name)).map((classroom) => (
                     <TableRow key={classroom.id}>
                       <TableCell className="font-medium">{classroom.name}</TableCell>
+                      <TableCell className="font-semibold">₦{(classroom.fees || 0).toLocaleString()}</TableCell>
                       <TableCell>{classroom.teacherName || 'N/A'}</TableCell>
                       <TableCell className="text-right">
                          <DropdownMenu>
@@ -248,28 +234,17 @@ export default function ClassroomsPage() {
                           <DropdownMenuContent align="end">
                             <DropdownMenuItem asChild>
                                <Link href={`/admin/enrollments/${classroom.id}`} className="cursor-pointer">
-                                    <Users className="mr-2 h-4 w-4" />
-                                    View Enrollments
+                                    <Users className="mr-2 h-4 w-4" /> View Enrollments
                                </Link>
                             </DropdownMenuItem>
                             <DropdownMenuItem onClick={() => openEditDialog(classroom)} className="cursor-pointer">
-                              <Edit className="mr-2 h-4 w-4" />
-                              Edit
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => openDeleteDialog(classroom)} className="text-destructive cursor-pointer">
-                              <Trash2 className="mr-2 h-4 w-4" />
-                              Delete
+                              <Edit className="mr-2 h-4 w-4" /> Edit
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </TableCell>
                     </TableRow>
-                  ))
-                ) : (
-                   <TableRow>
-                      <TableCell colSpan={3} className="text-center h-24">No classrooms found.</TableCell>
-                   </TableRow>
-                )}
+                  ))}
               </TableBody>
             </Table>
           )}

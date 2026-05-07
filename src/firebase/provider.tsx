@@ -13,7 +13,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 
 // --- PROFILE TYPE ---
 export type UserProfile = {
-  role?: 'Admin' | 'Teacher';
+  role?: 'SuperAdmin' | 'Admin' | 'Teacher';
   name?: string;
   email?: string;
   assignedClassroomId?: string;
@@ -91,8 +91,9 @@ export function FirebaseProvider({ children }: { children: ReactNode }) {
         if (authUser) {
           try {
             let baseProfile: UserProfile = {};
+            // Updated hardcoded SuperAdmin UID
             if (authUser.uid === 'GOpbb9SsavhpATk1p0KNmPGGQ0S2') {
-                baseProfile = { role: 'Admin', name: 'Admin User', email: authUser.email || 'admin@example.com' };
+                baseProfile = { role: 'SuperAdmin', name: 'Admin User', email: authUser.email || 'admin@example.com' };
             } else if (authUser.uid === 'u3krP4g02DgPJ6Avv1XhVNvvb8R2') {
                 baseProfile = { role: 'Teacher', name: 'Primary 4 Teacher', email: authUser.email, assignedClassroomId: '9C0VNAZOmArOqXUrK7M1' };
             } else if (authUser.uid === 'YAemjwMFEAOnvp6RL6STw3GJK0I2') {
