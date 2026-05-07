@@ -39,10 +39,12 @@ import { useFirestore, useMemoFirebase } from '@/firebase/provider';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { useDoc } from '@/firebase/firestore/use-doc';
 import { collection, query, doc, onSnapshot, setDoc, Timestamp, where } from 'firebase/firestore';
-import { Search, PlusCircle, History, WalletCards, Loader2, ArrowLeft, ReceiptText } from 'lucide-react';
+import { Search, PlusCircle, History, WalletCards, Loader2, ArrowLeft, ReceiptText, Download } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
+import * as ExcelJS from 'exceljs';
+import { saveAs } from 'file-saver';
 
 type Student = { id: string; name: string; admissionNumber: string; isDeleted?: boolean; classroomId?: string };
 type Classroom = { id: string; name: string; fees?: number };
@@ -65,6 +67,8 @@ type TermPayment = {
     balance: number;
 };
 
+type PaymentStatus = 'all' | 'paid' | 'partial' | 'owing';
+
 export default function LedgerPage() {
   const firestore = useFirestore();
   const router = useRouter();
@@ -72,9 +76,11 @@ export default function LedgerPage() {
 
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedClassId, setSelectedClassId] = useState<string>('all');
+  const [selectedStatus, setSelectedStatus] = useState<PaymentStatus>('all');
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [paymentHistoryStudent, setPaymentHistoryStudent] = useState<Student | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
 
   // --- Data Fetching ---
   const settingsRef = useMemoFirebase(() => (firestore ? doc(firestore, 'schoolSettings', 'current') : null), [firestore]);
@@ -131,17 +137,28 @@ export default function LedgerPage() {
     return () => unsub();
   }, [firestore, settings]);
 
+  const classroomMap = useMemo(() => {
+    return (classrooms || []).reduce((acc, c) => ({ ...acc, [c.id]: c }), {} as Record<string, Classroom>);
+  }, [classrooms]);
+
   const filteredStudents = useMemo(() => {
     return students.filter(s => {
         const matchesSearch = s.name.toLowerCase().includes(searchTerm.toLowerCase()) || s.admissionNumber.toLowerCase().includes(searchTerm.toLowerCase());
         const matchesClass = selectedClassId === 'all' || s.classroomId === selectedClassId;
-        return matchesSearch && matchesClass;
-    }).sort((a, b) => a.name.localeCompare(b.name));
-  }, [students, searchTerm, selectedClassId]);
+        
+        const payment = payments[s.id];
+        const expected = classroomMap[s.classroomId || '']?.fees || 0;
+        const paid = payment?.totalPaid || 0;
+        
+        let matchesStatus = true;
+        if (selectedStatus === 'paid') matchesStatus = paid >= expected && expected > 0;
+        else if (selectedStatus === 'partial') matchesStatus = paid > 0 && paid < expected;
+        else if (selectedStatus === 'owing') matchesStatus = paid === 0;
 
-  const classroomMap = useMemo(() => {
-    return (classrooms || []).reduce((acc, c) => ({ ...acc, [c.id]: c }), {} as Record<string, Classroom>);
-  }, [classrooms]);
+        return matchesSearch && matchesClass && matchesStatus;
+    }).sort((a, b) => a.name.localeCompare(b.name));
+  }, [students, searchTerm, selectedClassId, selectedStatus, payments, classroomMap]);
+
 
   const handleAddPayment = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -158,7 +175,6 @@ export default function LedgerPage() {
     const paymentId = `${selectedStudent.id}_${settings.currentSessionId}_${settings.currentTermId}`;
     const existingPayment = payments[selectedStudent.id];
 
-    // AUTOMATIC DATE LOGGING
     const newInstallment: Installment = {
         amount,
         date: Timestamp.now(), 
@@ -189,13 +205,85 @@ export default function LedgerPage() {
     }
   };
 
+  const handleExportToExcel = async () => {
+    if (filteredStudents.length === 0) {
+        toast({ variant: 'destructive', title: 'Export Failed', description: 'No data to export.' });
+        return;
+    }
+
+    setIsExporting(true);
+    try {
+        const workbook = new ExcelJS.Workbook();
+        const sheet = workbook.addWorksheet('Fee Ledger');
+
+        // Header
+        sheet.addRow(['JustVision Kiddies School - Fee Ledger']);
+        sheet.addRow([`Report Date: ${format(new Date(), 'PPP')}`]);
+        sheet.addRow([]);
+
+        // Table Header
+        const headerRow = sheet.addRow(['S/N', 'Student Name', 'Admission No', 'Class', 'Expected Fee', 'Total Paid', 'Balance', 'Status']);
+        headerRow.font = { bold: true };
+        headerRow.eachCell(cell => {
+            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'D3D3D3' } };
+            cell.border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
+        });
+
+        // Rows
+        filteredStudents.forEach((s, index) => {
+            const classroom = classroomMap[s.classroomId || ''];
+            const payment = payments[s.id];
+            const expected = classroom?.fees || 0;
+            const paid = payment?.totalPaid || 0;
+            const balance = expected - paid;
+            
+            let status = 'Owing';
+            if (paid >= expected && expected > 0) status = 'Paid';
+            else if (paid > 0) status = 'Partial';
+
+            const row = sheet.addRow([
+                index + 1,
+                s.name,
+                s.admissionNumber,
+                classroom?.name || 'N/A',
+                expected,
+                paid,
+                balance,
+                status
+            ]);
+
+            row.eachCell(cell => {
+                cell.border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
+            });
+        });
+
+        // Formatting
+        sheet.getColumn(2).width = 30;
+        sheet.getColumn(3).width = 20;
+        sheet.getColumn(4).width = 15;
+        sheet.getColumn(5).width = 15;
+        sheet.getColumn(6).width = 15;
+        sheet.getColumn(7).width = 15;
+        sheet.getColumn(8).width = 15;
+
+        const buffer = await workbook.xlsx.writeBuffer();
+        saveAs(new Blob([buffer]), `Fee_Ledger_${format(new Date(), 'yyyy-MM-dd')}.xlsx`);
+
+        toast({ title: 'Export Successful', description: 'Your ledger report has been downloaded.' });
+    } catch (error: any) {
+        toast({ variant: 'destructive', title: 'Export Failed', description: error.message });
+    } finally {
+        setIsExporting(false);
+    }
+  };
+
   const getStatusBadge = (studentId: string, classId?: string) => {
     const payment = payments[studentId];
     const classroom = classId ? classroomMap[classId] : null;
     const expected = classroom?.fees || 0;
 
     if (!payment || payment.totalPaid === 0) return <Badge variant="destructive">Owing</Badge>;
-    if (payment.totalPaid >= expected) return <Badge className="bg-green-600 hover:bg-green-700">Paid</Badge>;
+    if (payment.totalPaid >= expected && expected > 0) return <Badge className="bg-green-600 hover:bg-green-700">Paid</Badge>;
     return <Badge variant="secondary" className="bg-yellow-500 text-white hover:bg-yellow-600">Partial</Badge>;
   };
 
@@ -208,10 +296,14 @@ export default function LedgerPage() {
             </Button>
             <h1 className="text-3xl font-bold tracking-tight">Fee Ledger</h1>
         </div>
+        <Button onClick={handleExportToExcel} disabled={isExporting} variant="outline" className="w-full sm:w-auto">
+            {isExporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
+            Export to Excel
+        </Button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card className="md:col-span-2 shadow-sm">
+      <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
+          <Card className="md:col-span-3 shadow-sm">
               <CardContent className="pt-6">
                   <div className="relative">
                       <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
@@ -237,11 +329,26 @@ export default function LedgerPage() {
                   </Select>
               </CardContent>
           </Card>
+          <Card className="shadow-sm">
+              <CardContent className="pt-6">
+                  <Select value={selectedStatus} onValueChange={(val: any) => setSelectedStatus(val)}>
+                      <SelectTrigger>
+                          <SelectValue placeholder="All Status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                          <SelectItem value="all">All Status</SelectItem>
+                          <SelectItem value="paid">Paid (Full)</SelectItem>
+                          <SelectItem value="partial">Partial</SelectItem>
+                          <SelectItem value="owing">Owing</SelectItem>
+                      </SelectContent>
+                  </Select>
+              </CardContent>
+          </Card>
           <Card className="bg-primary/10 border-primary/20 shadow-sm">
               <CardContent className="pt-6">
                   <div className="flex items-center gap-2 text-primary-foreground font-semibold">
                       <WalletCards className="h-5 w-5 text-primary" />
-                      <span className="text-foreground">{filteredStudents.length} Students listed</span>
+                      <span className="text-foreground">{filteredStudents.length} Listed</span>
                   </div>
               </CardContent>
           </Card>
@@ -312,6 +419,13 @@ export default function LedgerPage() {
                         </TableRow>
                         );
                     })}
+                    {filteredStudents.length === 0 && (
+                        <TableRow>
+                            <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
+                                No students match your filters.
+                            </TableCell>
+                        </TableRow>
+                    )}
                 </TableBody>
                 </Table>
             </div>
