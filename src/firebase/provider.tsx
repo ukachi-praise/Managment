@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, ReactNode, useState, useEffect, useMemo, DependencyList } from 'react';
 import { FirebaseApp } from 'firebase/app';
-import { Firestore, doc, onSnapshot } from 'firebase/firestore';
+import { Firestore, doc, getDoc, onSnapshot } from 'firebase/firestore';
 import { Auth, User, onAuthStateChanged } from 'firebase/auth';
 import { FirebaseErrorListener } from '@/components/FirebaseErrorListener';
 import { initializeFirebase } from '@/firebase'; // SAFE IMPORT
@@ -115,35 +115,55 @@ export function FirebaseProvider({ children }: { children: ReactNode }) {
           // assignment. Do not fall back to stale UID-specific role or class data.
           const baseProfile: UserProfile = { email: authUser.email };
 
-          // Inner real-time listener for Firestore Profile
+          const applyProfile = (profileData: Record<string, unknown>) => {
+            const finalProfile: UserProfile = {
+              ...baseProfile,
+              ...profileData,
+              role: normalizeRole(profileData.role),
+            };
+            setUser({ ...authUser, ...finalProfile });
+            setProfileError(null);
+            setIsLoading(false);
+          };
+
           const userDocRef = doc(firestore, 'users', authUser.uid);
-          unsubscribeProfile = onSnapshot(userDocRef, (snap) => {
-            if (requestId !== profileRequestId || auth.currentUser?.uid !== authUser.uid) return;
-            if (!snap.exists()) {
+          void (async () => {
+            try {
+              console.info('[Firebase] Profile lookup started', { projectId: firestore.app.options.projectId, uid: authUser.uid });
+              const initialSnapshot = await getDoc(userDocRef);
+              if (requestId !== profileRequestId || auth.currentUser?.uid !== authUser.uid) return;
+              if (!initialSnapshot.exists()) {
                 const message = `No Firestore profile exists for authenticated user ${authUser.uid}.`;
                 console.error(message);
                 setProfileError(message);
                 setUser({ ...authUser, ...baseProfile });
                 setIsLoading(false);
                 return;
+              }
+              console.info('[Firebase] Profile document found', { projectId: firestore.app.options.projectId, uid: authUser.uid });
+              applyProfile(initialSnapshot.data());
+              unsubscribeProfile = onSnapshot(userDocRef, (snapshot) => {
+                if (requestId !== profileRequestId || auth.currentUser?.uid !== authUser.uid || !snapshot.exists()) return;
+                applyProfile(snapshot.data());
+              }, (error) => {
+                // The authenticated profile is already usable. Keep it available
+                // during transient listener/network failures and log the stage.
+                console.error('[Firebase] Profile listener failed', { code: error.code, message: error.message });
+              });
+            } catch (error: any) {
+              if (requestId !== profileRequestId || auth.currentUser?.uid !== authUser.uid) return;
+              const code = error?.code || 'unknown';
+              const message = code === 'permission-denied'
+                ? 'Firestore denied access to the authenticated user profile.'
+                : code === 'unavailable' || code === 'deadline-exceeded'
+                  ? 'Firestore is temporarily unavailable while loading the user profile.'
+                  : error?.message || 'Unable to load your Firestore profile.';
+              console.error('[Firebase] Profile lookup failed', { code, message, projectId: firestore.app.options.projectId, uid: authUser.uid });
+              setProfileError(message);
+              setUser({ ...authUser, ...baseProfile });
+              setIsLoading(false);
             }
-            const firestoreProfile = snap.data() as UserProfile & { role?: unknown };
-            const finalProfile: UserProfile = {
-              ...baseProfile,
-              ...firestoreProfile,
-              role: normalizeRole(firestoreProfile.role),
-            };
-            setUser({ ...authUser, ...finalProfile });
-            setProfileError(null);
-            setIsLoading(false);
-          }, (err) => {
-            if (requestId !== profileRequestId || auth.currentUser?.uid !== authUser.uid) return;
-            console.error("Error listening to user profile:", err);
-            // Do not turn profile read failures into an apparently valid role.
-            setProfileError(err.message || 'Unable to load your Firestore profile.');
-            setUser({ ...authUser, ...baseProfile });
-            setIsLoading(false);
-          });
+          })();
         } else {
           setUser(null);
           setProfileError(null);
