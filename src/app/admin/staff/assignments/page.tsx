@@ -62,12 +62,11 @@ export default function StaffAssignmentsPage() {
         const teacherData = teacherSnapshot.data();
         const oldClassroomId = teacherData.assignedClassroomId as string | undefined;
         if (pending.type === 'remove') {
+          // Complete the read phase before starting the write phase.
+          const oldRef = oldClassroomId ? doc(firestore, 'classrooms', oldClassroomId) : null;
+          const oldSnapshot = oldRef ? await transaction.get(oldRef) : null;
           transaction.update(teacherRef, { assignedClassroomId: deleteField() });
-          if (oldClassroomId) {
-            const oldRef = doc(firestore, 'classrooms', oldClassroomId);
-            const oldSnapshot = await transaction.get(oldRef);
-            if (oldSnapshot.exists() && oldSnapshot.data().teacherId === pending.staff.id) transaction.update(oldRef, { teacherId: deleteField(), teacherName: deleteField() });
-          }
+          if (oldRef && oldSnapshot?.exists() && oldSnapshot.data().teacherId === pending.staff.id) transaction.update(oldRef, { teacherId: deleteField(), teacherName: deleteField() });
           return;
         }
         if (!pending.classroomId) throw new Error('Select an existing classroom.');
@@ -76,16 +75,16 @@ export default function StaffAssignmentsPage() {
         if (!targetSnapshot.exists()) throw new Error('The selected classroom no longer exists.');
         const targetData = targetSnapshot.data();
         const occupantId = targetData.teacherId as string | undefined;
+        const oldRef = oldClassroomId && oldClassroomId !== pending.classroomId ? doc(firestore, 'classrooms', oldClassroomId) : null;
+        const oldSnapshot = oldRef ? await transaction.get(oldRef) : null;
+        const occupantRef = occupantId && occupantId !== pending.staff.id ? doc(firestore, 'users', occupantId) : null;
+        const occupantSnapshot = occupantRef ? await transaction.get(occupantRef) : null;
+
+        // All documents needed for validation have now been read. Writes begin below.
         if (occupantId && occupantId !== pending.staff.id) {
-          const occupantRef = doc(firestore, 'users', occupantId);
-          const occupantSnapshot = await transaction.get(occupantRef);
-          if (occupantSnapshot.exists() && occupantSnapshot.data().assignedClassroomId === pending.classroomId) transaction.update(occupantRef, { assignedClassroomId: deleteField() });
+          if (occupantRef && occupantSnapshot?.exists() && occupantSnapshot.data().assignedClassroomId === pending.classroomId) transaction.update(occupantRef, { assignedClassroomId: deleteField() });
         }
-        if (oldClassroomId && oldClassroomId !== pending.classroomId) {
-          const oldRef = doc(firestore, 'classrooms', oldClassroomId);
-          const oldSnapshot = await transaction.get(oldRef);
-          if (oldSnapshot.exists() && oldSnapshot.data().teacherId === pending.staff.id) transaction.update(oldRef, { teacherId: deleteField(), teacherName: deleteField() });
-        }
+        if (oldRef && oldSnapshot?.exists() && oldSnapshot.data().teacherId === pending.staff.id) transaction.update(oldRef, { teacherId: deleteField(), teacherName: deleteField() });
         transaction.update(teacherRef, { assignedClassroomId: pending.classroomId });
         transaction.update(targetRef, { teacherId: pending.staff.id, teacherName: teacherData.name || pending.staff.name || '' });
       });
