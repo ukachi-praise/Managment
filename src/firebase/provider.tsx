@@ -20,6 +20,14 @@ export type UserProfile = {
 };
 export type AppUser = User & UserProfile;
 
+function normalizeRole(value: unknown): UserProfile['role'] {
+  const role = typeof value === 'string' ? value.trim().toLowerCase() : '';
+  if (role === 'teacher') return 'Teacher';
+  if (role === 'admin') return 'Admin';
+  if (role === 'superadmin' || role === 'super admin') return 'SuperAdmin';
+  return undefined;
+}
+
 // --- CONTEXT STATE ---
 interface FirebaseContextState {
   app: FirebaseApp | null;
@@ -27,6 +35,7 @@ interface FirebaseContextState {
   firestore: Firestore | null;
   user: AppUser | null;
   isLoading: boolean;
+  profileError: string | null;
 }
 
 // --- CONTEXT ---
@@ -73,6 +82,7 @@ const MissingConfigErrorDisplay = () => (
 export function FirebaseProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AppUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [profileError, setProfileError] = useState<string | null>(null);
   
   const services = useMemo(() => initializeFirebase(), []);
 
@@ -98,58 +108,45 @@ export function FirebaseProvider({ children }: { children: ReactNode }) {
 
         if (authUser) {
           setUser(null);
+          setProfileError(null);
           setIsLoading(true);
 
-          // Hardcoded fallback logic
-          let baseProfile: UserProfile = {};
-          if (authUser.uid === 'GOpbb9SsavhpATk1p0KNmPGGQ0S2') {
-              baseProfile = { role: 'SuperAdmin', name: 'Super Admin', email: authUser.email || 'admin@example.com' };
-          } else if (authUser.uid === 'WRbg0T3XA7eIpFFb9amDgvii12x1') {
-              baseProfile = { role: 'Admin', name: 'School Admin', email: authUser.email || 'staff@example.com' };
-          } else if (authUser.uid === 'u3krP4g02DgPJ6Avv1XhVNvvb8R2') {
-              baseProfile = { role: 'Teacher', name: 'Primary 4 Teacher', email: authUser.email, assignedClassroomId: '9C0VNAZOmArOqXUrK7M1' };
-          } else if (authUser.uid === 'YAemjwMFEAOnvp6RL6STw3GJK0I2') {
-              baseProfile = { role: 'Teacher', name: 'Pre-Nursery Teacher', email: authUser.email, assignedClassroomId: 'VSR3ERyCrmmCxGrgBMjp' };
-          } else if (authUser.uid === 'VEjzC6td3HNfWBg4CjNnCtSlC7g1') {
-              baseProfile = { role: 'Teacher', name: 'Nursery 1b Teacher', email: authUser.email, assignedClassroomId: '65H3TTmH4qnrASE28Vhr' };
-          } else if (authUser.uid === 'vhyAkcnmE2OD9cheoDeXdsdUL1a2') {
-              baseProfile = { role: 'Teacher', name: 'Nursery 1a Teacher', email: authUser.email, assignedClassroomId: 'v96bogkVQBnAc8MRkQ03' };
-          } else if (authUser.uid === 'UJ71VwEZhhVclFS8FdeVEL1jH1C3') {
-              baseProfile = { role: 'Teacher', name: 'Primary 1a Teacher', email: authUser.email, assignedClassroomId: 'zpSkbUkTvjLCKgqtq2ty' };
-          } else if (authUser.uid === 'lqMDWRYrbugIlhVBA083OVpJO3p1') {
-              baseProfile = { role: 'Teacher', name: 'Primary 1b Teacher', email: authUser.email, assignedClassroomId: 'j10edcHHi18zdtbFLmPd' };
-          } else if (authUser.uid === 'Z1yDssDNRshnMOcnKlxK7wSmhpE3') {
-              baseProfile = { role: 'Teacher', name: 'Nursery 2 Teacher', email: authUser.email, assignedClassroomId: 'eTjWpIGq67tOAQkf4ErA' };
-          } else if (authUser.uid === '0wYNrCqR0ZTJgEykZ9R1mqvDO5o2') {
-              baseProfile = { role: 'Teacher', name: 'Primary 3 Teacher', email: authUser.email, assignedClassroomId: 'ZLq6vszAGuUbLKhwADAJ' };
-          } else if (authUser.uid === 'vzT4PhW7g5SipKPScj89DGodBZF2') {
-              baseProfile = { role: 'Teacher', name: 'Creche Teacher', email: authUser.email, assignedClassroomId: 'BNy5qe8cbkes4dfKRZLv' };
-          } else if (authUser.uid === 'pRcRHW1mSsT49pB5EXjTaB6ID002') {
-              baseProfile = { role: 'Teacher', name: 'Primary 2 Teacher', email: 'anitahemba@gmail.com', assignedClassroomId: 'uljYiyQYSZa5acHFakRB' };
-          } else if (authUser.uid === 'xM6L5fJj7vUMbT3p4qN2rWcZ8yG2') {
-              baseProfile = { role: 'Teacher', name: 'Primary 5 Teacher', email: authUser.email, assignedClassroomId: 'nrmeHRqY7TtrkDxLAGnB' };
-          }
+          // Firestore is the source of truth for authorization and classroom
+          // assignment. Do not fall back to stale UID-specific role or class data.
+          const baseProfile: UserProfile = { email: authUser.email };
 
           // Inner real-time listener for Firestore Profile
           const userDocRef = doc(firestore, 'users', authUser.uid);
           unsubscribeProfile = onSnapshot(userDocRef, (snap) => {
             if (requestId !== profileRequestId || auth.currentUser?.uid !== authUser.uid) return;
-            let firestoreProfile: UserProfile = {};
-            if (snap.exists()) {
-                firestoreProfile = snap.data() as UserProfile;
+            if (!snap.exists()) {
+                const message = `No Firestore profile exists for authenticated user ${authUser.uid}.`;
+                console.error(message);
+                setProfileError(message);
+                setUser({ ...authUser, ...baseProfile });
+                setIsLoading(false);
+                return;
             }
-            const finalProfile = { ...baseProfile, ...firestoreProfile };
+            const firestoreProfile = snap.data() as UserProfile & { role?: unknown };
+            const finalProfile: UserProfile = {
+              ...baseProfile,
+              ...firestoreProfile,
+              role: normalizeRole(firestoreProfile.role),
+            };
             setUser({ ...authUser, ...finalProfile });
+            setProfileError(null);
             setIsLoading(false);
           }, (err) => {
             if (requestId !== profileRequestId || auth.currentUser?.uid !== authUser.uid) return;
             console.error("Error listening to user profile:", err);
-            // Fallback to static user state if profile fetch fails
+            // Do not turn profile read failures into an apparently valid role.
+            setProfileError(err.message || 'Unable to load your Firestore profile.');
             setUser({ ...authUser, ...baseProfile });
             setIsLoading(false);
           });
         } else {
           setUser(null);
+          setProfileError(null);
           setIsLoading(false);
         }
       },
@@ -159,6 +156,7 @@ export function FirebaseProvider({ children }: { children: ReactNode }) {
         unsubscribeProfile = undefined;
         console.error("Auth State Error:", error);
         setUser(null);
+        setProfileError(error.message || 'Unable to verify your account profile.');
         setIsLoading(false);
       }
     );
@@ -180,6 +178,7 @@ export function FirebaseProvider({ children }: { children: ReactNode }) {
     firestore: services.firestore,
     user,
     isLoading,
+    profileError,
   };
 
   return (
@@ -207,12 +206,12 @@ export const useFirebase = (): { app: FirebaseApp; auth: Auth; firestore: Firest
   };
 };
 
-export const useUser = (): { user: AppUser | null, isLoading: boolean, isLoggedIn: boolean } => {
+export const useUser = (): { user: AppUser | null, isLoading: boolean, isLoggedIn: boolean, profileError: string | null } => {
     const context = useContext(FirebaseContext);
     if (context === undefined) {
         throw new Error('useUser must be used within a FirebaseProvider.');
     }
-    return { user: context.user, isLoading: context.isLoading, isLoggedIn: !context.isLoading && !!context.user };
+    return { user: context.user, isLoading: context.isLoading, isLoggedIn: !context.isLoading && !!context.user, profileError: context.profileError };
 }
 
 export const useAuth = (): Auth => {

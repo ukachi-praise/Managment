@@ -24,7 +24,7 @@ export default function AuthGuard({
 }: AuthGuardProps) {
   const router = useRouter();
   const pathname = usePathname();
-  const { user, isLoading: isUserLoading } = useUser();
+  const { user, isLoading: isUserLoading, profileError } = useUser();
   const firestore = useFirestore();
 
   const classroomRef = useMemoFirebase(
@@ -36,7 +36,7 @@ export default function AuthGuard({
   const isLoading = isUserLoading || (specificClassroomId ? isClassroomLoading : false);
 
   useEffect(() => {
-    if (isLoading) return;
+    if (isLoading || profileError) return;
 
     const userRole = user?.role;
     const isAdminRoute = pathname.startsWith('/admin');
@@ -84,7 +84,7 @@ export default function AuthGuard({
       return;
     }
 
-  }, [isLoading, user, classroom, pathname, router, allow, specificClassroomId]);
+  }, [isLoading, profileError, user, classroom, pathname, router, allow, specificClassroomId]);
 
 
   if (isLoading) {
@@ -92,6 +92,17 @@ export default function AuthGuard({
       <div className="flex h-screen w-full items-center justify-center">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
         <span className="sr-only">Verifying permissions...</span>
+      </div>
+    );
+  }
+
+  if (profileError) {
+    return (
+      <div className="flex min-h-screen w-full items-center justify-center p-6 text-center">
+        <div>
+          <h1 className="text-xl font-semibold text-destructive">Account profile unavailable</h1>
+          <p className="mt-2 max-w-lg text-sm text-muted-foreground">We could not load your staff profile. Please contact an administrator and try again.</p>
+        </div>
       </div>
     );
   }

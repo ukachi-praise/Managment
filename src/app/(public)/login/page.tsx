@@ -11,7 +11,7 @@ import { useEffect } from 'react';
 import { Loader2 } from 'lucide-react';
 
 export default function LoginPage() {
-  const { user, isLoggedIn, isLoading } = useUser();
+  const { user, isLoggedIn, isLoading, profileError } = useUser();
   const router = useRouter();
 
   useEffect(() => {
@@ -21,7 +21,7 @@ export default function LoginPage() {
     }
 
     // Once loading is complete, if the user is logged in, redirect them.
-    if (isLoggedIn && user) {
+    if (isLoggedIn && user && !profileError) {
       const destination = user.role === 'Admin' || user.role === 'SuperAdmin'
         ? '/admin/dashboard'
         : user.role === 'Teacher'
@@ -29,16 +29,20 @@ export default function LoginPage() {
           : '/unauthorized';
       router.replace(destination);
     }
-  }, [isLoading, isLoggedIn, user, router]);
+  }, [isLoading, isLoggedIn, user, profileError, router]);
 
   // Show a loader while the auth state is being determined or if a redirect is in progress.
-  if (isLoading || (isLoggedIn && user)) {
+  if (isLoading || (isLoggedIn && user && !profileError)) {
     return (
       <div className="flex h-screen w-full items-center justify-center">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
         <span className="sr-only">Loading...</span>
       </div>
     );
+  }
+
+  if (profileError) {
+    return <div className="flex min-h-screen items-center justify-center p-6 text-center"><div><h1 className="text-xl font-semibold text-destructive">Account profile unavailable</h1><p className="mt-2 text-sm text-muted-foreground">Your account is authenticated, but its school profile could not be loaded. Please contact an administrator.</p></div></div>;
   }
 
   // Only render the login form if not loading and not logged in.
