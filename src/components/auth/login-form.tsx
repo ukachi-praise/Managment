@@ -19,8 +19,9 @@ import { toast } from '@/hooks/use-toast';
 import { useState } from 'react';
 import { Loader2, Eye, EyeOff } from 'lucide-react';
 import Link from 'next/link';
-import { useAuth } from '@/firebase/provider';
+import { useAuth, useFirestore } from '@/firebase/provider';
 import { signInWithSessionPersistence } from '@/firebase/auth';
+import { doc, getDoc } from 'firebase/firestore';
 
 const formSchema = z.object({
   email: z.string().email({ message: 'Please enter a valid email.' }),
@@ -32,6 +33,7 @@ export function LoginForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const auth = useAuth();
+  const firestore = useFirestore();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -43,19 +45,25 @@ export function LoginForm() {
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
-    if (!auth) {
+    if (!auth || !firestore) {
         toast({ variant: 'destructive', title: 'Firebase not initialized.'});
         setIsLoading(false);
         return;
     }
 
     try {
-        await signInWithSessionPersistence(auth, values.email, values.password);
+        const userCredential = await signInWithSessionPersistence(auth, values.email, values.password);
+        const profileSnapshot = await getDoc(doc(firestore, 'users', userCredential.user.uid));
+        const roleValue = profileSnapshot.exists() && typeof profileSnapshot.data().role === 'string'
+          ? profileSnapshot.data().role.trim().toLowerCase()
+          : '';
+        const role = roleValue === 'teacher' ? 'Teacher' : roleValue === 'admin' ? 'Admin' : roleValue === 'superadmin' || roleValue === 'super admin' ? 'SuperAdmin' : null;
+        if (!profileSnapshot.exists() || !role) {
+          await auth.signOut();
+          throw new Error('Your account profile is missing or does not have an authorized staff role.');
+        }
         toast({ title: 'Login Successful', description: 'Redirecting...' });
-        
-        // IMPORTANT: The AuthGuard will now handle redirection based on the user's role.
-        // A full page refresh ensures the FirebaseProvider re-evaluates the user state correctly.
-        router.refresh(); 
+        router.push(role === 'Teacher' ? '/teacher/dashboard' : '/admin/dashboard');
 
     } catch (error: any) {
         setIsLoading(false);
