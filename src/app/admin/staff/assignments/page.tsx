@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { collection, doc, query, runTransaction, deleteField } from 'firebase/firestore';
+import { collection, doc, query, runTransaction, deleteField, DocumentData, DocumentReference, DocumentSnapshot } from 'firebase/firestore';
 import { ArrowLeft, Check, Loader2, UserCog, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useFirestore, useMemoFirebase } from '@/firebase/provider';
@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { STAFF_CLASSROOM_ASSIGNMENTS } from '@/lib/hardcoded-staff-assignments';
 
 type Staff = { id: string; name?: string; email?: string; role?: string; assignedClassroomId?: string };
 type Classroom = { id: string; name: string; teacherId?: string; teacherName?: string };
@@ -26,6 +27,7 @@ export default function StaffAssignmentsPage() {
   const [selectedClassroomId, setSelectedClassroomId] = useState('');
   const [pending, setPending] = useState<PendingAction | null>(null);
   const [saving, setSaving] = useState(false);
+  const [applyingFixedAssignments, setApplyingFixedAssignments] = useState(false);
   const usersQuery = useMemoFirebase(() => firestore ? query(collection(firestore, 'users')) : null, [firestore]);
   const classroomsQuery = useMemoFirebase(() => firestore ? query(collection(firestore, 'classrooms')) : null, [firestore]);
   const { data: users, isLoading: usersLoading } = useCollection<Staff>(usersQuery);
@@ -35,6 +37,92 @@ export default function StaffAssignmentsPage() {
   const classroomMap = useMemo(() => new Map(sortedClassrooms.map(classroom => [classroom.id, classroom])), [sortedClassrooms]);
   const staffMap = useMemo(() => new Map(staff.map(user => [user.id, user])), [staff]);
   const assignments = sortedClassrooms.filter(classroom => classroom.teacherId || classroom.teacherName);
+
+  const applyFixedAssignments = async () => {
+    if (!firestore) return;
+    setApplyingFixedAssignments(true);
+    try {
+      const classroomMatches = STAFF_CLASSROOM_ASSIGNMENTS.map(item => ({
+        ...item,
+        matches: sortedClassrooms.filter(classroom => classroom.name === item.classroomName),
+      }));
+      const invalidClassrooms = classroomMatches.filter(item => item.matches.length !== 1);
+      if (invalidClassrooms.length) {
+        throw new Error(invalidClassrooms.map(item => `${item.classroomName}: ${item.matches.length === 0 ? 'not found' : 'ambiguous'}`).join('; '));
+      }
+
+      await runTransaction(firestore, async transaction => {
+        const teacherRefs = STAFF_CLASSROOM_ASSIGNMENTS.map(item => doc(firestore, 'users', item.staffUid));
+        const teacherSnapshots = new Map<string, DocumentSnapshot<DocumentData>>();
+        for (let index = 0; index < teacherRefs.length; index++) {
+          teacherSnapshots.set(STAFF_CLASSROOM_ASSIGNMENTS[index].staffUid, await transaction.get(teacherRefs[index]));
+        }
+        const targetRefs = classroomMatches.map(item => doc(firestore, 'classrooms', item.matches[0].id));
+        const targetSnapshots = new Map<string, DocumentSnapshot<DocumentData>>();
+        for (let index = 0; index < targetRefs.length; index++) {
+          targetSnapshots.set(STAFF_CLASSROOM_ASSIGNMENTS[index].classroomName, await transaction.get(targetRefs[index]));
+        }
+
+        const oldIds = new Set<string>();
+        const occupantIds = new Set<string>();
+        teacherSnapshots.forEach(snapshot => {
+          if (snapshot.exists() && snapshot.data().assignedClassroomId) oldIds.add(snapshot.data().assignedClassroomId as string);
+        });
+        targetSnapshots.forEach(snapshot => {
+          if (snapshot.exists() && snapshot.data().teacherId) occupantIds.add(snapshot.data().teacherId as string);
+        });
+        const oldRefs = new Map<string, DocumentReference<DocumentData>>();
+        const oldSnapshots = new Map<string, DocumentSnapshot<DocumentData>>();
+        for (const oldId of oldIds) {
+          const ref = doc(firestore, 'classrooms', oldId);
+          oldRefs.set(oldId, ref);
+          oldSnapshots.set(oldId, await transaction.get(ref));
+        }
+        const occupantRefs = new Map<string, DocumentReference<DocumentData>>();
+        const occupantSnapshots = new Map<string, DocumentSnapshot<DocumentData>>();
+        for (const occupantId of occupantIds) {
+          if (teacherSnapshots.has(occupantId)) continue;
+          const ref = doc(firestore, 'users', occupantId);
+          occupantRefs.set(occupantId, ref);
+          occupantSnapshots.set(occupantId, await transaction.get(ref));
+        }
+
+        // Every required read is complete above. Writes begin only now.
+        for (let index = 0; index < STAFF_CLASSROOM_ASSIGNMENTS.length; index++) {
+          const item = STAFF_CLASSROOM_ASSIGNMENTS[index];
+          const teacherSnapshot = teacherSnapshots.get(item.staffUid);
+          const targetSnapshot = targetSnapshots.get(item.classroomName);
+          if (!teacherSnapshot?.exists()) throw new Error(`${item.staffUid}: user document not found.`);
+          if (teacherSnapshot.data().role !== 'Teacher') throw new Error(`${item.staffUid}: account is not an eligible Teacher.`);
+          if (!targetSnapshot?.exists()) throw new Error(`${item.classroomName}: classroom document not found.`);
+        }
+        for (let index = 0; index < STAFF_CLASSROOM_ASSIGNMENTS.length; index++) {
+          const item = STAFF_CLASSROOM_ASSIGNMENTS[index];
+          const teacherRef = teacherRefs[index];
+          const teacherSnapshot = teacherSnapshots.get(item.staffUid)!;
+          const teacherData = teacherSnapshot.data()!;
+          const targetRef = targetRefs[index];
+          const targetData = targetSnapshots.get(item.classroomName)!.data()!;
+          const targetId = targetRef.id;
+          const oldId = teacherData.assignedClassroomId as string | undefined;
+          if (oldId && oldId !== targetId) {
+            const oldSnapshot = oldSnapshots.get(oldId);
+            if (oldSnapshot?.exists() && oldSnapshot.data().teacherId === item.staffUid) transaction.update(oldRefs.get(oldId)!, { teacherId: deleteField(), teacherName: deleteField() });
+          }
+          const occupantId = targetData.teacherId as string | undefined;
+          if (occupantId && occupantId !== item.staffUid) {
+            const occupantSnapshot = teacherSnapshots.get(occupantId) || occupantSnapshots.get(occupantId);
+            if (occupantSnapshot?.exists() && occupantSnapshot.data().assignedClassroomId === targetId) transaction.update((teacherRefs[STAFF_CLASSROOM_ASSIGNMENTS.findIndex(entry => entry.staffUid === occupantId)] || occupantRefs.get(occupantId))!, { assignedClassroomId: deleteField() });
+          }
+          if (oldId !== targetId) transaction.update(teacherRef, { assignedClassroomId: targetId });
+          if (targetData.teacherId !== item.staffUid || targetData.teacherName !== (teacherData.name || '')) transaction.update(targetRef, { teacherId: item.staffUid, teacherName: teacherData.name || '' });
+        }
+      });
+      toast({ title: 'Fixed assignments applied', description: `${STAFF_CLASSROOM_ASSIGNMENTS.length} staff-to-classroom assignments were verified and applied.` });
+    } catch (error) {
+      toast({ variant: 'destructive', title: 'Fixed assignment failed', description: error instanceof Error ? error.message : 'Could not apply the fixed assignments.' });
+    } finally { setApplyingFixedAssignments(false); }
+  };
 
   const requestAssign = () => {
     const teacher = staffMap.get(selectedStaffId);
@@ -97,7 +185,7 @@ export default function StaffAssignmentsPage() {
   const loading = usersLoading || classroomsLoading;
   return <div className="mx-auto max-w-6xl space-y-6">
     <div className="flex items-center gap-4"><Button onClick={() => router.back()} variant="outline" size="icon"><ArrowLeft className="h-4 w-4" /></Button><div><h1 className="text-3xl font-bold tracking-tight">Staff Assignment</h1><p className="text-muted-foreground">Assign eligible teachers to existing classrooms.</p></div></div>
-    <Card><CardHeader><CardTitle className="flex items-center gap-2"><UserCog className="h-5 w-5" />Assign a teacher</CardTitle><CardDescription>Classroom IDs are managed internally; only existing classrooms can be selected.</CardDescription></CardHeader><CardContent className="grid gap-4 sm:grid-cols-[1fr_1fr_auto] sm:items-end"><div className="space-y-2"><label className="text-sm font-medium">Teacher</label><Select value={selectedStaffId} onValueChange={setSelectedStaffId}><SelectTrigger><SelectValue placeholder={loading ? 'Loading…' : 'Select teacher'} /></SelectTrigger><SelectContent>{staff.map(user => <SelectItem key={user.id} value={user.id}>{user.name || user.email || user.id}</SelectItem>)}</SelectContent></Select></div><div className="space-y-2"><label className="text-sm font-medium">Classroom</label><Select value={selectedClassroomId} onValueChange={setSelectedClassroomId}><SelectTrigger><SelectValue placeholder="Select classroom" /></SelectTrigger><SelectContent>{sortedClassrooms.map(classroom => <SelectItem key={classroom.id} value={classroom.id}>{classroom.name}</SelectItem>)}</SelectContent></Select></div><Button onClick={requestAssign} disabled={loading || saving}>Assign teacher</Button></CardContent></Card>
+    <Card><CardHeader><CardTitle className="flex items-center gap-2"><UserCog className="h-5 w-5" />Assign a teacher</CardTitle><CardDescription>Classroom IDs are managed internally; only existing classrooms can be selected.</CardDescription></CardHeader><CardContent className="grid gap-4 sm:grid-cols-[1fr_1fr_auto] sm:items-end"><div className="space-y-2"><label className="text-sm font-medium">Teacher</label><Select value={selectedStaffId} onValueChange={setSelectedStaffId}><SelectTrigger><SelectValue placeholder={loading ? 'Loading…' : 'Select teacher'} /></SelectTrigger><SelectContent>{staff.map(user => <SelectItem key={user.id} value={user.id}>{user.name || user.email || user.id}</SelectItem>)}</SelectContent></Select></div><div className="space-y-2"><label className="text-sm font-medium">Classroom</label><Select value={selectedClassroomId} onValueChange={setSelectedClassroomId}><SelectTrigger><SelectValue placeholder="Select classroom" /></SelectTrigger><SelectContent>{sortedClassrooms.map(classroom => <SelectItem key={classroom.id} value={classroom.id}>{classroom.name}</SelectItem>)}</SelectContent></Select></div><Button onClick={requestAssign} disabled={loading || saving}>Assign teacher</Button><Button variant="outline" onClick={applyFixedAssignments} disabled={loading || saving || applyingFixedAssignments}>{applyingFixedAssignments && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Apply fixed assignments</Button></CardContent></Card>
     <Card><CardHeader><CardTitle>Current assignments</CardTitle><CardDescription>{assignments.length ? 'Each classroom has at most one assigned teacher.' : 'No classroom assignments exist yet.'}</CardDescription></CardHeader><CardContent className="p-0"><Table><TableHeader><TableRow><TableHead>Teacher</TableHead><TableHead>Email</TableHead><TableHead>Classroom</TableHead><TableHead>Status</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader><TableBody>{assignments.map(classroom => { const teacher = classroom.teacherId ? staffMap.get(classroom.teacherId) : undefined; return <TableRow key={classroom.id}><TableCell className="font-medium">{teacher?.name || classroom.teacherName || 'Unknown teacher'}</TableCell><TableCell>{teacher?.email || '—'}</TableCell><TableCell>{classroom.name}</TableCell><TableCell><Badge variant="secondary"><Check className="mr-1 h-3 w-3" />Assigned</Badge></TableCell><TableCell className="text-right"><Button variant="outline" size="sm" onClick={() => teacher && requestRemove(teacher)} disabled={!teacher}>Remove</Button></TableCell></TableRow>; })}</TableBody></Table></CardContent></Card>
     <AlertDialog open={Boolean(pending)} onOpenChange={open => !open && !saving && setPending(null)}><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>{pending?.type === 'remove' ? 'Remove classroom assignment?' : pending?.conflict ? 'Confirm assignment change' : 'Confirm classroom assignment'}</AlertDialogTitle><AlertDialogDescription>{pending?.type === 'remove' ? `${pending.staff.name || pending.staff.email} will be removed from ${pending.classroomName || 'their classroom'}. The staff account will remain active.` : pending?.conflict ? `${pending.conflict} Continuing will replace the existing association and clear the previous classroom assignment.` : `Assign ${pending?.staff.name || pending?.staff.email} to ${pending?.classroomName}?`}</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel disabled={saving}>Cancel</AlertDialogCancel><AlertDialogAction onClick={saveAssignment} disabled={saving}>{saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Confirm</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
   </div>;
