@@ -18,7 +18,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { PlusCircle, ArrowRight, ArrowLeft } from 'lucide-react';
+import { PlusCircle, ArrowRight, ArrowLeft, Upload } from 'lucide-react';
 import Link from 'next/link';
 import {
   useCollection,
@@ -73,7 +73,6 @@ type Student = {
   name?: string;
 }
 
-
 export default function StudentsPage() {
   const [open, setOpen] = useState(false);
   const firestore = useFirestore();
@@ -86,25 +85,25 @@ export default function StudentsPage() {
     [firestore]
   );
   const { data: classrooms, isLoading: classroomsLoading } = useCollection<Classroom>(classroomsQuery);
-  
+
   const enrollmentsQuery = useMemoFirebase(
     () => (firestore ? query(collection(firestore, 'enrollments')) : null),
     [firestore]
   );
   const { data: enrollments, isLoading: enrollmentsLoading } = useCollection<Enrollment>(enrollmentsQuery);
-  
+
   const allStudentsQuery = useMemoFirebase(
     () => (firestore ? query(collection(firestore, 'students')) : null),
     [firestore]
   );
   const { data: allStudents, isLoading: studentsLoading } = useCollection<Student>(allStudentsQuery);
-  
+
   const settingsRef = useMemoFirebase(() => (firestore ? doc(firestore, 'schoolSettings', 'current') : null), [firestore]);
   const { data: settings, isLoading: settingsLoading } = useDoc<SchoolSettings>(settingsRef);
 
   const studentCounts = useMemo(() => {
     if (!enrollments || !allStudents) return {};
-    
+
     // Create a set of active student IDs for quick lookup
     const activeStudentIds = new Set(
       allStudents
@@ -130,10 +129,10 @@ export default function StudentsPage() {
   const handleAddStudent = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!firestore) return;
-    
+
     const form = event.currentTarget;
     const formData = new FormData(form);
-    
+
     const studentName = formData.get('name') as string;
     const classroomId = formData.get('classroomId') as string;
     const gender = formData.get('gender') as string;
@@ -189,14 +188,13 @@ export default function StudentsPage() {
     }
 
   };
-  
+
     const sortedClassrooms = useMemo(() => {
         if (!classrooms) return [];
         return [...classrooms].sort((a, b) => a.name.localeCompare(b.name));
     }, [classrooms]);
 
   const isLoading = classroomsLoading || settingsLoading || enrollmentsLoading || studentsLoading;
-
 
   return (
     <div className="space-y-6">
@@ -277,6 +275,12 @@ export default function StudentsPage() {
             </form>
           </DialogContent>
         </Dialog>
+        <Button asChild variant="outline">
+          <Link href="/admin/students/bulk">
+            <Upload className="mr-2 h-4 w-4" />
+            Bulk Enrolment
+          </Link>
+        </Button>
       </div>
 
         {isLoading ? (
@@ -339,5 +343,3 @@ export default function StudentsPage() {
     </div>
   );
 }
-
-    
