@@ -29,6 +29,7 @@ import Image from 'next/image';
 import { format } from 'date-fns';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Separator } from '@/components/ui/separator';
+import { SCHOOL_NAME } from '@/lib/school';
 
 // --- TYPE DEFINITIONS ---
 export type PupilData = { id: string; name: string; admissionNumber: string; isDeleted?: boolean; };
@@ -159,7 +160,7 @@ export const ResultSheet = forwardRef<HTMLDivElement, ResultSheetProps>(({
   // --- DATA PROCESSING & MEMOIZATION ---
   const finalTemplateData = templateData || savedTemplateData;
   const settings = finalTemplateData?.settings || initialSettings;
-  const schoolName = finalTemplateData?.schoolName || 'JustVision Kiddies School';
+  const schoolName = SCHOOL_NAME;
 
   const allSubjectsMap = useMemo(() => {
     if (!allSubjects) return new Map();
@@ -265,7 +266,7 @@ export const ResultSheet = forwardRef<HTMLDivElement, ResultSheetProps>(({
   const softSkillsCol2 = allSoftSkillsList.slice(6);
 
   return (
-    <div ref={ref} className="relative w-full max-w-[794px] mx-auto min-h-[1250px] bg-white text-black print:shadow-none print:m-0 print:p-0 print:w-full print:h-auto flex flex-col p-6 border-4 border-black">
+    <div ref={ref} data-report-card-ready={String(!isLoading && !!student && !!termResult)} className="relative w-full max-w-[794px] mx-auto min-h-[1250px] bg-white text-black print:shadow-none print:m-0 print:p-0 print:w-[194mm] print:max-w-none print:min-h-[281mm] print:h-auto flex flex-col p-6 border-4 border-black">
         <div className="absolute inset-0 z-0 flex items-center justify-center pointer-events-none">
             <Image src="/Logo.jpg" alt="School Watermark" width={500} height={500} className="opacity-15" />
         </div>
@@ -374,7 +375,7 @@ export const ResultSheet = forwardRef<HTMLDivElement, ResultSheetProps>(({
                 )}
                  <div className="flex-grow min-h-0"></div>
                 
-                <footer className="text-base" style={{ pageBreakBefore: 'always' }}>
+                <footer className="text-base">
                     <section className='border border-black p-1 flex flex-col gap-1'>
                         <div className="grid grid-cols-[1fr_1fr_2fr] gap-x-2 pt-1">
                             {settings.gradingKey.visible && (

@@ -5,19 +5,15 @@ import Image from 'next/image';
 import { AdminLoginForm } from '@/components/auth/admin-login-form';
 import { Logo } from '@/components/shared/logo';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { useUser, useAuth } from '@/firebase/provider';
+import { useUser } from '@/firebase/provider';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { Loader2 } from 'lucide-react';
-import { signOut } from 'firebase/auth';
-import { useToast } from '@/hooks/use-toast';
 
 
 export default function AdminLoginPage() {
   const { user, isLoggedIn, isLoading } = useUser();
-  const auth = useAuth();
   const router = useRouter();
-  const { toast } = useToast();
 
   useEffect(() => {
     if (isLoading) {
@@ -25,26 +21,17 @@ export default function AdminLoginPage() {
     }
 
     if (isLoggedIn) {
-        if (user?.role === 'Admin') {
-            // If user is already an admin, send them to the dashboard
-            router.replace('/admin/dashboard');
-        } else {
-            // If a non-admin is logged in, log them out before showing the admin login form
-            if(auth) {
-                signOut(auth);
-                toast({
-                    variant: 'destructive',
-                    title: 'Access Denied',
-                    description: 'You have been logged out. Please sign in with an admin account.',
-                });
-            }
-        }
+      const destination = user?.role === 'Admin' || user?.role === 'SuperAdmin'
+        ? '/admin/dashboard'
+        : user?.role === 'Teacher'
+        ? '/teacher/dashboard'
+        : '/unauthorized';
+      router.replace(destination);
     }
-    // If not logged in, the component will render the login form below
-  }, [isLoading, isLoggedIn, user, router, auth, toast]);
+    }, [isLoading, isLoggedIn, user, router]);
 
   // Show a loader while checking auth state or if a redirect is happening.
-  if (isLoading || (isLoggedIn && user?.role === 'Admin')) {
+  if (isLoading || isLoggedIn) {
     return (
        <div className="flex h-screen w-full items-center justify-center">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />

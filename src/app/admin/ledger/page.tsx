@@ -45,6 +45,7 @@ import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import * as ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
+import { SCHOOL_NAME } from '@/lib/school';
 
 type Student = { id: string; name: string; admissionNumber: string; isDeleted?: boolean; classroomId?: string };
 type Classroom = { id: string; name: string; fees?: number };
@@ -214,7 +215,7 @@ export default function LedgerPage() {
         const workbook = new ExcelJS.Workbook();
         const sheet = workbook.addWorksheet('Fee Ledger');
 
-        sheet.addRow(['JustVision Kiddies School - Fee Ledger']);
+        sheet.addRow([`${SCHOOL_NAME} - Fee Ledger`]);
         sheet.addRow([`Report Date: ${format(new Date(), 'PPP')}`]);
         sheet.addRow([]);
 

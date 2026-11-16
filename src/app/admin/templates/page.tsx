@@ -13,6 +13,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { ResultSheet } from '@/components/results/result-sheet';
 import type { SavedTemplateData, TemplateSettings, Classroom, PupilData, ResultEntry } from '@/components/results/result-sheet';
+import { SCHOOL_NAME } from '@/lib/school';
 
 const initialSettings: TemplateSettings = {
   studentInfo: { fontSize: 12, visible: true },
@@ -28,7 +29,7 @@ const initialSettings: TemplateSettings = {
 export default function TemplatesPage() {
   const { toast } = useToast();
   const [templateName, setTemplateName] = useState('Primary School Template');
-  const [schoolName, setSchoolName] = useState('JustVision Kiddies School');
+  const [schoolName, setSchoolName] = useState(SCHOOL_NAME);
   const [settings, setSettings] = useState<TemplateSettings>(initialSettings);
   const [isSaving, setIsSaving] = useState(false);
   const router = useRouter();
@@ -43,7 +44,7 @@ export default function TemplatesPage() {
   useEffect(() => {
     if (savedTemplateData) {
       setTemplateName(savedTemplateData.name || 'Primary School Template');
-      setSchoolName(savedTemplateData.schoolName || 'JustVision Kiddies School');
+      setSchoolName(SCHOOL_NAME);
       setSettings(savedTemplateData.settings || initialSettings);
     }
   }, [savedTemplateData]);
@@ -51,7 +52,7 @@ export default function TemplatesPage() {
   const loadSavedTemplate = () => {
     if (savedTemplateData) {
       setTemplateName(savedTemplateData.name || 'Primary School Template');
-      setSchoolName(savedTemplateData.schoolName || 'JustVision Kiddies School');
+      setSchoolName(SCHOOL_NAME);
       setSettings(savedTemplateData.settings || initialSettings);
       toast({ title: 'Template Loaded' });
     } else {

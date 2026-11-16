@@ -22,8 +22,12 @@ export default function LoginPage() {
 
     // Once loading is complete, if the user is logged in, redirect them.
     if (isLoggedIn && user) {
-      const dashboard = user.role === 'Admin' ? '/admin/dashboard' : '/teacher/dashboard';
-      router.replace(dashboard);
+      const destination = user.role === 'Admin' || user.role === 'SuperAdmin'
+        ? '/admin/dashboard'
+        : user.role === 'Teacher'
+          ? '/teacher/dashboard'
+          : '/unauthorized';
+      router.replace(destination);
     }
   }, [isLoading, isLoggedIn, user, router]);
 

@@ -38,6 +38,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { useToast } from '@/hooks/use-toast';
+import { fetchActiveStudentsByIds } from '@/lib/student-membership';
 import {
   Dialog,
   DialogContent,
@@ -59,7 +60,7 @@ import {
 
 type Student = { id: string; name: string; isDeleted?: boolean; admissionNumber: string; dob: string; gender: string; parentName: string; contact: string; };
 type Classroom = { id: string; name: string };
-type StudentInClass = { id: string; name: string; studentId: string; };
+type Enrollment = { id: string; studentId: string; classroomId: string; };
 
 
 export default function TeacherClassPage() {
@@ -82,22 +83,22 @@ export default function TeacherClassPage() {
   );
   const { data: classroom, isLoading: classroomLoading } = useDoc<Classroom>(classroomRef);
 
-  const studentsInClassQuery = useMemoFirebase(
-    () => (firestore && classroomId) ? query(collection(firestore, 'classrooms', classroomId, 'students')) : null,
+  const enrollmentsQuery = useMemoFirebase(
+    () => (firestore && classroomId) ? query(collection(firestore, 'enrollments'), where('classroomId', '==', classroomId)) : null,
     [firestore, classroomId]
   );
-  const { data: studentsInClass, isLoading: studentsLoading } = useCollection<StudentInClass>(studentsInClassQuery);
+  const { data: enrollments, isLoading: studentsLoading } = useCollection<Enrollment>(enrollmentsQuery);
   
   
   useEffect(() => {
     const fetchStudentDetails = async () => {
-      if (!firestore || !studentsInClass) {
+      if (!firestore || !enrollments) {
         setStudentDetails([]);
         setDetailsLoading(false);
         return;
       }
       
-      if (studentsInClass.length === 0) {
+      if (enrollments.length === 0) {
         setStudentDetails([]);
         setDetailsLoading(false);
         return;
@@ -105,33 +106,8 @@ export default function TeacherClassPage() {
 
       setDetailsLoading(true);
       try {
-        const studentIds = studentsInClass.map(e => e.studentId);
-        
-        if (studentIds.length === 0) {
-            setStudentDetails([]);
-            setDetailsLoading(false);
-            return;
-        }
-        
-        const batches = [];
-        for (let i = 0; i < studentIds.length; i += 30) {
-          const batch = studentIds.slice(i, i + 30);
-          if (batch.length > 0) {
-            const q = query(collection(firestore, 'students'), where('__name__', 'in', batch));
-            batches.push(getDocs(q));
-          }
-        }
-
-        const results = await Promise.all(batches);
-        const allStudents: Student[] = [];
-        
-        results.forEach(snapshot => {
-          snapshot.docs.forEach(doc => {
-            allStudents.push({ id: doc.id, ...doc.data() } as Student);
-          });
-        });
-
-        setStudentDetails(allStudents);
+        const students = await fetchActiveStudentsByIds(firestore, enrollments.map(({ studentId }) => studentId));
+        setStudentDetails(students as Student[]);
       } catch (error) {
         console.error('Error fetching student details:', error);
         toast({
@@ -145,15 +121,18 @@ export default function TeacherClassPage() {
     };
 
     fetchStudentDetails();
-  }, [firestore, studentsInClass, toast]);
+  }, [firestore, enrollments, toast]);
   
   const combinedStudentData = useMemo(() => {
-    if (!studentsInClass || !studentDetails) return [];
+    if (!enrollments || !studentDetails) return [];
     
     const detailsMap = new Map(studentDetails.map(d => [d.id, d]));
+    const seenStudentIds = new Set<string>();
     
-    return studentsInClass
+    return enrollments
       .map(e => {
+        if (seenStudentIds.has(e.studentId)) return null;
+        seenStudentIds.add(e.studentId);
         const details = detailsMap.get(e.studentId);
         if (!details || details.isDeleted) return null;
         return { ...details }; 
@@ -161,7 +140,7 @@ export default function TeacherClassPage() {
       .filter((s): s is Student => s !== null)
       .sort((a,b) => a.name.localeCompare(b.name));
 
-  }, [studentsInClass, studentDetails]);
+  }, [enrollments, studentDetails]);
 
 
   const isLoading = classroomLoading || studentsLoading || detailsLoading;
@@ -193,22 +172,31 @@ export default function TeacherClassPage() {
     if (!firestore || !studentToDelete) return;
     
     try {
-        const batch = writeBatch(firestore);
-
-        // 1. Mark the main student record as deleted
-        const studentRef = doc(firestore, 'students', studentToDelete.id);
-        batch.update(studentRef, { isDeleted: true });
-
-        // 2. Delete their reference from the classroom's subcollection
-        const classStudentRef = doc(firestore, 'classrooms', classroomId, 'students', studentToDelete.id);
-        batch.delete(classStudentRef);
-        
-        // 3. Delete from the root /enrollments collection
-        const enrollmentsQuery = query(collection(firestore, 'enrollments'), where('studentId', '==', studentToDelete.id), where('classroomId', '==', classroomId));
+        // Remove only this student's source-class enrollment(s); leave other
+        // class/history records untouched. The single-field query avoids a
+        // composite index requirement for studentId + classroomId.
+        const enrollmentsQuery = query(collection(firestore, 'enrollments'), where('studentId', '==', studentToDelete.id));
         const enrollmentsSnapshot = await getDocs(enrollmentsQuery);
-        enrollmentsSnapshot.forEach(doc => batch.delete(doc.ref));
+        const classEnrollments = enrollmentsSnapshot.docs.filter(
+          enrollmentDoc => enrollmentDoc.data().classroomId === classroomId
+        );
 
-        await batch.commit();
+        // Firestore batches are capped at 500 writes; reserve one operation
+        // in the first batch for marking the student as deleted.
+        const enrollmentChunks: typeof classEnrollments[] = [];
+        for (let index = 0; index < classEnrollments.length; index += 499) {
+          enrollmentChunks.push(classEnrollments.slice(index, index + 499));
+        }
+        if (enrollmentChunks.length === 0) enrollmentChunks.push([]);
+
+        for (let index = 0; index < enrollmentChunks.length; index++) {
+          const batch = writeBatch(firestore);
+          if (index === 0) {
+            batch.update(doc(firestore, 'students', studentToDelete.id), { isDeleted: true });
+          }
+          enrollmentChunks[index].forEach(enrollmentDoc => batch.delete(enrollmentDoc.ref));
+          await batch.commit();
+        }
 
         toast({
             variant: 'destructive',

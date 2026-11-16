@@ -20,7 +20,7 @@ import { useState } from 'react';
 import { Loader2, Eye, EyeOff } from 'lucide-react';
 import Link from 'next/link';
 import { useAuth, useFirestore } from '@/firebase/provider';
-import { signInWithEmailAndPassword } from 'firebase/auth';
+import { signInWithSessionPersistence } from '@/firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
 
 const formSchema = z.object({
@@ -51,7 +51,7 @@ export function AdminLoginForm() {
         return;
     }
     try {
-        const userCredential = await signInWithEmailAndPassword(auth, values.email, values.password);
+        const userCredential = await signInWithSessionPersistence(auth, values.email, values.password);
         const user = userCredential.user;
         
         const userDocRef = doc(firestore, 'users', user.uid);

@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, ReactNode, useState, useEffect, useMemo, DependencyList } from 'react';
 import { FirebaseApp } from 'firebase/app';
-import { Firestore, doc, getDoc, onSnapshot } from 'firebase/firestore';
+import { Firestore, doc, onSnapshot } from 'firebase/firestore';
 import { Auth, User, onAuthStateChanged } from 'firebase/auth';
 import { FirebaseErrorListener } from '@/components/FirebaseErrorListener';
 import { initializeFirebase } from '@/firebase'; // SAFE IMPORT
@@ -14,9 +14,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 export type UserProfile = {
   role?: 'SuperAdmin' | 'Admin' | 'Teacher';
   name?: string;
-  email?: string;
+  email?: string | null;
   assignedClassroomId?: string;
-  phoneNumber?: string;
+  phoneNumber?: string | null;
 };
 export type AppUser = User & UserProfile;
 
@@ -84,11 +84,22 @@ export function FirebaseProvider({ children }: { children: ReactNode }) {
 
     const { auth, firestore } = services;
 
-    // Outer listener for Auth state
+    let unsubscribeProfile: (() => void) | undefined;
+    let profileRequestId = 0;
+
+    // Keep one profile listener for the current identity; a listener created
+    // inside an auth callback cannot be cleaned up by returning from that callback.
     const unsubscribeAuth = onAuthStateChanged(
       auth,
-      async (authUser) => {
+      (authUser) => {
+        const requestId = ++profileRequestId;
+        unsubscribeProfile?.();
+        unsubscribeProfile = undefined;
+
         if (authUser) {
+          setUser(null);
+          setIsLoading(true);
+
           // Hardcoded fallback logic
           let baseProfile: UserProfile = {};
           if (authUser.uid === 'GOpbb9SsavhpATk1p0KNmPGGQ0S2') {
@@ -121,7 +132,8 @@ export function FirebaseProvider({ children }: { children: ReactNode }) {
 
           // Inner real-time listener for Firestore Profile
           const userDocRef = doc(firestore, 'users', authUser.uid);
-          const unsubscribeProfile = onSnapshot(userDocRef, (snap) => {
+          unsubscribeProfile = onSnapshot(userDocRef, (snap) => {
+            if (requestId !== profileRequestId || auth.currentUser?.uid !== authUser.uid) return;
             let firestoreProfile: UserProfile = {};
             if (snap.exists()) {
                 firestoreProfile = snap.data() as UserProfile;
@@ -130,26 +142,32 @@ export function FirebaseProvider({ children }: { children: ReactNode }) {
             setUser({ ...authUser, ...finalProfile });
             setIsLoading(false);
           }, (err) => {
+            if (requestId !== profileRequestId || auth.currentUser?.uid !== authUser.uid) return;
             console.error("Error listening to user profile:", err);
             // Fallback to static user state if profile fetch fails
             setUser({ ...authUser, ...baseProfile });
             setIsLoading(false);
           });
-
-          return () => unsubscribeProfile();
         } else {
           setUser(null);
           setIsLoading(false);
         }
       },
       (error) => {
+        profileRequestId++;
+        unsubscribeProfile?.();
+        unsubscribeProfile = undefined;
         console.error("Auth State Error:", error);
         setUser(null);
         setIsLoading(false);
       }
     );
 
-    return () => unsubscribeAuth();
+    return () => {
+      profileRequestId++;
+      unsubscribeProfile?.();
+      unsubscribeAuth();
+    };
   }, [services]); 
 
   if (!services) {

@@ -21,15 +21,16 @@ import {
 import { useFirestore, useMemoFirebase } from '@/firebase/provider';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { useDoc } from '@/firebase/firestore/use-doc';
-import { collection, query, where, doc, getDocs, Timestamp } from 'firebase/firestore';
+import { collection, query, where, doc, Timestamp } from 'firebase/firestore';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Loader2, ArrowLeft } from 'lucide-react';
 import { format } from 'date-fns';
 import AuthGuard from '@/components/auth/AuthGuard';
 import { useToast } from '@/hooks/use-toast';
+import { fetchActiveStudentsByIds } from '@/lib/student-membership';
 
-type StudentInClass = { studentId: string; name: string; createdAt: Timestamp };
+type Enrollment = { id: string; studentId: string; classroomId: string; createdAt?: Timestamp };
 type Student = { id: string; name: string; isDeleted?: boolean; };
 type Classroom = { id: string; name: string; teacherId?: string };
 
@@ -57,23 +58,23 @@ function EnrollmentPageContent() {
   const { data: classroom, isLoading: classroomLoading } = useDoc<Classroom>(classroomRef);
 
   // 1. Fetch the list of student references from the subcollection. This is efficient.
-  const studentsInClassQuery = useMemoFirebase(
-    () => classroomId && firestore ? query(collection(firestore, 'classrooms', classroomId, 'students')) : null,
+  const enrollmentsQuery = useMemoFirebase(
+    () => classroomId && firestore ? query(collection(firestore, 'enrollments'), where('classroomId', '==', classroomId)) : null,
     [classroomId, firestore]
   );
-  const { data: studentsInClass, isLoading: enrollmentsLoading } = useCollection<StudentInClass>(studentsInClassQuery);
+  const { data: enrollments, isLoading: enrollmentsLoading } = useCollection<Enrollment>(enrollmentsQuery);
 
   
   // 2. Once we have the student references, fetch their full details in batches.
   useEffect(() => {
     const fetchStudentDetails = async () => {
-      if (!firestore || !studentsInClass) {
+      if (!firestore || !enrollments) {
         setCombinedData([]);
         setDetailsLoading(false);
         return;
       }
       
-      if (studentsInClass.length === 0) {
+      if (enrollments.length === 0) {
         setCombinedData([]);
         setDetailsLoading(false);
         return;
@@ -81,28 +82,19 @@ function EnrollmentPageContent() {
 
       setDetailsLoading(true);
       try {
-        const studentIds = studentsInClass.map(e => e.studentId);
-        
-        const studentDetailsMap = new Map<string, Student>();
-        // Batch fetch student details
-        for (let i = 0; i < studentIds.length; i += 30) {
-          const batch = studentIds.slice(i, i + 30);
-          if (batch.length > 0) {
-            const q = query(collection(firestore, 'students'), where('__name__', 'in', batch));
-            const snapshot = await getDocs(q);
-             snapshot.docs.forEach(doc => {
-                studentDetailsMap.set(doc.id, { id: doc.id, ...doc.data() } as Student);
-             });
-          }
-        }
+        const studentDetails = await fetchActiveStudentsByIds(firestore, enrollments.map(({ studentId }) => studentId));
+        const studentDetailsMap = new Map(studentDetails.map((student) => [student.id, student as Student]));
         
         // Combine the data
-        const combined = studentsInClass
+        const seenStudentIds = new Set<string>();
+        const combined = enrollments
             .map(enrollment => {
+                if (seenStudentIds.has(enrollment.studentId)) return null;
+                seenStudentIds.add(enrollment.studentId);
                 const student = studentDetailsMap.get(enrollment.studentId);
                 if (!student || student.isDeleted) return null;
                 return {
-                    enrollmentId: student.id, // Using studentId as key since enrollment doc isn't fetched
+                    enrollmentId: student.id,
                     studentName: student.name,
                     enrollmentDate: enrollment.createdAt?.toDate ? format(enrollment.createdAt.toDate(), 'PPP') : 'N/A',
                 };
@@ -124,7 +116,7 @@ function EnrollmentPageContent() {
     };
 
     fetchStudentDetails();
-  }, [firestore, studentsInClass, toast]);
+  }, [firestore, enrollments, toast]);
 
 
   const isLoading = classroomLoading || enrollmentsLoading || detailsLoading;

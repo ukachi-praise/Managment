@@ -1,6 +1,7 @@
 import { format } from 'date-fns';
 import path from 'path';
 import fs from 'fs/promises';
+import { SCHOOL_NAME } from '@/lib/school';
 
 // Define types to match the expected data structure from the client
 type ScoreData = { subjectName: string; ca1: number | null; ca2: number | null; exam: number | null; total: number; grade: string; remark: string; subSubjects?: string[] };
@@ -9,8 +10,8 @@ type ClassroomData = { name: string; teacherName?: string; };
 type TermResultData = { daysAttended?: number; };
 type SchoolSettingsData = { currentSession: string; currentTermId: string; daysSchoolOpened: number; nextTermResumptionDate: any; };
 type OverallData = { average: string; grade: string; };
-type TemplateSettings = { studentInfo: { fontSize: number; visible: boolean; }; header: { visible: boolean; }; subjectsTable: { visible: boolean; }; summary: { visible: boolean; }; softSkills: { visible: boolean; }; gradingKey: { visible: boolean; }; remarks: { visible: boolean; }; signatures: { visible: boolean; }; };
-type SavedTemplateData = { name: string; schoolName: string; settings: TemplateSettings; };
+export type ReportTemplateSettings = { studentInfo: { fontSize: number; visible: boolean; }; header: { visible: boolean; }; subjectsTable: { visible: boolean; }; summary: { visible: boolean; }; softSkills: { visible: boolean; }; gradingKey: { visible: boolean; }; remarks: { visible: boolean; }; signatures: { visible: boolean; }; };
+export type SavedTemplateData = { name: string; schoolName: string; settings: ReportTemplateSettings; };
 
 interface ReportCardPayload {
     pupil: PupilData;
@@ -22,7 +23,10 @@ interface ReportCardPayload {
     templateData?: SavedTemplateData;
 }
 
-const termNames: Record<string, string> = { term1: '1st Term', term2: '2nd Term', term3: '3rd Term' };
+const termNames: Record<string, string> = {
+    term1: '1st Term', term2: '2nd Term', term3: '3rd Term',
+    '1st': '1st Term', '2nd': '2nd Term', '3rd': '3rd Term',
+};
 
 async function getLogoBase64(): Promise<string> {
     try {
@@ -40,8 +44,17 @@ export async function generateReportCardHtml(payload: ReportCardPayload): Promis
         pupil, classroom, termResult, schoolSettings, scores, overall, templateData 
     } = payload;
 
-    const settings = templateData?.settings;
-    const schoolName = templateData?.schoolName || 'JustVision Kiddies School';
+    const settings = templateData?.settings || {
+        studentInfo: { fontSize: 12, visible: true },
+        header: { visible: true },
+        subjectsTable: { visible: true },
+        summary: { visible: true },
+        softSkills: { visible: true },
+        gradingKey: { visible: true },
+        remarks: { visible: true },
+        signatures: { visible: true },
+    };
+    const schoolName = SCHOOL_NAME;
 
     const subjectsHtml = scores.map((score: any) => `
         <tr>
@@ -99,20 +112,24 @@ export async function generateReportCardHtml(payload: ReportCardPayload): Promis
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Pupil Report Card</title>
-        <script src="https://cdn.tailwindcss.com"></script>
+        <script async src="https://cdn.tailwindcss.com" onload="window.__reportStylesReady = true" onerror="window.__reportStylesFailed = true"></script>
         <style>
             @import url('https://fonts.googleapis.com/css2?family=PT+Sans:ital,wght@0,400;0,700;1,400;1,700&display=swap');
+            @page { size: A4 portrait; margin: 0; }
+            *, *::before, *::after { box-sizing: border-box; }
+            html, body { margin: 0; padding: 0; }
             body { font-family: 'PT Sans', sans-serif; -webkit-print-color-adjust: exact; print-color-adjust: exact; background-color: #f3f4f6; }
             .report-card-container { width: 210mm; margin: auto; background: white; }
-            .report-page { min-height: 297mm; padding: 1.5rem; position: relative; display: flex; flex-direction: column; }
+            .report-page { width: 210mm; height: 297mm; min-height: 297mm; padding: 1.5rem; position: relative; display: flex; flex-direction: column; break-after: auto; overflow-wrap: anywhere; }
+            .report-page { break-inside: avoid-page; }
             .watermark { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); opacity: 0.05; width: 60%; pointer-events: none; }
             .content-wrapper { position: relative; z-index: 2; height: 100%; display: flex; flex-direction: column; }
             table { border-collapse: collapse; width: 100%; }
-            .page-break { page-break-before: always; }
             ${settings?.studentInfo.fontSize ? `.student-info-table { font-size: ${settings.studentInfo.fontSize}px; }` : ''}
-            @media print {
-              body { background-color: white; }
-              .report-card-container { box-shadow: none; margin: 0; }
+                        @media print {
+                            html, body { width: 210mm; margin: 0; padding: 0; background-color: white; }
+                            .report-card-container { width: 210mm; margin: 0; box-shadow: none; }
+                            .report-page { width: 210mm; height: 297mm; min-height: 297mm; margin: 0; }
             }
         </style>
     </head>
@@ -188,7 +205,7 @@ export async function generateReportCardHtml(payload: ReportCardPayload): Promis
             </div>
 
             <!-- PAGE 2 -->
-            <div class="report-page page-break">
+            <div class="report-page">
                 <img src="${logoBase64}" class="watermark" alt="Watermark">
                 <div class="content-wrapper">
                     <footer class="w-full">

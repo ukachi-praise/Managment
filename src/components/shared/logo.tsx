@@ -1,5 +1,6 @@
 import { BookOpenCheck } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { SCHOOL_NAME } from '@/lib/school';
 
 export function Logo({ className }: { className?: string }) {
   return (
@@ -10,7 +11,7 @@ export function Logo({ className }: { className?: string }) {
       )}
     >
       <BookOpenCheck className="h-6 w-6 text-accent" />
-      <span className="font-headline">JustVision Kiddies</span>
+      <span className="max-w-40 font-headline text-sm leading-tight sm:max-w-none sm:text-base">{SCHOOL_NAME}</span>
     </div>
   );
 }

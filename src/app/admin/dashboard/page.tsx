@@ -7,11 +7,13 @@ import {
   CardTitle,
   CardDescription,
 } from '@/components/ui/card';
-import { Users, Presentation, BookCopy, Loader2, TrendingUp, GraduationCap, ShieldCheck, Wallet } from 'lucide-react';
+import { Users, Presentation, BookCopy, TrendingUp, GraduationCap, ShieldCheck, Wallet } from 'lucide-react';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { useMemoFirebase, useFirestore, useUser as useAppUser } from '@/firebase/provider';
 import { collection, query } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
+import { ResultsCompletionMonitor } from '@/components/admin/results-completion-monitor';
+import { SCHOOL_NAME } from '@/lib/school';
 
 function StatCard({ title, value, icon: Icon, note, isLoading, colorClass }: { title: string, value: number | string, icon: React.ElementType, note: string, isLoading: boolean, colorClass: string }) {
   return (
@@ -83,7 +85,7 @@ export default function AdminDashboard() {
             <ShieldCheck className="h-8 w-8 text-primary" />
             Admin Overview
         </h1>
-        <p className="text-muted-foreground">Welcome to the JustVision Management System. Here is your school's current status.</p>
+        <p className="text-muted-foreground">Welcome to {SCHOOL_NAME}. Here is your school's current status.</p>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
@@ -121,19 +123,8 @@ export default function AdminDashboard() {
         />
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-7">
-        <Card className="lg:col-span-4">
-            <CardHeader>
-                <CardTitle>School Pulse</CardTitle>
-                <CardDescription>Recent updates and notifications will appear here.</CardDescription>
-            </CardHeader>
-            <CardContent className="h-64 flex items-center justify-center border-t border-dashed">
-                <div className="text-center text-muted-foreground">
-                    <Loader2 className="h-8 w-8 animate-spin mx-auto mb-2 opacity-20" />
-                    <p>Live activity monitoring coming soon.</p>
-                </div>
-            </CardContent>
-        </Card>
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-7">
+        <ResultsCompletionMonitor classrooms={classrooms} isLoading={classroomsLoading} />
 
         <Card className="lg:col-span-3">
             <CardHeader>

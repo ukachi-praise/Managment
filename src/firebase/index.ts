@@ -2,7 +2,12 @@
 // src/firebase/index.ts
 
 import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
-import { getAuth, Auth } from 'firebase/auth';
+import {
+  Auth,
+  browserSessionPersistence,
+  getAuth,
+  initializeAuth,
+} from 'firebase/auth';
 import { getFirestore, Firestore } from 'firebase/firestore';
 
 type FirebaseServices = {
@@ -46,9 +51,26 @@ function initializeFirebase(): FirebaseServices | null {
 
   try {
     const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
+    // Session persistence is isolated to this browser tab and survives refreshes.
+    // Initialize it before Auth can restore an older shared local-persistence user.
+    const auth = typeof window === 'undefined'
+      ? getAuth(app)
+      : (() => {
+          try {
+            return initializeAuth(app, { persistence: browserSessionPersistence });
+          } catch (error) {
+            // Next.js Fast Refresh can re-run module initialization after Auth
+            // has already been initialized in this browser context.
+            if ((error as { code?: string })?.code === 'auth/already-initialized') {
+              return getAuth(app);
+            }
+            throw error;
+          }
+        })();
+
     services = { 
       firebaseApp: app, 
-      auth: getAuth(app), 
+      auth, 
       firestore: getFirestore(app) 
     };
     return services;

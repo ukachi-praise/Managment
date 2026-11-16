@@ -39,7 +39,7 @@ import {
 } from 'firebase/firestore';
 
 // Define types based on backend.json
-type Student = { id: string; name: string };
+type Student = { id: string; name: string; isDeleted?: boolean };
 type Subject = { id: string; name: string };
 type Classroom = { id: string; name: string; teacherId?: string };
 type Enrollment = { id: string; studentId: string; classroomId: string };
@@ -137,7 +137,7 @@ export function ResultInputTable() {
   const studentsInClass = useMemo(() => {
       if (!enrollments || !allStudents) return [];
       const studentIds = new Set(enrollments.map(e => e.studentId));
-      return allStudents.filter(s => studentIds.has(s.id));
+      return allStudents.filter(s => studentIds.has(s.id) && !s.isDeleted && typeof s.name === 'string' && s.name.trim().length > 0);
   }, [enrollments, allStudents]);
 
   // --- Fetch existing results when class and subject are selected ---

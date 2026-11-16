@@ -1,4 +1,4 @@
-# **App Name**: JustVision Kiddies School Database & Result Management System
+# **App Name**: Justvision Gifted Kids Montessori Database & Result Management System
 
 ## Core Features:
 

@@ -17,6 +17,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import * as htmlToImage from 'html-to-image';
 import jsPDF from 'jspdf';
 import { useToast } from '@/hooks/use-toast';
+import { fetchActiveStudentsByIds } from '@/lib/student-membership';
 
 
 // --- TYPE DEFINITIONS ---
@@ -79,16 +80,21 @@ export default function ResultSheetPage() {
         }
       }
 
-      // Fetch class population from the subcollection count
-      const classStudentsRef = collection(firestore, 'classrooms', classroom.id, 'students');
-      const classEnrollmentsSnap = await getDocs(classStudentsRef);
-      setClassPopulation(classEnrollmentsSnap.size);
+      // Count distinct, active students using the same membership source as rosters.
+      const classEnrollmentsSnap = await getDocs(query(
+        collection(firestore, 'enrollments'),
+        where('classroomId', '==', classroom.id)
+      ));
+      const studentIds = [...new Set(classEnrollmentsSnap.docs.map((enrollment) => enrollment.data().studentId).filter(Boolean))];
+      const activeStudents = await fetchActiveStudentsByIds(firestore, studentIds);
+      setClassPopulation(activeStudents.length);
     }
     fetchExtraData();
   }, [firestore, classroom]);
 
 
   const isLoading = studentLoading || classroomLoading || termResultLoading;
+  const isReportContextLoading = isLoading || classPopulation === null;
   
   const exportA4PDF = async () => {
     const node = resultSheetRef.current;
@@ -170,8 +176,8 @@ export default function ResultSheetPage() {
   }
 
   return (
-    <div className="bg-muted min-h-screen py-4 sm:py-8 px-2 sm:px-4 no-print">
-      <div className="max-w-4xl mx-auto mb-4 flex justify-between items-center">
+    <div data-report-page-ready={String(!isReportContextLoading)} className="bg-muted min-h-screen py-4 sm:py-8 px-2 sm:px-4 print:min-h-0 print:bg-white print:p-0">
+      <div className="max-w-4xl mx-auto mb-4 flex justify-between items-center no-print">
         <Button onClick={() => router.back()} variant="outline">
           <ArrowLeft className="mr-2 h-4 w-4" />
           Back

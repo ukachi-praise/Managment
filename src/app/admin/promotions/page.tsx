@@ -28,15 +28,15 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useFirestore, useMemoFirebase } from '@/firebase/provider';
 import { useCollection } from '@/firebase/firestore/use-collection';
-import { collection, query, where, doc, getDocs, writeBatch, serverTimestamp, Timestamp } from 'firebase/firestore';
+import { collection, query, where, getDocs, writeBatch } from 'firebase/firestore';
 import { Loader2, ArrowLeft, ArrowRight, UserCheck, AlertTriangle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { fetchActiveStudentsByIds } from '@/lib/student-membership';
 
 type Classroom = { id: string; name: string };
 type Student = { id: string; name: string; isDeleted?: boolean; admissionNumber: string };
-type StudentInClass = { id: string; studentId: string; name: string };
 type Enrollment = { id: string; studentId: string; classroomId: string };
 
 export default function PromotionsPage() {
@@ -73,9 +73,14 @@ export default function PromotionsPage() {
 
       setIsFetching(true);
       try {
-        const studentsInClassRef = collection(firestore, 'classrooms', sourceClassId, 'students');
-        const studentsInClassSnap = await getDocs(studentsInClassRef);
-        const studentIds = studentsInClassSnap.docs.map(d => (d.data() as StudentInClass).studentId);
+        const sourceEnrollmentsQuery = query(
+          collection(firestore, 'enrollments'),
+          where('classroomId', '==', sourceClassId)
+        );
+        const sourceEnrollmentsSnap = await getDocs(sourceEnrollmentsQuery);
+        const studentIds = [...new Set(sourceEnrollmentsSnap.docs.map((enrollmentDoc) =>
+          (enrollmentDoc.data() as Enrollment).studentId
+        ).filter(Boolean))];
 
         if (studentIds.length === 0) {
           setStudentsInSource([]);
@@ -83,18 +88,7 @@ export default function PromotionsPage() {
           return;
         }
 
-        const studentDetails: Student[] = [];
-        for (let i = 0; i < studentIds.length; i += 30) {
-          const batchIds = studentIds.slice(i, i + 30);
-          const q = query(collection(firestore, 'students'), where('__name__', 'in', batchIds));
-          const snapshot = await getDocs(q);
-          snapshot.forEach(doc => {
-            const data = doc.data() as Omit<Student, 'id'>;
-            if (!data.isDeleted) {
-                studentDetails.push({ id: doc.id, ...data });
-            }
-          });
-        }
+        const studentDetails = await fetchActiveStudentsByIds(firestore, studentIds) as Student[];
 
         setStudentsInSource(studentDetails.sort((a, b) => a.name.localeCompare(b.name)));
         setSelectedSelectedStudentIds(new Set()); // Reset selection
@@ -142,40 +136,33 @@ export default function PromotionsPage() {
     toast({ title: 'Processing Promotions...', description: `Moving ${selectedStudentIds.size} student(s) to the new class.` });
 
     try {
-        const batch = writeBatch(firestore);
         const selectedIdsArray = Array.from(selectedStudentIds);
 
-        // 1. Update root /enrollments for each student
-        const enrollmentsRef = collection(firestore, 'enrollments');
-        // We need to find the specific enrollment doc for each student
-        // This can be slow if we do it one by one, but batches are capped at 500 operations.
-        // For safety, let's fetch them first.
-        const enrollmentsQuery = query(enrollmentsRef, where('studentId', 'in', selectedIdsArray));
-        const enrollmentsSnapshot = await getDocs(enrollmentsQuery);
-        
-        enrollmentsSnapshot.forEach(enrollmentDoc => {
-            batch.update(enrollmentDoc.ref, { classroomId: targetClassId });
+        // Restrict the update to records currently in the selected source class.
+        // This leaves unrelated and historical enrollments untouched.
+        const sourceEnrollmentsSnapshot = await getDocs(query(
+          collection(firestore, 'enrollments'),
+          where('classroomId', '==', sourceClassId)
+        ));
+        const selectedIds = new Set(selectedIdsArray);
+        const enrollmentsToMove = sourceEnrollmentsSnapshot.docs.filter((enrollmentDoc) => {
+          const enrollment = enrollmentDoc.data() as Enrollment;
+          return selectedIds.has(enrollment.studentId);
         });
 
-        // 2. Move records in the classroom subcollections
-        for (const studentId of selectedIdsArray) {
-            const student = studentsInSource.find(s => s.id === studentId);
-            if (!student) continue;
-
-            // Delete from source class
-            const sourceRef = doc(firestore, 'classrooms', sourceClassId, 'students', studentId);
-            batch.delete(sourceRef);
-
-            // Add to target class
-            const targetRef = doc(firestore, 'classrooms', targetClassId, 'students', studentId);
-            batch.set(targetRef, {
-                studentId: studentId,
-                name: student.name,
-                createdAt: serverTimestamp()
-            });
+        if (enrollmentsToMove.length === 0) {
+          throw new Error('No current source-class enrollment records were found for the selected students.');
         }
 
-        await batch.commit();
+        // Firestore batches are limited to 500 writes. Update matching source
+        // records in chunks; no enrollment documents are created or deleted.
+        for (let index = 0; index < enrollmentsToMove.length; index += 500) {
+          const batch = writeBatch(firestore);
+          enrollmentsToMove.slice(index, index + 500).forEach((enrollmentDoc) => {
+            batch.update(enrollmentDoc.ref, { classroomId: targetClassId });
+          });
+          await batch.commit();
+        }
 
         toast({ title: 'Success!', description: `Successfully promoted ${selectedStudentIds.size} student(s).` });
         

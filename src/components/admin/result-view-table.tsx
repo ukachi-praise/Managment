@@ -3,6 +3,7 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import {
   Table,
   TableBody,
@@ -22,6 +23,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Loader2, Download, FileArchive, Edit } from 'lucide-react';
 import {
   useFirestore,
+  useAuth,
   useUser,
 } from '@/firebase/provider';
 import { useCollection } from '@/firebase/firestore/use-collection';
@@ -31,27 +33,18 @@ import {
   collection,
   query,
   where,
-  doc,
   getDocs,
-  Timestamp,
-  getDoc
+  doc,
 } from 'firebase/firestore';
 import { Button } from '../ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { calculateGrade } from '@/lib/utils';
 import { saveAs } from 'file-saver';
+import { fetchActiveStudentsByIds } from '@/lib/student-membership';
 
 
 // --- TYPE DEFINITIONS ---
 type Student = { id: string; name: string; admissionNumber: string; isDeleted?: boolean; };
 type Classroom = { id: string; name: string; teacherName?: string; };
-type StudentInClass = { studentId: string; name: string; };
-type Subject = { id: string; name: string; subSubjects?: string[] };
-type SchoolSettingsData = { currentSessionId: string; currentTermId: string; daysSchoolOpened: number; nextTermResumptionDate: Timestamp | Date | string; };
-type TemplateSettings = { studentInfo: { fontSize: number; visible: boolean; }; header: { visible: boolean; }; subjectsTable: { visible: boolean; }; summary: { visible: boolean; }; softSkills: { visible: boolean; }; gradingKey: { visible: boolean; }; remarks: { visible: boolean; }; signatures: { visible: boolean; }; };
-type SavedTemplateData = { name: string; schoolName: string; settings: TemplateSettings; };
-type SubjectScore = { ca1: number | null; ca2: number | null; exam: number | null; };
-type TermResult = { scores: Record<string, SubjectScore>; studentId: string; termId: string; sessionId: string; classroomId: string; daysAttended?: number; };
 type AcademicSession = { id: string; name: string; }
 type Term = { id: string; name: "1st" | "2nd" | "3rd"; }
 
@@ -60,12 +53,15 @@ const termNames: Record<string, string> = { "1st": '1st Term', "2nd": '2nd Term'
 
 export function ResultViewTable() {
   const firestore = useFirestore();
+  const searchParams = useSearchParams();
+  const auth = useAuth();
   const { toast } = useToast();
   const { user } = useUser();
 
   const [selectedSession, setSelectedSession] = useState<string | null>(null);
   const [selectedTerm, setSelectedTerm] = useState<string | null>(null);
   const [selectedClass, setSelectedClass] = useState<string | null>(null);
+  const [exportMode, setExportMode] = useState<'class' | 'term'>('class');
 
   const [studentsInClass, setStudentsInClass] = useState<Student[]>([]);
   const [isFetchingStudents, setIsFetchingStudents] = useState(false);
@@ -84,16 +80,22 @@ export function ResultViewTable() {
     [firestore]
   );
   const { data: classrooms, isLoading: classroomsLoading } = useCollection<Classroom>(classroomsQuery);
-  
-  const settingsRef = useMemoFirebase(() => (firestore ? doc(firestore, 'schoolSettings', 'current') : null), [firestore]);
-  const { data: schoolSettings } = useDoc<SchoolSettingsData>(settingsRef);
-  
-  const templateRef = useMemoFirebase(() => (firestore ? doc(firestore, 'resultTemplates', 'main-template') : null), [firestore]);
-  const { data: savedTemplateData } = useDoc<SavedTemplateData>(templateRef);
-  
-  const subjectsQuery = useMemoFirebase(() => (firestore ? collection(firestore, 'subjects') : null), [firestore]);
-  const { data: allSubjects } = useCollection<Subject>(subjectsQuery);
 
+  const settingsRef = useMemoFirebase(
+    () => (firestore ? doc(firestore, 'schoolSettings', 'current') : null),
+    [firestore]
+  );
+  const { data: schoolSettings } = useDoc<{ currentSessionId?: string; currentTermId?: string }>(settingsRef);
+  const requestedClassId = searchParams.get('classroomId');
+
+  useEffect(() => {
+    if (!selectedSession && schoolSettings?.currentSessionId) setSelectedSession(schoolSettings.currentSessionId);
+    if (!selectedTerm && schoolSettings?.currentTermId) setSelectedTerm(schoolSettings.currentTermId);
+    if (!selectedClass && requestedClassId && classrooms?.some(classroom => classroom.id === requestedClassId)) {
+      setSelectedClass(requestedClassId);
+    }
+  }, [selectedSession, selectedTerm, selectedClass, schoolSettings, requestedClassId, classrooms]);
+  
   const sortedSessions = useMemo(() => {
     if (!sessions) return [];
     return [...sessions].sort((a,b) => b.name.localeCompare(a.name));
@@ -108,10 +110,12 @@ export function ResultViewTable() {
 
         setIsFetchingStudents(true);
         try {
-            // 1. Get student references from the subcollection
-            const studentsInClassRef = collection(firestore, 'classrooms', selectedClass, 'students');
-            const studentsInClassSnap = await getDocs(studentsInClassRef);
-            const studentIds = studentsInClassSnap.docs.map(d => d.id);
+            // Read current class membership from root enrollment records.
+            const enrollmentsSnap = await getDocs(query(
+              collection(firestore, 'enrollments'),
+              where('classroomId', '==', selectedClass)
+            ));
+            const studentIds = [...new Set(enrollmentsSnap.docs.map(d => d.data().studentId).filter(Boolean))];
 
             if (studentIds.length === 0) {
                 setStudentsInClass([]);
@@ -119,21 +123,7 @@ export function ResultViewTable() {
                 return;
             }
 
-            // 2. Fetch student documents in batches of 30
-            const studentDetails: Student[] = [];
-            for (let i = 0; i < studentIds.length; i += 30) {
-                const batchIds = studentIds.slice(i, i + 30);
-                if (batchIds.length === 0) continue;
-
-                const studentsQuery = query(collection(firestore, 'students'), where('__name__', 'in', batchIds));
-                const studentsSnap = await getDocs(studentsQuery);
-                studentsSnap.forEach(doc => {
-                    const studentData = doc.data() as Omit<Student, 'id'>;
-                    if (!studentData.isDeleted) {
-                        studentDetails.push({ id: doc.id, ...studentData });
-                    }
-                });
-            }
+            const studentDetails = await fetchActiveStudentsByIds(firestore, studentIds) as Student[];
             
             setStudentsInClass(studentDetails.sort((a, b) => a.name.localeCompare(b.name)));
 
@@ -154,7 +144,7 @@ export function ResultViewTable() {
   }
 
   const handleBulkDownload = async () => {
-    if (!studentsInClass || studentsInClass.length === 0 || !selectedSession || !selectedTerm) return;
+    if (exportMode !== 'class' || !studentsInClass || studentsInClass.length === 0 || !selectedSession || !selectedTerm) return;
 
     setIsDownloading(true);
     toast({
@@ -172,83 +162,57 @@ export function ResultViewTable() {
     setIsDownloading(false);
   };
   
-    const handleBulkZip = async () => {
-    if (!studentsInClass || studentsInClass.length === 0 || !firestore || !schoolSettings || !allSubjects || !selectedSession || !selectedTerm) {
-        toast({ variant: "destructive", title: "Missing Info", description: "Please select a session, term, and class." });
+  const handleBulkZip = async () => {
+    if (!user || !selectedSession || !selectedTerm || (exportMode === 'class' && !selectedClass)) {
+        toast({ variant: 'destructive', title: 'Missing Info', description: 'Please select a session and term, and a class for class export.' });
         return;
     }
 
     setIsZipping(true);
     toast({
       title: 'Initiating ZIP Export...',
-      description: `Preparing to export reports for ${studentsInClass.length} student(s). This may take a moment.`,
+      description: exportMode === 'class' ? 'Preparing current class reports.' : 'Preparing reports across all classes for this term.',
     });
 
     try {
-        const classroom = classrooms?.find(c => c.id === selectedClass);
-        if(!classroom) throw new Error("Classroom not found");
-        
-        const sessionDoc = sessions?.find(s => s.id === selectedSession);
-        if(!sessionDoc) throw new Error("Session not found");
-
-
-        const studentDataForApi = await Promise.all(studentsInClass.map(async (student) => {
-            const termResultId = `${selectedSession}-${selectedTerm}`;
-            const resultDocRef = doc(firestore, 'students', student.id, 'results', termResultId);
-            const resultDocSnap = await getDoc(resultDocRef);
-
-            if (!resultDocSnap.exists()) return null;
-
-            const termResult = resultDocSnap.data() as TermResult;
-            
-            const scores = Object.entries(termResult.scores).map(([subjectId, score]) => {
-                const subject = allSubjects.find(s => s.id === subjectId);
-                const total = (score.ca1 || 0) + (score.ca2 || 0) + (score.exam || 0);
-                const { grade, remark } = calculateGrade(total);
-                return { subjectName: subject?.name || 'Unknown', subSubjects: subject?.subSubjects || [], ca1: score.ca1, ca2: score.ca2, exam: score.exam, total, grade, remark };
-            });
-
-            const totalSum = scores.reduce((sum, entry) => sum + entry.total, 0);
-            const average = scores.length > 0 ? (totalSum / scores.length) : 0;
-            const overall = { average: average.toFixed(2), grade: calculateGrade(average).grade };
-
-            return { pupil: student, classroom: { name: classroom.name, teacherName: classroom.teacherName }, termResult, scores, overall };
-        }));
-
-        const validStudentData = studentDataForApi.filter(data => data !== null);
-
-        if (validStudentData.length === 0) {
-            toast({ variant: "destructive", title: "No Data", description: "No result data found for any student in this class for the selected term." });
-            setIsZipping(false);
-            return;
+        const authUser = auth.currentUser;
+        if (!authUser || authUser.uid !== user.uid) {
+          throw new Error('Your sign-in is no longer available. Please sign in again and retry the export.');
         }
-
-        const payload = {
-            pupils: validStudentData,
-            classroom,
-            schoolSettings: {
-                ...schoolSettings,
-                currentSession: sessionDoc.name,
-                currentTermId: selectedTerm,
-            },
-            templateData: savedTemplateData,
-        };
-
+        const idToken = await authUser.getIdToken();
         const response = await fetch('/api/export-class-zip', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload),
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${idToken}` },
+            body: JSON.stringify({
+              mode: exportMode,
+              sessionId: selectedSession,
+              termId: selectedTerm,
+              classroomId: selectedClass || undefined,
+              firebaseUser: authUser.toJSON(),
+            }),
         });
 
         if (!response.ok) {
             const errorData = await response.json();
-            throw new Error(errorData.details || `ZIP generation failed with status ${response.status}`);
+            const skippedDetail = Array.isArray(errorData.skipped) && errorData.skipped.length
+              ? ` ${errorData.skipped.length} student(s) were skipped; see the error details.`
+              : '';
+            throw new Error(`${errorData.error || `ZIP generation failed with status ${response.status}`}${skippedDetail}`);
         }
 
         const blob = await response.blob();
-        saveAs(blob, `${classroom.name.replace(/ /g, '_')}_Results.zip`);
+        if (blob.size < 100) throw new Error('The server returned an empty ZIP archive.');
+        const sessionName = sessions?.find(item => item.id === selectedSession)?.name || 'Session';
+        const termName = terms?.find(item => item.id === selectedTerm)?.name || 'Term';
+        const className = classrooms?.find(item => item.id === selectedClass)?.name || 'Class';
+        const filename = exportMode === 'class'
+          ? `${className.replace(/[^a-z0-9]/gi, '_')}_Results_${sessionName.replace(/[^a-z0-9]/gi, '_')}_${termName.replace(/[^a-z0-9]/gi, '_')}.zip`
+          : `Results_${sessionName.replace(/[^a-z0-9]/gi, '_')}_${termName.replace(/[^a-z0-9]/gi, '_')}.zip`;
+        saveAs(blob, filename);
 
-        toast({ title: 'Success', description: `Downloaded ZIP file for ${classroom.name}.` });
+        const pdfCount = response.headers.get('X-Export-PDF-Count') || '0';
+        const skippedCount = response.headers.get('X-Export-Skipped-Count') || '0';
+        toast({ title: 'Success', description: `Downloaded ${pdfCount} PDF(s). ${skippedCount} report(s) skipped; details are included in Export_Summary.txt.` });
 
     } catch (error: any) {
         console.error("Failed to generate ZIP:", error);
@@ -265,9 +229,16 @@ export function ResultViewTable() {
       <CardHeader>
         <CardTitle>View & Export Results</CardTitle>
         <CardDescription>
-            Select a session, term, and class to view student results and export their report cards.
+          Export student report cards as individual PDFs, by class or across the entire term.
         </CardDescription>
-        <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="mt-4 grid grid-cols-1 md:grid-cols-4 gap-4">
+          <Select value={exportMode} onValueChange={(value: 'class' | 'term') => setExportMode(value)}>
+            <SelectTrigger><SelectValue placeholder="Export Mode" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="class">Export by Class</SelectItem>
+              <SelectItem value="term">Export Entire Term</SelectItem>
+            </SelectContent>
+          </Select>
             <Select onValueChange={setSelectedSession} value={selectedSession || ''}>
                 <SelectTrigger><SelectValue placeholder="Select Session" /></SelectTrigger>
                 <SelectContent>
@@ -282,35 +253,45 @@ export function ResultViewTable() {
                 </SelectContent>
             </Select>
             
-            <Select onValueChange={handleClassChange} value={selectedClass || ''}>
+            {exportMode === 'class' ? (
+              <Select onValueChange={handleClassChange} value={selectedClass || ''}>
                 <SelectTrigger><SelectValue placeholder="Select Class" /></SelectTrigger>
                 <SelectContent>
                 {classrooms?.sort((a, b) => a.name.localeCompare(b.name)).map((c) => (
-                    <SelectItem key={c.id} value={c.id}>
-                    {c.name}
-                    </SelectItem>
+                  <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
                 ))}
                 </SelectContent>
-            </Select>
+              </Select>
+            ) : (
+              <div className="flex items-center rounded-md border px-3 text-sm text-muted-foreground">
+                All current classes
+              </div>
+            )}
         </div>
          <div className="mt-4 flex flex-col sm:flex-row gap-2 justify-end">
-            <Button onClick={handleBulkDownload} disabled={isDownloading || isZipping || isFetchingStudents || studentsInClass.length === 0} className="w-full sm:w-auto">
+            <Button onClick={handleBulkDownload} disabled={exportMode !== 'class' || !selectedSession || !selectedTerm || isDownloading || isZipping || isFetchingStudents || studentsInClass.length === 0} className="w-full sm:w-auto">
                 {isDownloading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
                 Export PDFs (Multi-Tab)
             </Button>
-            <Button onClick={handleBulkZip} disabled={isDownloading || isZipping || isFetchingStudents || studentsInClass.length === 0} className="w-full sm:w-auto">
+            <Button onClick={handleBulkZip} disabled={!selectedSession || !selectedTerm || (exportMode === 'class' && (!selectedClass || studentsInClass.length === 0)) || isDownloading || isZipping || isFetchingStudents} className="w-full sm:w-auto">
                 {isZipping ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileArchive className="mr-2 h-4 w-4" />}
-                Export All as ZIP
+                {exportMode === 'class' ? 'Export Class as ZIP' : 'Export Term as ZIP'}
             </Button>
         </div>
       </CardHeader>
       <CardContent>
-        {selectedClass && selectedSession && selectedTerm ? (
+        {selectedSession && selectedTerm && (exportMode === 'term' || selectedClass) ? (
           <>
-            <p className="text-sm text-muted-foreground mb-4">
-              Click &quot;Export PDFs&quot; to open each report in a new tab (allow pop-ups), or &quot;Export All as ZIP&quot; to get a single file with all reports. You can also view an individual report by clicking the button in the table.
-            </p>
-            <div className="overflow-x-auto">
+            {exportMode === 'term' ? (
+              <p className="text-sm text-muted-foreground mb-4">
+                The archive will contain eligible saved results from every class, organized into class folders. Missing, unpublished, or invalid results are listed in Export_Summary.txt.
+              </p>
+            ) : (
+              <p className="text-sm text-muted-foreground mb-4">
+                Export PDFs opens each report in a new tab. Export Class as ZIP creates a class folder containing each eligible report. Missing results are listed in Export_Summary.txt.
+              </p>
+            )}
+            {exportMode === 'class' && <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -351,11 +332,11 @@ export function ResultViewTable() {
                   )}
                 </TableBody>
               </Table>
-            </div>
+            </div>}
           </>
         ) : (
           <div className="text-center text-muted-foreground py-12">
-            Please select a session, term, and class to view the list of students.
+            {exportMode === 'class' ? 'Please select a session, term, and class.' : 'Please select a session and term to export all classes.'}
           </div>
         )}
       </CardContent>

@@ -70,6 +70,7 @@ type Enrollment = {
 type Student = {
     id: string;
     isDeleted?: boolean;
+  name?: string;
 }
 
 
@@ -106,16 +107,23 @@ export default function StudentsPage() {
     
     // Create a set of active student IDs for quick lookup
     const activeStudentIds = new Set(
-      allStudents.filter(student => !student.isDeleted).map(student => student.id)
+      allStudents
+        .filter(student => !student.isDeleted && typeof student.name === 'string' && student.name.trim().length > 0)
+        .map(student => student.id)
     );
 
-    // Count enrollments only if the student is active
-    return enrollments.reduce((acc, enrollment) => {
-      if (activeStudentIds.has(enrollment.studentId)) {
-        acc[enrollment.classroomId] = (acc[enrollment.classroomId] || 0) + 1;
-      }
-      return acc;
-    }, {} as Record<string, number>);
+    // Join by student ID and count each active student only once per class.
+    const studentsByClass = new Map<string, Set<string>>();
+    enrollments.forEach(({ classroomId, studentId }) => {
+      if (!classroomId || !studentId || !activeStudentIds.has(studentId)) return;
+      const classStudentIds = studentsByClass.get(classroomId) || new Set<string>();
+      classStudentIds.add(studentId);
+      studentsByClass.set(classroomId, classStudentIds);
+    });
+
+    return Object.fromEntries(
+      [...studentsByClass].map(([classroomId, studentIds]) => [classroomId, studentIds.size])
+    ) as Record<string, number>;
   }, [enrollments, allStudents]);
 
   // --- Event Handlers ---
@@ -168,15 +176,6 @@ export default function StudentsPage() {
             classroomId: classroomId,
             createdAt: serverTimestamp()
         });
-
-        // 3. (FIX) Create a reference document in the classrooms/{id}/students subcollection
-        const classStudentRef = doc(collection(firestore, 'classrooms', classroomId, 'students'), newStudentRef.id);
-        batch.set(classStudentRef, {
-            name: studentName,
-            studentId: newStudentRef.id,
-            createdAt: serverTimestamp()
-        });
-
 
         await batch.commit();
 
