@@ -52,7 +52,7 @@ const adminNavItems: NavItem[] = [
   
   { href: () => '/admin/promotions', label: 'Promotions', icon: ArrowUpCircle, roles: ["SuperAdmin"] },
   { href: () => '/admin/staff', label: 'Staff Accounts', icon: Users2, roles: ["SuperAdmin"] },
-  { href: () => '/admin/staff/assignments', label: 'Staff Assignment', icon: UserIcon, roles: ["SuperAdmin", "Admin"] },
+  { href: () => '/admin/staff/assignments', label: 'Staff Assignment', icon: Logo, roles: ["SuperAdmin", "Admin"] },
   { href: () => '/admin/sessions', label: 'Academic Sessions', icon: Building, roles: ["SuperAdmin"] },
   { href: () => '/admin/info', label: 'School Settings', icon: Info, roles: ["SuperAdmin"] },
   { href: () => '/admin/remarks', label: 'Predefined Remarks', icon: MessageSquareQuote, roles: ["SuperAdmin"] },
