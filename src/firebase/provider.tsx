@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, ReactNode, useState, useEffect, useMemo, DependencyList } from 'react';
 import { FirebaseApp } from 'firebase/app';
-import { Firestore, doc, getDoc, onSnapshot } from 'firebase/firestore';
+import { Firestore, doc, getDocFromServer, onSnapshot } from 'firebase/firestore';
 import { Auth, User, onAuthStateChanged } from 'firebase/auth';
 import { FirebaseErrorListener } from '@/components/FirebaseErrorListener';
 import { initializeFirebase } from '@/firebase'; // SAFE IMPORT
@@ -130,7 +130,7 @@ export function FirebaseProvider({ children }: { children: ReactNode }) {
           void (async () => {
             try {
               console.info('[Firebase] Profile lookup started', { projectId: firestore.app.options.projectId, uid: authUser.uid });
-              const initialSnapshot = await getDoc(userDocRef);
+              const initialSnapshot = await getDocFromServer(userDocRef);
               if (requestId !== profileRequestId || auth.currentUser?.uid !== authUser.uid) return;
               if (!initialSnapshot.exists()) {
                 const message = `No Firestore profile exists for authenticated user ${authUser.uid}.`;

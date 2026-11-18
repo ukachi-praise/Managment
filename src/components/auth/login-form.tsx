@@ -21,7 +21,7 @@ import { Loader2, Eye, EyeOff } from 'lucide-react';
 import Link from 'next/link';
 import { useAuth, useFirestore } from '@/firebase/provider';
 import { signInWithSessionPersistence } from '@/firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDocFromServer } from 'firebase/firestore';
 
 const formSchema = z.object({
   email: z.string().email({ message: 'Please enter a valid email.' }),
@@ -53,7 +53,7 @@ export function LoginForm() {
 
     try {
         const userCredential = await signInWithSessionPersistence(auth, values.email, values.password);
-        const profileSnapshot = await getDoc(doc(firestore, 'users', userCredential.user.uid));
+        const profileSnapshot = await getDocFromServer(doc(firestore, 'users', userCredential.user.uid));
         const roleValue = profileSnapshot.exists() && typeof profileSnapshot.data().role === 'string'
           ? profileSnapshot.data().role.trim().toLowerCase()
           : '';

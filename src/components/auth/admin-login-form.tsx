@@ -21,7 +21,7 @@ import { Loader2, Eye, EyeOff } from 'lucide-react';
 import Link from 'next/link';
 import { useAuth, useFirestore } from '@/firebase/provider';
 import { signInWithSessionPersistence } from '@/firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDocFromServer } from 'firebase/firestore';
 
 const formSchema = z.object({
   email: z.string().email({ message: 'Please enter a valid email.' }),
@@ -55,7 +55,7 @@ export function AdminLoginForm() {
         const user = userCredential.user;
         
         const userDocRef = doc(firestore, 'users', user.uid);
-        const userDoc = await getDoc(userDocRef);
+        const userDoc = await getDocFromServer(userDocRef);
 
         const isHardcodedAdmin = user.uid === 'GOpbb9SsavhpATk1p0KNmPGGQ0S2' || user.uid === 'WRbg0T3XA7eIpFFb9amDgvii12x1';
         const isFirestoreAdmin = userDoc.exists() && (userDoc.data().role === 'Admin' || userDoc.data().role === 'SuperAdmin');
