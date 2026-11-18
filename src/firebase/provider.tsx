@@ -2,10 +2,11 @@
 
 import React, { createContext, useContext, ReactNode, useState, useEffect, useMemo, DependencyList } from 'react';
 import { FirebaseApp } from 'firebase/app';
-import { Firestore, doc, getDocFromServer, onSnapshot } from 'firebase/firestore';
+import { Firestore, collection, doc, getDocFromServer, getDocsFromServer, onSnapshot, query, where } from 'firebase/firestore';
 import { Auth, User, onAuthStateChanged } from 'firebase/auth';
 import { FirebaseErrorListener } from '@/components/FirebaseErrorListener';
 import { initializeFirebase } from '@/firebase'; // SAFE IMPORT
+import { STAFF_CLASSROOM_ASSIGNMENTS } from '@/lib/hardcoded-staff-assignments';
 import { AlertCircle } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
@@ -111,16 +112,24 @@ export function FirebaseProvider({ children }: { children: ReactNode }) {
           setProfileError(null);
           setIsLoading(true);
 
-          // Firestore is the source of truth for authorization and classroom
-          // assignment. Do not fall back to stale UID-specific role or class data.
+          // Firestore is the source of truth for authorization. Classroom
+          // assignment is resolved separately for teachers below.
           const baseProfile: UserProfile = { email: authUser.email };
+          const hardcodedAssignment = STAFF_CLASSROOM_ASSIGNMENTS.find(
+            (assignment) => assignment.staffUid === authUser.uid
+          );
+          let resolvedClassroomId: string | null | undefined;
 
           const applyProfile = (profileData: Record<string, unknown>) => {
+            const role = normalizeRole(profileData.role);
             const finalProfile: UserProfile = {
               ...baseProfile,
               ...profileData,
-              role: normalizeRole(profileData.role),
+              role,
             };
+            if (role === 'Teacher') {
+              finalProfile.assignedClassroomId = resolvedClassroomId ?? undefined;
+            }
             setUser({ ...authUser, ...finalProfile });
             setProfileError(null);
             setIsLoading(false);
@@ -129,19 +138,36 @@ export function FirebaseProvider({ children }: { children: ReactNode }) {
           const userDocRef = doc(firestore, 'users', authUser.uid);
           void (async () => {
             try {
-              console.info('[Firebase] Profile lookup started', { projectId: firestore.app.options.projectId, uid: authUser.uid });
+              console.info('[Firebase] Profile lookup started', { projectId: firestore.app.options.projectId });
               const initialSnapshot = await getDocFromServer(userDocRef);
               if (requestId !== profileRequestId || auth.currentUser?.uid !== authUser.uid) return;
               if (!initialSnapshot.exists()) {
-                const message = `No Firestore profile exists for authenticated user ${authUser.uid}.`;
+                const message = 'No Firestore profile exists for the authenticated user.';
                 console.error(message);
                 setProfileError(message);
                 setUser({ ...authUser, ...baseProfile });
                 setIsLoading(false);
                 return;
               }
-              console.info('[Firebase] Profile document found', { projectId: firestore.app.options.projectId, uid: authUser.uid });
+              console.info('[Firebase] Profile document found', { projectId: firestore.app.options.projectId });
               applyProfile(initialSnapshot.data());
+              if (normalizeRole(initialSnapshot.data().role) === 'Teacher' && hardcodedAssignment) {
+                try {
+                  const classroomSnapshot = await getDocsFromServer(query(
+                    collection(firestore, 'classrooms'),
+                    where('name', '==', hardcodedAssignment.classroomName)
+                  ));
+                  if (requestId !== profileRequestId || auth.currentUser?.uid !== authUser.uid) return;
+                  resolvedClassroomId = classroomSnapshot.docs[0]?.id ?? null;
+                } catch (error) {
+                  resolvedClassroomId = null;
+                  console.error('[Firebase] Teacher classroom resolution failed', {
+                    code: (error as { code?: string })?.code || 'unknown',
+                    classroomName: hardcodedAssignment.classroomName,
+                  });
+                }
+                applyProfile(initialSnapshot.data());
+              }
               unsubscribeProfile = onSnapshot(userDocRef, (snapshot) => {
                 if (requestId !== profileRequestId || auth.currentUser?.uid !== authUser.uid || !snapshot.exists()) return;
                 applyProfile(snapshot.data());
@@ -158,7 +184,7 @@ export function FirebaseProvider({ children }: { children: ReactNode }) {
                 : code === 'unavailable' || code === 'deadline-exceeded'
                   ? 'Firestore is temporarily unavailable while loading the user profile.'
                   : error?.message || 'Unable to load your Firestore profile.';
-              console.error('[Firebase] Profile lookup failed', { code, message, projectId: firestore.app.options.projectId, uid: authUser.uid });
+              console.error('[Firebase] Profile lookup failed', { code, message, projectId: firestore.app.options.projectId });
               setProfileError(message);
               setUser({ ...authUser, ...baseProfile });
               setIsLoading(false);
