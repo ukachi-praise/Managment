@@ -22,6 +22,7 @@ import Link from 'next/link';
 import { useAuth, useFirestore } from '@/firebase/provider';
 import { signInWithSessionPersistence } from '@/firebase/auth';
 import { doc, getDocFromServer } from 'firebase/firestore';
+import { logAuthDiagnostic, logAuthDiagnosticError } from '@/lib/auth-diagnostics';
 
 const formSchema = z.object({
   email: z.string().email({ message: 'Please enter a valid email.' }),
@@ -51,22 +52,33 @@ export function AdminLoginForm() {
         return;
     }
     try {
+        logAuthDiagnostic('email-password-authentication-started', { entryPoint: 'admin-login' });
         const userCredential = await signInWithSessionPersistence(auth, values.email, values.password);
         const user = userCredential.user;
+        logAuthDiagnostic('email-password-authentication-succeeded', { entryPoint: 'admin-login', uidPresent: true });
         
         const userDocRef = doc(firestore, 'users', user.uid);
+        logAuthDiagnostic('login-profile-path-constructed', { entryPoint: 'admin-login', path: 'users/{authenticatedUid}' });
+        logAuthDiagnostic('login-profile-read-started', { entryPoint: 'admin-login', operation: 'getDocFromServer', path: 'users/{authenticatedUid}' });
         const userDoc = await getDocFromServer(userDocRef);
+        logAuthDiagnostic('login-profile-read-completed', { entryPoint: 'admin-login', documentExists: userDoc.exists() });
 
         const isHardcodedAdmin = user.uid === 'GOpbb9SsavhpATk1p0KNmPGGQ0S2' || user.uid === 'WRbg0T3XA7eIpFFb9amDgvii12x1';
         const isFirestoreAdmin = userDoc.exists() && (userDoc.data().role === 'Admin' || userDoc.data().role === 'SuperAdmin');
+        logAuthDiagnostic('login-role-validation-completed', { entryPoint: 'admin-login', valid: isHardcodedAdmin || isFirestoreAdmin, role: isFirestoreAdmin ? userDoc.data().role : null });
 
         if (isHardcodedAdmin || isFirestoreAdmin) {
             toast({
                 title: 'Login Successful',
                 description: 'Welcome to the control panel! Redirecting...',
             });
+            logAuthDiagnostic('final-redirect-decision', { entryPoint: 'admin-login', decision: 'redirect', destination: '/admin/dashboard', role: isFirestoreAdmin ? userDoc.data().role : 'hardcoded-admin' });
             router.push('/admin/dashboard');
         } else {
+             logAuthDiagnosticError('login-profile-validation-failed', {
+                code: !userDoc.exists() ? 'not-found' : 'invalid-profile',
+                message: !userDoc.exists() ? 'Profile document does not exist.' : 'Profile role is not administrative.',
+             }, { entryPoint: 'admin-login', path: 'users/{authenticatedUid}', documentExists: userDoc.exists() });
              toast({
                 variant: 'destructive',
                 title: 'Permission Denied',
@@ -75,6 +87,7 @@ export function AdminLoginForm() {
             await auth.signOut();
         }
     } catch (error: any) {
+        logAuthDiagnosticError('admin-login-failed', error, { entryPoint: 'admin-login' });
         if (error.code === 'auth/invalid-credential' || error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
             toast({
             variant: 'destructive',

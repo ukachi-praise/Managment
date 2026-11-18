@@ -9,6 +9,7 @@ import {
   initializeAuth,
 } from 'firebase/auth';
 import { getFirestore, Firestore } from 'firebase/firestore';
+import { logAuthDiagnostic, logAuthDiagnosticError } from '@/lib/auth-diagnostics';
 
 type FirebaseServices = {
     firebaseApp: FirebaseApp;
@@ -42,9 +43,10 @@ function initializeFirebase(): FirebaseServices | null {
 
   // Check for missing credentials.
   if (!firebaseConfig.apiKey || !firebaseConfig.projectId) {
-    console.warn(
-      'Firebase config is missing. Please add your Firebase credentials to your .env file.'
-    );
+    logAuthDiagnosticError('firebase-initialization-failed', new Error('Required Firebase configuration is missing.'), {
+      missingApiKey: !firebaseConfig.apiKey,
+      missingProjectId: !firebaseConfig.projectId,
+    });
     initializationFailed = true;
     return null;
   }
@@ -73,9 +75,15 @@ function initializeFirebase(): FirebaseServices | null {
       auth, 
       firestore: getFirestore(app) 
     };
+    logAuthDiagnostic('firebase-initialized', {
+      projectId: app.options.projectId,
+      authDomainPresent: Boolean(app.options.authDomain),
+      appIdPresent: Boolean(app.options.appId),
+      database: '(default)',
+    });
     return services;
   } catch (e) {
-    console.error("Error initializing Firebase:", e);
+    logAuthDiagnosticError('firebase-initialization-failed', e);
     initializationFailed = true;
     return null;
   }

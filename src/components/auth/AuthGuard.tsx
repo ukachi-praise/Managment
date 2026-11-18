@@ -7,6 +7,7 @@ import { useUser, useFirestore, useMemoFirebase } from '@/firebase/provider';
 import { useDoc } from '@/firebase/firestore/use-doc';
 import { Loader2 } from 'lucide-react';
 import { doc } from 'firebase/firestore';
+import { logAuthDiagnostic } from '@/lib/auth-diagnostics';
 
 
 type AuthGuardProps = {
@@ -44,6 +45,7 @@ export default function AuthGuard({
     if (!user) {
       const targetLogin = isAdminRoute ? '/admin/login' : '/login';
       if (pathname !== targetLogin) {
+        logAuthDiagnostic('final-redirect-decision', { entryPoint: 'auth-guard', decision: 'redirect-to-login', destination: targetLogin, pathname });
         router.replace(targetLogin);
       }
       return;
@@ -51,6 +53,7 @@ export default function AuthGuard({
 
     if (pathname.endsWith('/login')) {
       const dashboard = (userRole === 'SuperAdmin' || userRole === 'Admin') ? '/admin/dashboard' : '/teacher/dashboard';
+      logAuthDiagnostic('final-redirect-decision', { entryPoint: 'auth-guard', decision: 'redirect-from-login', destination: dashboard, role: userRole || null });
       router.replace(dashboard);
       return;
     }
@@ -75,14 +78,18 @@ export default function AuthGuard({
     const isAuthorizedForAdmin = (userRole === 'SuperAdmin' || userRole === 'Admin');
     if ((pathname.startsWith('/admin') && !isAuthorizedForAdmin) || (pathname.startsWith('/teacher') && isAuthorizedForAdmin)) {
        const correctDashboard = isAuthorizedForAdmin ? '/admin/dashboard' : '/teacher/dashboard';
+       logAuthDiagnostic('final-redirect-decision', { entryPoint: 'auth-guard', decision: 'redirect-to-role-dashboard', destination: correctDashboard, role: userRole || null, pathname });
        router.replace(correctDashboard);
        return;
     }
 
     if (!isAllowed) {
+      logAuthDiagnostic('final-redirect-decision', { entryPoint: 'auth-guard', decision: 'redirect-unauthorized', destination: '/unauthorized', role: userRole || null, pathname });
       router.replace('/unauthorized');
       return;
     }
+
+    logAuthDiagnostic('final-redirect-decision', { entryPoint: 'auth-guard', decision: 'allow', role: userRole || null, pathname });
 
   }, [isLoading, profileError, user, classroom, pathname, router, allow, specificClassroomId]);
 

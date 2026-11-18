@@ -9,6 +9,7 @@ import { useUser } from '@/firebase/provider';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { Loader2 } from 'lucide-react';
+import { logAuthDiagnostic } from '@/lib/auth-diagnostics';
 
 export default function LoginPage() {
   const { user, isLoggedIn, isLoading, profileError } = useUser();
@@ -27,6 +28,7 @@ export default function LoginPage() {
         : user.role === 'Teacher'
           ? '/teacher/dashboard'
           : '/unauthorized';
+      logAuthDiagnostic('final-redirect-decision', { entryPoint: 'staff-login-page', decision: 'redirect', destination, role: user.role || null });
       router.replace(destination);
     }
   }, [isLoading, isLoggedIn, user, profileError, router]);

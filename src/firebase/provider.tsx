@@ -7,6 +7,7 @@ import { Auth, User, onAuthStateChanged } from 'firebase/auth';
 import { FirebaseErrorListener } from '@/components/FirebaseErrorListener';
 import { initializeFirebase } from '@/firebase'; // SAFE IMPORT
 import { STAFF_CLASSROOM_ASSIGNMENTS } from '@/lib/hardcoded-staff-assignments';
+import { logAuthDiagnostic, logAuthDiagnosticError } from '@/lib/auth-diagnostics';
 import { AlertCircle } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
@@ -94,6 +95,10 @@ export function FirebaseProvider({ children }: { children: ReactNode }) {
     }
 
     const { auth, firestore } = services;
+    logAuthDiagnostic('auth-state-listener-initialized', {
+      projectId: firestore.app.options.projectId,
+      database: '(default)',
+    });
 
     let unsubscribeProfile: (() => void) | undefined;
     let profileRequestId = 0;
@@ -108,6 +113,8 @@ export function FirebaseProvider({ children }: { children: ReactNode }) {
         unsubscribeProfile = undefined;
 
         if (authUser) {
+          logAuthDiagnostic('user-authenticated', { uidPresent: true });
+          logAuthDiagnostic('authenticated-uid-obtained', { uidPresent: true });
           setUser(null);
           setProfileError(null);
           setIsLoading(true);
@@ -136,45 +143,114 @@ export function FirebaseProvider({ children }: { children: ReactNode }) {
           };
 
           const userDocRef = doc(firestore, 'users', authUser.uid);
+          logAuthDiagnostic('profile-document-path-constructed', {
+            path: 'users/{authenticatedUid}',
+            collection: userDocRef.parent.id,
+            documentIdPresent: Boolean(userDocRef.id),
+          });
           void (async () => {
             try {
-              console.info('[Firebase] Profile lookup started', { projectId: firestore.app.options.projectId });
+              logAuthDiagnostic('profile-read-started', {
+                operation: 'getDocFromServer',
+                path: 'users/{authenticatedUid}',
+                projectId: firestore.app.options.projectId,
+              });
               const initialSnapshot = await getDocFromServer(userDocRef);
               if (requestId !== profileRequestId || auth.currentUser?.uid !== authUser.uid) return;
+              logAuthDiagnostic('profile-read-completed', {
+                operation: 'getDocFromServer',
+                path: 'users/{authenticatedUid}',
+                documentExists: initialSnapshot.exists(),
+              });
               if (!initialSnapshot.exists()) {
                 const message = 'No Firestore profile exists for the authenticated user.';
-                console.error(message);
+                logAuthDiagnosticError('profile-read-failed', { code: 'not-found', message }, {
+                  operation: 'getDocFromServer',
+                  path: 'users/{authenticatedUid}',
+                  documentExists: false,
+                });
                 setProfileError(message);
                 setUser({ ...authUser, ...baseProfile });
                 setIsLoading(false);
                 return;
               }
-              console.info('[Firebase] Profile document found', { projectId: firestore.app.options.projectId });
-              applyProfile(initialSnapshot.data());
-              if (normalizeRole(initialSnapshot.data().role) === 'Teacher' && hardcodedAssignment) {
+              const profileData = initialSnapshot.data();
+              const schoolId = typeof profileData.schoolId === 'string' ? profileData.schoolId : undefined;
+              logAuthDiagnostic('school-id-extracted', {
+                schoolIdPresent: Boolean(schoolId),
+                source: 'users/{authenticatedUid}',
+              });
+              logAuthDiagnostic('school-document-read-skipped', {
+                reason: 'No school document lookup exists in the current authentication flow.',
+                schoolIdPresent: Boolean(schoolId),
+              });
+
+              const role = normalizeRole(profileData.role);
+              logAuthDiagnostic('role-validation-started', {
+                roleFieldPresent: typeof profileData.role === 'string',
+              });
+              logAuthDiagnostic('role-validation-completed', {
+                valid: Boolean(role),
+                role: role || null,
+              });
+              applyProfile(profileData);
+
+              logAuthDiagnostic('teacher-assignment-lookup-started', {
+                applicable: role === 'Teacher',
+                mappingPresent: Boolean(hardcodedAssignment),
+              });
+              if (role === 'Teacher' && hardcodedAssignment) {
                 try {
-                  const classroomSnapshot = await getDocsFromServer(query(
+                  const classroomQuery = query(
                     collection(firestore, 'classrooms'),
                     where('name', '==', hardcodedAssignment.classroomName)
-                  ));
+                  );
+                  logAuthDiagnostic('teacher-assignment-read-started', {
+                    operation: 'getDocsFromServer',
+                    path: 'classrooms',
+                    filter: 'name == mappedClassroomName',
+                  });
+                  const classroomSnapshot = await getDocsFromServer(classroomQuery);
                   if (requestId !== profileRequestId || auth.currentUser?.uid !== authUser.uid) return;
                   resolvedClassroomId = classroomSnapshot.docs[0]?.id ?? null;
+                  logAuthDiagnostic('teacher-assignment-lookup-completed', {
+                    documentExists: classroomSnapshot.docs.length > 0,
+                    matchCount: classroomSnapshot.docs.length,
+                    resolvedClassroomIdPresent: Boolean(resolvedClassroomId),
+                  });
                 } catch (error) {
                   resolvedClassroomId = null;
-                  console.error('[Firebase] Teacher classroom resolution failed', {
-                    code: (error as { code?: string })?.code || 'unknown',
-                    classroomName: hardcodedAssignment.classroomName,
+                  logAuthDiagnosticError('teacher-assignment-read-failed', error, {
+                    operation: 'getDocsFromServer',
+                    path: 'classrooms',
+                    filter: 'name == mappedClassroomName',
                   });
                 }
                 applyProfile(initialSnapshot.data());
+              } else {
+                logAuthDiagnostic('teacher-assignment-lookup-completed', {
+                  status: role === 'Teacher' ? 'not-mapped' : 'not-applicable',
+                  resolvedClassroomIdPresent: false,
+                });
               }
+              logAuthDiagnostic('profile-listener-started', {
+                operation: 'onSnapshot',
+                path: 'users/{authenticatedUid}',
+              });
               unsubscribeProfile = onSnapshot(userDocRef, (snapshot) => {
                 if (requestId !== profileRequestId || auth.currentUser?.uid !== authUser.uid || !snapshot.exists()) return;
+                logAuthDiagnostic('profile-listener-update', {
+                  path: 'users/{authenticatedUid}',
+                  documentExists: true,
+                });
                 applyProfile(snapshot.data());
               }, (error) => {
                 // The authenticated profile is already usable. Keep it available
                 // during transient listener/network failures and log the stage.
-                console.error('[Firebase] Profile listener failed', { code: error.code, message: error.message });
+                logAuthDiagnosticError('profile-listener-failed', error, {
+                  operation: 'onSnapshot',
+                  path: 'users/{authenticatedUid}',
+                });
               });
             } catch (error: any) {
               if (requestId !== profileRequestId || auth.currentUser?.uid !== authUser.uid) return;
@@ -184,7 +260,12 @@ export function FirebaseProvider({ children }: { children: ReactNode }) {
                 : code === 'unavailable' || code === 'deadline-exceeded'
                   ? 'Firestore is temporarily unavailable while loading the user profile.'
                   : error?.message || 'Unable to load your Firestore profile.';
-              console.error('[Firebase] Profile lookup failed', { code, message, projectId: firestore.app.options.projectId });
+              logAuthDiagnosticError('profile-read-failed', error, {
+                operation: 'getDocFromServer',
+                path: 'users/{authenticatedUid}',
+                projectId: firestore.app.options.projectId,
+                documentExists: false,
+              });
               setProfileError(message);
               setUser({ ...authUser, ...baseProfile });
               setIsLoading(false);
@@ -200,7 +281,9 @@ export function FirebaseProvider({ children }: { children: ReactNode }) {
         profileRequestId++;
         unsubscribeProfile?.();
         unsubscribeProfile = undefined;
-        console.error("Auth State Error:", error);
+        logAuthDiagnosticError('auth-state-listener-failed', error, {
+          operation: 'onAuthStateChanged',
+        });
         setUser(null);
         setProfileError(error.message || 'Unable to verify your account profile.');
         setIsLoading(false);
