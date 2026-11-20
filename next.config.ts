@@ -36,9 +36,10 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  serverExternalPackages: ['puppeteer'],
+  serverExternalPackages: ['puppeteer', 'puppeteer-core', '@sparticuz/chromium'],
+  outputFileTracingIncludes: {
+    '/api/export-class-zip': ['./node_modules/@sparticuz/chromium/bin/**'],
+  },
 };
 
 export default nextConfig;
-
-    

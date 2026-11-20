@@ -18,6 +18,7 @@ import * as htmlToImage from 'html-to-image';
 import jsPDF from 'jspdf';
 import { useToast } from '@/hooks/use-toast';
 import { fetchActiveStudentsByIds } from '@/lib/student-membership';
+import { RESULT_PDF_LAYOUT } from '@/lib/result-pdf-layout';
 
 
 // --- TYPE DEFINITIONS ---
@@ -113,32 +114,42 @@ export default function ResultSheetPage() {
         description: "Please wait while the report card is being created.",
     });
 
+    const originalStyle = node.getAttribute('style');
     try {
-        const dataUrl = await htmlToImage.toPng(node, { quality: 1.0, pixelRatio: 2 });
+        const captureWidthPx = Math.round(RESULT_PDF_LAYOUT.contentWidthMm * 96 / 25.4);
+        const captureHeightPx = Math.round(RESULT_PDF_LAYOUT.contentHeightMm * 96 / 25.4);
+        node.style.width = `${RESULT_PDF_LAYOUT.contentWidthMm}mm`;
+        node.style.height = `${RESULT_PDF_LAYOUT.contentHeightMm}mm`;
+        node.style.minHeight = `${RESULT_PDF_LAYOUT.contentHeightMm}mm`;
+        node.style.maxWidth = 'none';
+        node.style.padding = '6mm';
+        const reportOverflows = () => node.scrollHeight > node.clientHeight + 1;
+        if (reportOverflows()) {
+            node.classList.add('result-pdf-compact');
+            if (reportOverflows()) {
+                throw new Error('This result has more content than fits on one A4 page. Reduce unnecessary report spacing or simplify the report template, then retry.');
+            }
+        }
+        const dataUrl = await htmlToImage.toPng(node, { quality: 1.0, pixelRatio: 2, width: captureWidthPx, height: captureHeightPx });
         const pdf = new jsPDF("p", "mm", "a4");
         const img = new Image();
-        img.src = dataUrl;
-
-        img.onload = () => {
-            const pageWidth = pdf.internal.pageSize.getWidth(); // 210mm
-            const pageHeight = pdf.internal.pageSize.getHeight(); // 297mm
-            const imgWidth = img.width;
-            const imgHeight = img.height;
-            const ratio = Math.min(pageWidth / imgWidth, pageHeight / imgHeight);
-            const renderWidth = imgWidth * ratio;
-            const renderHeight = imgHeight * ratio;
-            const x = (pageWidth - renderWidth) / 2;
-            const y = (pageHeight - renderHeight) / 2;
-
-            pdf.addImage(dataUrl, "PNG", x, y, renderWidth, renderHeight, undefined, "FAST");
-            pdf.save(`${student.name.replace(/ /g, '_')}_Report.pdf`);
-            
-            toast({
-                title: "Download Started",
-                description: "Your PDF has been successfully generated.",
-            });
-        };
-        img.onerror = () => { throw new Error("Failed to load generated image."); }
+        await new Promise<void>((resolve, reject) => {
+            img.onload = () => resolve();
+            img.onerror = () => reject(new Error('Failed to load the report image for PDF export.'));
+            img.src = dataUrl;
+        });
+        pdf.addImage(
+            dataUrl,
+            "PNG",
+            RESULT_PDF_LAYOUT.marginMm,
+            RESULT_PDF_LAYOUT.marginMm,
+            RESULT_PDF_LAYOUT.contentWidthMm,
+            RESULT_PDF_LAYOUT.contentHeightMm,
+            undefined,
+            "FAST"
+        );
+        pdf.save(`${student.name.replace(/ /g, '_')}_Report.pdf`);
+        toast({ title: "Download Started", description: "Your PDF has been successfully generated." });
     } catch (error: any) {
         console.error("PDF Export Error:", error);
         toast({
@@ -147,6 +158,12 @@ export default function ResultSheetPage() {
             description: error.message || "An unexpected error occurred.",
         });
     } finally {
+        const node = resultSheetRef.current;
+        if (node) {
+            node.classList.remove('result-pdf-compact');
+            if (originalStyle === null) node.removeAttribute('style');
+            else node.setAttribute('style', originalStyle);
+        }
         setIsExporting(false);
     }
   };
@@ -202,4 +219,4 @@ export default function ResultSheetPage() {
   );
 }
 
-    
+

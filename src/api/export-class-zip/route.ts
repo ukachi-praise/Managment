@@ -3,34 +3,26 @@ export const runtime = "nodejs"; // IMPORTANT: Force Node.js runtime
 
 import { NextRequest, NextResponse } from 'next/server';
 import JSZip from 'jszip';
-import puppeteer from 'puppeteer';
+import type { Browser } from 'puppeteer-core';
 import { generateReportCardHtml } from '@/lib/render-result-template';
+import { launchPdfBrowser } from '@/lib/server/pdf-browser';
 
-async function generatePupilPDF(pupilData: any) {
+async function generatePupilPDF(browser: Browser, pupilData: any) {
     const html = await generateReportCardHtml(pupilData);
-    
-    // Add more robust arguments for compatibility with restricted cloud environments.
-    const browser = await puppeteer.launch({ 
-        headless: true, 
-        args: [
-            '--no-sandbox', 
-            '--disable-setuid-sandbox',
-            '--disable-gpu',
-            '--disable-dev-shm-usage'
-        ] 
-    });
     const page = await browser.newPage();
-    
-    await page.setContent(html, { waitUntil: 'networkidle0' });
-
-    const pdfBuffer = await page.pdf({ format: 'A4', printBackground: true, margin: { top: '0px', right: '0px', bottom: '0px', left: '0px' } });
-    await browser.close();
-
-    return pdfBuffer;
+    try {
+        await page.setContent(html, { waitUntil: 'networkidle0' });
+        const pdfBuffer = Buffer.from(await page.pdf({ format: 'A4', printBackground: true, margin: { top: '0px', right: '0px', bottom: '0px', left: '0px' } }));
+        if (pdfBuffer.length < 1000 || pdfBuffer.subarray(0, 4).toString() !== '%PDF') throw new Error('Puppeteer returned an invalid or empty PDF.');
+        return pdfBuffer;
+    } finally {
+        await page.close().catch(() => undefined);
+    }
 }
 
 
 export async function POST(req: NextRequest) {
+    let browser: Browser | undefined;
     try {
         const body = await req.json();
 
@@ -48,6 +40,8 @@ export async function POST(req: NextRequest) {
         if (!classFolder) {
             throw new Error('Could not create zip folder for the class.');
         }
+        browser = await launchPdfBrowser();
+        const generationErrors: string[] = [];
 
         for (const pupilData of validPupils) {
             const { pupil } = pupilData;
@@ -65,14 +59,20 @@ export async function POST(req: NextRequest) {
                     schoolSettings,
                     templateData,
                 };
-                const pdfBuffer = await generatePupilPDF(fullPupilPayload);
+                const pdfBuffer = await generatePupilPDF(browser, fullPupilPayload);
                 // Add the PDF to the single class folder
                 classFolder.file(`${pupil.name.replace(/ /g, '_')}_Report.pdf`, pdfBuffer);
             } catch(err: any) {
                 console.error(`PDF generation failed for ${pupil.name}:`, err.message);
-                 // Add a text file indicating the error for this specific pupil
-                classFolder.file(`${pupil.name}_PDF_GENERATION_FAILED.txt`, err.message);
+                generationErrors.push(`${pupil.name}: ${err.message}`);
             }
+        }
+
+        if (generationErrors.length) {
+            return NextResponse.json({ error: 'One or more PDFs could not be generated; no ZIP was created.', details: generationErrors }, { status: 500 });
+        }
+        if (!Object.keys(zip.files).some(path => path.endsWith('.pdf'))) {
+            return NextResponse.json({ error: 'No valid PDF reports were generated.' }, { status: 500 });
         }
 
         const zipBuffer = await zip.generateAsync({ type: 'nodebuffer' });
@@ -91,5 +91,7 @@ export async function POST(req: NextRequest) {
             status: 500,
             headers: { 'Content-Type': 'application/json' },
         });
+    } finally {
+        await browser?.close().catch(() => undefined);
     }
 }

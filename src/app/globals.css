@@ -73,6 +73,14 @@ body::before {
   }
 }
 
+/* Applied only when a student's report content needs a little more vertical room. */
+.result-pdf-compact .mb-4 { margin-bottom: 0.5rem !important; }
+.result-pdf-compact .mt-4 { margin-top: 0.5rem !important; }
+.result-pdf-compact .p-2 { padding: 0.35rem !important; }
+.result-pdf-compact .pt-4 { padding-top: 0.5rem !important; }
+.result-pdf-compact table th,
+.result-pdf-compact table td { padding: 2px !important; line-height: 1.1 !important; }
+
 @media print {
   body::before {
     display: none !important;
@@ -85,5 +93,15 @@ body::before {
   }
   .no-print {
     display: none !important;
+  }
+
+  .result-report-card {
+    width: var(--result-pdf-content-width) !important;
+    height: var(--result-pdf-content-height) !important;
+    min-height: var(--result-pdf-content-height) !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 6mm !important;
+    box-shadow: none !important;
   }
 }

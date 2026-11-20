@@ -2,15 +2,72 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Explicit collection-group access is required for real-time result
-    // monitoring across students/{studentId}/results/{resultId}.
-    match /{path=**}/results/{resultId} {
-      allow read: if request.auth != null;
+    function signedIn() {
+      return request.auth != null;
     }
 
-    // Applies to every collection and document
+    function profilePath(uid) {
+      return /databases/$(database)/documents/users/$(uid);
+    }
+
+    function activeStaff() {
+      let profile = get(profilePath(request.auth.uid)).data;
+      return signedIn()
+        && exists(profilePath(request.auth.uid))
+        && profile.role in ['SuperAdmin', 'Admin', 'Teacher']
+        && (!profile.keys().hasAny(['status']) || profile.status in ['active', 'approved', 'Active', 'Approved'])
+        && (!profile.keys().hasAny(['accountStatus']) || profile.accountStatus in ['active', 'approved', 'Active', 'Approved']);
+    }
+
+    function isAdmin() {
+      return activeStaff() && get(profilePath(request.auth.uid)).data.role in ['SuperAdmin', 'Admin'];
+    }
+
+    function isTeacher() {
+      return activeStaff() && get(profilePath(request.auth.uid)).data.role == 'Teacher';
+    }
+
+    function roleUnchanged() {
+      return !resource.data.keys().hasAny(['role'])
+        || !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role']);
+    }
+
+    function assignedTeacher(classroomId) {
+      return isTeacher()
+        && classroomId is string
+        && get(/databases/$(database)/documents/classrooms/$(classroomId)).data.teacherId == request.auth.uid
+        && get(profilePath(request.auth.uid)).data.assignedClassroomId == classroomId;
+    }
+
+    function resultBelongsToTeacher(resultData) {
+      return resultData.classroomId is string && assignedTeacher(resultData.classroomId);
+    }
+
+    match /users/{uid} {
+      allow read: if activeStaff();
+      allow update: if activeStaff()
+        && request.auth.uid == uid
+        && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role']);
+    }
+
+    match /classrooms/{classroomId} {
+      allow update: if assignedTeacher(classroomId)
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['teacherName']);
+    }
+
+    match /{path=**}/results/{resultId} {
+      allow read: if activeStaff();
+      allow create: if isAdmin() || resultBelongsToTeacher(request.resource.data);
+      allow update: if (isAdmin() && roleUnchanged())
+        || (resultBelongsToTeacher(resource.data) && resultBelongsToTeacher(request.resource.data));
+      allow delete: if isAdmin();
+    }
+
     match /{document=**} {
-      allow read, write: if request.auth != null;
+      allow read: if activeStaff();
+      allow create: if isAdmin() && !request.resource.data.keys().hasAny(['role']);
+      allow update: if isAdmin() && roleUnchanged();
+      allow delete: if isAdmin() && !resource.data.keys().hasAny(['role']);
     }
   }
 }

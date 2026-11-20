@@ -2,11 +2,11 @@
 'use client';
 
 import React, { type ReactNode } from 'react';
-import { FirebaseProvider, useFirebase } from '@/firebase/provider';
+import { FirebaseProvider, useUser } from '@/firebase/provider';
 import { Loader2 } from 'lucide-react';
 
 function FirebaseGate({ children }: { children: ReactNode }) {
-    const { isLoading: isUserLoading } = useFirebase();
+    const { isLoading: isUserLoading } = useUser();
 
     // The gate will show a loader only during the initial user check
     // or if core services are not yet available.

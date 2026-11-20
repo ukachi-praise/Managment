@@ -19,9 +19,8 @@ import { toast } from '@/hooks/use-toast';
 import { useState } from 'react';
 import { Loader2, Eye, EyeOff } from 'lucide-react';
 import Link from 'next/link';
-import { useAuth, useFirestore } from '@/firebase/provider';
+import { useAuth } from '@/firebase/provider';
 import { signInWithSessionPersistence } from '@/firebase/auth';
-import { doc, getDocFromServer } from 'firebase/firestore';
 import { logAuthDiagnostic, logAuthDiagnosticError } from '@/lib/auth-diagnostics';
 
 const formSchema = z.object({
@@ -34,7 +33,6 @@ export function LoginForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const auth = useAuth();
-  const firestore = useFirestore();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -46,7 +44,7 @@ export function LoginForm() {
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
-    if (!auth || !firestore) {
+    if (!auth) {
         toast({ variant: 'destructive', title: 'Firebase not initialized.'});
         setIsLoading(false);
         return;
@@ -54,30 +52,11 @@ export function LoginForm() {
 
     try {
         logAuthDiagnostic('email-password-authentication-started', { entryPoint: 'staff-login' });
-        const userCredential = await signInWithSessionPersistence(auth, values.email, values.password);
+        await signInWithSessionPersistence(auth, values.email, values.password);
         logAuthDiagnostic('email-password-authentication-succeeded', { entryPoint: 'staff-login', uidPresent: true });
-        const profileRef = doc(firestore, 'users', userCredential.user.uid);
-        logAuthDiagnostic('login-profile-path-constructed', { entryPoint: 'staff-login', path: 'users/{authenticatedUid}' });
-        logAuthDiagnostic('login-profile-read-started', { entryPoint: 'staff-login', operation: 'getDocFromServer', path: 'users/{authenticatedUid}' });
-        const profileSnapshot = await getDocFromServer(profileRef);
-        logAuthDiagnostic('login-profile-read-completed', { entryPoint: 'staff-login', documentExists: profileSnapshot.exists() });
-        const roleValue = profileSnapshot.exists() && typeof profileSnapshot.data().role === 'string'
-          ? profileSnapshot.data().role.trim().toLowerCase()
-          : '';
-        const role = roleValue === 'teacher' ? 'Teacher' : roleValue === 'admin' ? 'Admin' : roleValue === 'superadmin' || roleValue === 'super admin' ? 'SuperAdmin' : null;
-        logAuthDiagnostic('login-role-validation-completed', { entryPoint: 'staff-login', valid: Boolean(role), role });
-        if (!profileSnapshot.exists() || !role) {
-          logAuthDiagnosticError('login-profile-validation-failed', {
-            code: !profileSnapshot.exists() ? 'not-found' : 'invalid-profile',
-            message: !profileSnapshot.exists() ? 'Profile document does not exist.' : 'Profile role is not authorized.',
-          }, { entryPoint: 'staff-login', path: 'users/{authenticatedUid}', documentExists: profileSnapshot.exists() });
-          await auth.signOut();
-          throw new Error('Your account profile is missing or does not have an authorized staff role.');
-        }
         toast({ title: 'Login Successful', description: 'Redirecting...' });
-        const destination = role === 'Teacher' ? '/teacher/dashboard' : '/admin/dashboard';
-        logAuthDiagnostic('final-redirect-decision', { entryPoint: 'staff-login', decision: 'redirect', destination, role });
-        router.push(destination);
+        logAuthDiagnostic('final-redirect-decision', { entryPoint: 'staff-login', decision: 'provider-and-guard' });
+        router.refresh();
 
     } catch (error: any) {
         logAuthDiagnosticError('staff-login-failed', error, { entryPoint: 'staff-login' });

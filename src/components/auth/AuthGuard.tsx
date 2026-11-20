@@ -107,8 +107,8 @@ export default function AuthGuard({
     return (
       <div className="flex min-h-screen w-full items-center justify-center p-6 text-center">
         <div>
-          <h1 className="text-xl font-semibold text-destructive">Account profile unavailable</h1>
-          <p className="mt-2 max-w-lg text-sm text-muted-foreground">We could not load your staff profile. Please contact an administrator and try again.</p>
+          <h1 className="text-xl font-semibold text-destructive">Account access needs attention</h1>
+          <p className="mt-2 max-w-lg text-sm text-muted-foreground">{profileError}</p>
         </div>
       </div>
     );

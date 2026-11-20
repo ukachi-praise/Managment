@@ -2,7 +2,9 @@ export const runtime = 'nodejs';
 
 import { NextRequest, NextResponse } from 'next/server';
 import JSZip from 'jszip';
-import puppeteer, { Browser } from 'puppeteer';
+import type { Browser } from 'puppeteer-core';
+import { launchPdfBrowser } from '@/lib/server/pdf-browser';
+import { RESULT_PDF_LAYOUT } from '@/lib/result-pdf-layout';
 
 type FirestoreDocument = { id: string; [key: string]: any };
 type BrowserAuthUser = {
@@ -242,18 +244,35 @@ async function generatePupilPDF(
     await page.evaluate(async () => { await document.fonts.ready; });
     await page.emulateMediaType('print');
 
+    let reportOverflows = await page.$eval('[data-report-card-ready="true"]', (element) => {
+      const report = element as HTMLElement;
+      return report.scrollHeight > report.clientHeight + 1;
+    });
+    if (reportOverflows) {
+      await page.$eval('[data-report-card-ready="true"]', (element) => element.classList.add('result-pdf-compact'));
+      reportOverflows = await page.$eval('[data-report-card-ready="true"]', (element) => {
+        const report = element as HTMLElement;
+        return report.scrollHeight > report.clientHeight + 1;
+      });
+    }
+    if (reportOverflows) {
+      throw new Error('This result has more content than fits on one A4 page, even after reducing unnecessary spacing.');
+    }
+
     const pdf = await page.pdf({
       format: 'A4',
-      preferCSSPageSize: true,
+      preferCSSPageSize: false,
       printBackground: true,
       scale: 1,
       displayHeaderFooter: false,
-      margin: { top: '8mm', right: '8mm', bottom: '8mm', left: '8mm' },
+      margin: RESULT_PDF_LAYOUT.margin,
     });
     const pdfBuffer = Buffer.from(pdf);
     if (pdfBuffer.length < 1000 || pdfBuffer.subarray(0, 4).toString() !== '%PDF') {
       throw new Error('Puppeteer returned an invalid or empty PDF.');
     }
+    const pdfPageCount = (pdfBuffer.toString('latin1').match(/\/Type\s*\/Page\b/g) || []).length;
+    if (pdfPageCount !== 1) throw new Error(`Expected one page per student, but Chromium generated ${pdfPageCount} pages.`);
     return pdfBuffer;
   } finally {
     await page.close().catch(() => undefined);
@@ -368,10 +387,7 @@ export async function POST(req: NextRequest) {
 
     if (reports.length === 0) return NextResponse.json({ error: 'No eligible saved results were found.', skipped }, { status: 422 });
 
-    browser = await puppeteer.launch({
-      headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-gpu', '--disable-dev-shm-usage'],
-    });
+    browser = await launchPdfBrowser();
     const zip = new JSZip();
     const generationErrors: SkippedReport[] = [];
     await mapWithConcurrency(reports, 2, async report => {
@@ -389,6 +405,10 @@ export async function POST(req: NextRequest) {
       }
     });
     skipped.push(...generationErrors);
+
+    if (generationErrors.length > 0) {
+      return NextResponse.json({ error: 'One or more PDFs could not be generated; no ZIP was created.', skipped }, { status: 500 });
+    }
 
     const pdfPaths = Object.keys(zip.files).filter(path => path.endsWith('.pdf'));
     if (pdfPaths.length === 0) return NextResponse.json({ error: 'Puppeteer could not generate any valid PDFs.', skipped }, { status: 500 });

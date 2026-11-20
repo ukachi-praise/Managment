@@ -19,9 +19,8 @@ import { toast } from '@/hooks/use-toast';
 import { useState } from 'react';
 import { Loader2, Eye, EyeOff } from 'lucide-react';
 import Link from 'next/link';
-import { useAuth, useFirestore } from '@/firebase/provider';
+import { useAuth } from '@/firebase/provider';
 import { signInWithSessionPersistence } from '@/firebase/auth';
-import { doc, getDocFromServer } from 'firebase/firestore';
 import { logAuthDiagnostic, logAuthDiagnosticError } from '@/lib/auth-diagnostics';
 
 const formSchema = z.object({
@@ -34,7 +33,6 @@ export function AdminLoginForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const auth = useAuth();
-  const firestore = useFirestore();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -46,46 +44,18 @@ export function AdminLoginForm() {
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
-    if (!auth || !firestore) {
+    if (!auth) {
         toast({ variant: 'destructive', title: 'System not ready.' });
         setIsLoading(false);
         return;
     }
     try {
         logAuthDiagnostic('email-password-authentication-started', { entryPoint: 'admin-login' });
-        const userCredential = await signInWithSessionPersistence(auth, values.email, values.password);
-        const user = userCredential.user;
+        await signInWithSessionPersistence(auth, values.email, values.password);
         logAuthDiagnostic('email-password-authentication-succeeded', { entryPoint: 'admin-login', uidPresent: true });
-        
-        const userDocRef = doc(firestore, 'users', user.uid);
-        logAuthDiagnostic('login-profile-path-constructed', { entryPoint: 'admin-login', path: 'users/{authenticatedUid}' });
-        logAuthDiagnostic('login-profile-read-started', { entryPoint: 'admin-login', operation: 'getDocFromServer', path: 'users/{authenticatedUid}' });
-        const userDoc = await getDocFromServer(userDocRef);
-        logAuthDiagnostic('login-profile-read-completed', { entryPoint: 'admin-login', documentExists: userDoc.exists() });
-
-        const isHardcodedAdmin = user.uid === 'GOpbb9SsavhpATk1p0KNmPGGQ0S2' || user.uid === 'WRbg0T3XA7eIpFFb9amDgvii12x1';
-        const isFirestoreAdmin = userDoc.exists() && (userDoc.data().role === 'Admin' || userDoc.data().role === 'SuperAdmin');
-        logAuthDiagnostic('login-role-validation-completed', { entryPoint: 'admin-login', valid: isHardcodedAdmin || isFirestoreAdmin, role: isFirestoreAdmin ? userDoc.data().role : null });
-
-        if (isHardcodedAdmin || isFirestoreAdmin) {
-            toast({
-                title: 'Login Successful',
-                description: 'Welcome to the control panel! Redirecting...',
-            });
-            logAuthDiagnostic('final-redirect-decision', { entryPoint: 'admin-login', decision: 'redirect', destination: '/admin/dashboard', role: isFirestoreAdmin ? userDoc.data().role : 'hardcoded-admin' });
-            router.push('/admin/dashboard');
-        } else {
-             logAuthDiagnosticError('login-profile-validation-failed', {
-                code: !userDoc.exists() ? 'not-found' : 'invalid-profile',
-                message: !userDoc.exists() ? 'Profile document does not exist.' : 'Profile role is not administrative.',
-             }, { entryPoint: 'admin-login', path: 'users/{authenticatedUid}', documentExists: userDoc.exists() });
-             toast({
-                variant: 'destructive',
-                title: 'Permission Denied',
-                description: 'This area is restricted to administrative staff only.',
-            });
-            await auth.signOut();
-        }
+        toast({ title: 'Login Successful', description: 'Redirecting...' });
+        logAuthDiagnostic('final-redirect-decision', { entryPoint: 'admin-login', decision: 'provider-and-guard' });
+        router.refresh();
     } catch (error: any) {
         logAuthDiagnosticError('admin-login-failed', error, { entryPoint: 'admin-login' });
         if (error.code === 'auth/invalid-credential' || error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {

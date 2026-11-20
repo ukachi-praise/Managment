@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useEffect, forwardRef } from 'react';
+import { useState, useMemo, useEffect, forwardRef, type CSSProperties } from 'react';
 import {
   Table,
   TableBody,
@@ -30,6 +30,7 @@ import { format } from 'date-fns';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Separator } from '@/components/ui/separator';
 import { SCHOOL_NAME } from '@/lib/school';
+import { RESULT_PDF_LAYOUT } from '@/lib/result-pdf-layout';
 
 // --- TYPE DEFINITIONS ---
 export type PupilData = { id: string; name: string; admissionNumber: string; isDeleted?: boolean; };
@@ -266,7 +267,15 @@ export const ResultSheet = forwardRef<HTMLDivElement, ResultSheetProps>(({
   const softSkillsCol2 = allSoftSkillsList.slice(6);
 
   return (
-    <div ref={ref} data-report-card-ready={String(!isLoading && !!student && !!termResult)} className="relative w-full max-w-[794px] mx-auto min-h-[1250px] bg-white text-black print:shadow-none print:m-0 print:p-0 print:w-[194mm] print:max-w-none print:min-h-[281mm] print:h-auto flex flex-col p-6 border-4 border-black">
+    <div
+        ref={ref}
+        data-report-card-ready={String(!isLoading && !!student && !!termResult)}
+        style={{
+            '--result-pdf-content-width': `${RESULT_PDF_LAYOUT.contentWidthMm}mm`,
+            '--result-pdf-content-height': `${RESULT_PDF_LAYOUT.contentHeightMm}mm`,
+        } as CSSProperties}
+        className="result-report-card relative w-full max-w-[794px] mx-auto min-h-[1250px] bg-white text-black flex flex-col p-6 border-4 border-black"
+    >
         <div className="absolute inset-0 z-0 flex items-center justify-center pointer-events-none">
             <Image src="/Logo.jpg" alt="School Watermark" width={500} height={500} className="opacity-15" />
         </div>
@@ -293,7 +302,7 @@ export const ResultSheet = forwardRef<HTMLDivElement, ResultSheetProps>(({
                 </header>
             )}
 
-            <div className="flex-grow overflow-hidden flex flex-col">
+            <div className="flex-grow min-h-0 flex flex-col">
                 {settings.studentInfo.visible && (
                     <div className="mb-4 p-2 border border-black" style={{ fontSize: `12px` }}>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-y-1 gap-x-4">
@@ -311,7 +320,7 @@ export const ResultSheet = forwardRef<HTMLDivElement, ResultSheetProps>(({
                 )}
                 
                 {settings.subjectsTable.visible && (
-                    <div className="border border-black overflow-auto">
+                    <div className="border border-black overflow-visible">
                         <Table>
                             <TableHeader>
                                 <TableRow>
