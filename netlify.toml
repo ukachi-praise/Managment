@@ -9,7 +9,6 @@
 
 [functions]
   node_bundler = "esbuild"
-  memory = 2048
   external_node_modules = ["@sparticuz/chromium", "puppeteer-core", "puppeteer"]
   included_files = ["node_modules/@sparticuz/chromium/bin/**"]
 

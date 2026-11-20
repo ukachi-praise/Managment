@@ -3,16 +3,14 @@ import type {NextConfig} from 'next';
 
 const nextConfig: NextConfig = {
   /* config options here */
+  allowedDevOrigins: [
+    'https://9000-firebase-studio-1762849495888.cluster-lu4mup47g5gm4rtyvhzpwbfadi.cloudworkstations.dev',
+  ],
   typescript: {
     ignoreBuildErrors: true,
   },
   eslint: {
     ignoreDuringBuilds: true,
-  },
-  experimental: {
-    allowedDevOrigins: [
-      'https://9000-firebase-studio-1762849495888.cluster-lu4mup47g5gm4rtyvhzpwbfadi.cloudworkstations.dev',
-    ],
   },
   images: {
     remotePatterns: [

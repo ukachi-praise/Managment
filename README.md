@@ -27,6 +27,6 @@ The Firestore rules require an active `users/{uid}` profile, prevent client-side
 
 The export route uses Puppeteer's locally installed browser on localhost and `@sparticuz/chromium` with `puppeteer-core` on Netlify. Netlify builds must keep `PUPPETEER_SKIP_DOWNLOAD=true`; Chromium is packaged as its own serverless binary. The Next.js trace for `/api/export-class-zip` includes the Chromium assets.
 
-`netlify.toml` requests 2 GB for Netlify functions. Netlify only allows higher memory on eligible credit-based Pro/Enterprise plans; the setting may need to be adjusted for the site's plan. Synchronous Netlify functions also have a hard 60-second execution cap. Large exports that exceed it need an asynchronous/background export workflow.
+`netlify.toml` leaves function memory at Netlify's plan default. Synchronous Netlify functions have a hard 60-second execution cap. Large exports that exceed it need an asynchronous/background export workflow.
 
 Run `npm run verify:pdf-export` to check local browser launch, PDF validity, and ZIP contents. This does not test Firebase-backed class data or a deployed Netlify function.
