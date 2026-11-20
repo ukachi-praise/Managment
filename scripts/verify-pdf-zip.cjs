@@ -4,7 +4,6 @@ const os = require('node:os');
 const path = require('node:path');
 const ts = require('typescript');
 const JSZip = require('jszip');
-const { jsPDF } = require('jspdf');
 
 require.extensions['.ts'] = (module, filename) => {
   const source = fs.readFileSync(filename, 'utf8');
@@ -13,6 +12,7 @@ require.extensions['.ts'] = (module, filename) => {
 };
 const { launchPdfBrowser } = require('../src/lib/server/pdf-browser.ts');
 const { RESULT_PDF_LAYOUT } = require('../src/lib/result-pdf-layout.ts');
+const { createA4ResultPdfFromImage } = require('../src/lib/result-pdf.ts');
 
 function reportHtml(studentName) {
   return `<!doctype html><html><head><meta charset="utf-8"><style>
@@ -65,17 +65,7 @@ async function main() {
     const reportImage = await reportElement.screenshot({ type: 'png' });
     const previewPath = path.join(os.tmpdir(), 'arms-result-pdf-preview.png');
     fs.writeFileSync(previewPath, reportImage);
-    const individualPdf = new jsPDF('p', 'mm', 'a4');
-    individualPdf.addImage(
-      `data:image/png;base64,${reportImage.toString('base64')}`,
-      'PNG',
-      RESULT_PDF_LAYOUT.marginMm,
-      RESULT_PDF_LAYOUT.marginMm,
-      RESULT_PDF_LAYOUT.contentWidthMm,
-      RESULT_PDF_LAYOUT.contentHeightMm,
-      undefined,
-      'FAST'
-    );
+    const individualPdf = createA4ResultPdfFromImage(`data:image/png;base64,${reportImage.toString('base64')}`);
     const individualBuffer = Buffer.from(individualPdf.output('arraybuffer'));
     assertOneA4Page(individualBuffer, 'Individual export');
 
@@ -86,14 +76,17 @@ async function main() {
     for (const studentName of ['Batch Student 1', 'Batch Student 2']) {
       const page = await browser.newPage();
       try {
+        await page.setViewport({
+          width: Math.round(RESULT_PDF_LAYOUT.contentWidthMm * 96 / 25.4),
+          height: Math.round(RESULT_PDF_LAYOUT.contentHeightMm * 96 / 25.4),
+          deviceScaleFactor: 2,
+        });
         await page.setContent(reportHtml(studentName), { waitUntil: 'networkidle0' });
-        const pdfBuffer = Buffer.from(await page.pdf({
-          format: 'A4',
-          printBackground: true,
-          scale: 1,
-          displayHeaderFooter: false,
-          margin: RESULT_PDF_LAYOUT.margin,
-        }));
+        const element = await page.$('#report');
+        assert.ok(element);
+        const png = await element.screenshot({ type: 'png', captureBeyondViewport: false, omitBackground: false });
+        const pdf = createA4ResultPdfFromImage(`data:image/png;base64,${png.toString('base64')}`);
+        const pdfBuffer = Buffer.from(pdf.output('arraybuffer'));
         assertOneA4Page(pdfBuffer, `${studentName} batch export`);
         classFolder.file(`${studentName.replaceAll(' ', '_')}_Report.pdf`, pdfBuffer);
         batchPdfSizes.push(pdfBuffer.length);

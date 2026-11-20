@@ -15,10 +15,10 @@ import { Loader2, ArrowLeft, Printer } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import * as htmlToImage from 'html-to-image';
-import jsPDF from 'jspdf';
 import { useToast } from '@/hooks/use-toast';
 import { fetchActiveStudentsByIds } from '@/lib/student-membership';
 import { RESULT_PDF_LAYOUT } from '@/lib/result-pdf-layout';
+import { createA4ResultPdfFromImage } from '@/lib/result-pdf';
 
 
 // --- TYPE DEFINITIONS ---
@@ -131,23 +131,13 @@ export default function ResultSheetPage() {
             }
         }
         const dataUrl = await htmlToImage.toPng(node, { quality: 1.0, pixelRatio: 2, width: captureWidthPx, height: captureHeightPx });
-        const pdf = new jsPDF("p", "mm", "a4");
         const img = new Image();
         await new Promise<void>((resolve, reject) => {
             img.onload = () => resolve();
             img.onerror = () => reject(new Error('Failed to load the report image for PDF export.'));
             img.src = dataUrl;
         });
-        pdf.addImage(
-            dataUrl,
-            "PNG",
-            RESULT_PDF_LAYOUT.marginMm,
-            RESULT_PDF_LAYOUT.marginMm,
-            RESULT_PDF_LAYOUT.contentWidthMm,
-            RESULT_PDF_LAYOUT.contentHeightMm,
-            undefined,
-            "FAST"
-        );
+        const pdf = createA4ResultPdfFromImage(dataUrl);
         pdf.save(`${student.name.replace(/ /g, '_')}_Report.pdf`);
         toast({ title: "Download Started", description: "Your PDF has been successfully generated." });
     } catch (error: any) {

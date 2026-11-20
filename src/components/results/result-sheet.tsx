@@ -73,9 +73,9 @@ const initialSettings: TemplateSettings = { studentInfo: { fontSize: 12, visible
 
 // --- HELPER COMPONENTS ---
 const StudentInfoDetail = ({ label, value, isLoading = false }: { label: string, value?: string | React.ReactNode, isLoading?: boolean }) => (
-    <div className="flex text-xs">
-        <span className="font-semibold w-[90px] shrink-0">{label}:</span>
-        <span className="flex-1 border-b border-dotted border-black">
+    <div className="result-student-info-field flex text-xs">
+        <span className="result-student-info-label font-semibold w-[90px] shrink-0">{label}:</span>
+        <span className="result-student-info-value flex-1 border-b border-dotted border-black">
             {isLoading ? <Skeleton className="h-4 w-24" /> : value}
         </span>
     </div>
@@ -305,7 +305,7 @@ export const ResultSheet = forwardRef<HTMLDivElement, ResultSheetProps>(({
             <div className="flex-grow min-h-0 flex flex-col">
                 {settings.studentInfo.visible && (
                     <div className="mb-4 p-2 border border-black" style={{ fontSize: `12px` }}>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-y-1 gap-x-4">
+                        <div className="result-student-info-grid grid grid-cols-1 md:grid-cols-3 gap-y-1 gap-x-4">
                             <StudentInfoDetail label="Student Name" value={student.name} />
                             <StudentInfoDetail label="Admission No" value={student.admissionNumber} />
                             <StudentInfoDetail label="Class" value={classroom?.name} />
@@ -382,7 +382,7 @@ export const ResultSheet = forwardRef<HTMLDivElement, ResultSheetProps>(({
                         </div>
                     </div>
                 )}
-                 <div className="flex-grow min-h-0"></div>
+                 <div className="h-2 shrink-0"></div>
                 
                 <footer className="text-base">
                     <section className='border border-black p-1 flex flex-col gap-1'>

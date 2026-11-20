@@ -5,6 +5,7 @@ import JSZip from 'jszip';
 import type { Browser } from 'puppeteer-core';
 import { launchPdfBrowser } from '@/lib/server/pdf-browser';
 import { RESULT_PDF_LAYOUT } from '@/lib/result-pdf-layout';
+import { createA4ResultPdfFromImage } from '@/lib/result-pdf';
 
 type FirestoreDocument = { id: string; [key: string]: any };
 type BrowserAuthUser = {
@@ -185,7 +186,7 @@ async function generatePupilPDF(
   const stylesheetFailures: string[] = [];
   page.setDefaultNavigationTimeout(60000);
   page.setDefaultTimeout(60000);
-  await page.setViewport({ width: 1200, height: 1600, deviceScaleFactor: 1 });
+  await page.setViewport({ width: 1200, height: 1600, deviceScaleFactor: 2 });
   page.on('response', (response) => {
     if (response.request().resourceType() === 'stylesheet' && response.status() >= 400) {
       stylesheetFailures.push(`${response.status()} ${response.url()}`);
@@ -242,7 +243,15 @@ async function generatePupilPDF(
     });
     await page.waitForFunction(() => Array.from(document.images).every((image) => image.complete && image.naturalWidth > 0), { timeout: 30000 });
     await page.evaluate(async () => { await document.fonts.ready; });
-    await page.emulateMediaType('print');
+
+    await page.$eval('[data-report-card-ready="true"]', (element, width, height) => {
+      const report = element as HTMLElement;
+      report.style.width = width;
+      report.style.height = height;
+      report.style.minHeight = height;
+      report.style.maxWidth = 'none';
+      report.style.padding = '6mm';
+    }, `${RESULT_PDF_LAYOUT.contentWidthMm}mm`, `${RESULT_PDF_LAYOUT.contentHeightMm}mm`);
 
     let reportOverflows = await page.$eval('[data-report-card-ready="true"]', (element) => {
       const report = element as HTMLElement;
@@ -259,15 +268,12 @@ async function generatePupilPDF(
       throw new Error('This result has more content than fits on one A4 page, even after reducing unnecessary spacing.');
     }
 
-    const pdf = await page.pdf({
-      format: 'A4',
-      preferCSSPageSize: false,
-      printBackground: true,
-      scale: 1,
-      displayHeaderFooter: false,
-      margin: RESULT_PDF_LAYOUT.margin,
-    });
-    const pdfBuffer = Buffer.from(pdf);
+    const reportElement = await page.$('[data-report-card-ready="true"]');
+    if (!reportElement) throw new Error('The rendered report card could not be captured.');
+    const reportPng = await reportElement.screenshot({ type: 'png', captureBeyondViewport: false, omitBackground: false });
+    const reportImage = `data:image/png;base64,${Buffer.from(reportPng).toString('base64')}`;
+    const generatedPdf = createA4ResultPdfFromImage(reportImage);
+    const pdfBuffer = Buffer.from(generatedPdf.output('arraybuffer'));
     if (pdfBuffer.length < 1000 || pdfBuffer.subarray(0, 4).toString() !== '%PDF') {
       throw new Error('Puppeteer returned an invalid or empty PDF.');
     }

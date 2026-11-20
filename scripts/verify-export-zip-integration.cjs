@@ -35,6 +35,11 @@ function loadTypeScriptModule(relativePath, mockedModules = {}) {
 }
 
 const reportUtils = loadTypeScriptModule('src/lib/utils.ts');
+const pdfLayout = loadTypeScriptModule('src/lib/result-pdf-layout.ts').RESULT_PDF_LAYOUT;
+const resultPdf = loadTypeScriptModule('src/lib/result-pdf.ts', {
+  './result-pdf-layout': { RESULT_PDF_LAYOUT: pdfLayout },
+  '@/lib/result-pdf-layout': { RESULT_PDF_LAYOUT: pdfLayout },
+});
 const renderedPages = [];
 const puppeteerMock = {
   launch: async () => {
@@ -84,6 +89,16 @@ const puppeteerMock = {
           return page.waitForFunction(...args);
         },
         async $eval(...args) { return page.$eval(...args); },
+        async $(selector) {
+          const element = await page.$(selector);
+          if (!element) return null;
+          return {
+            async screenshot(options) {
+              state.screenshotOptions = options;
+              return element.screenshot(options);
+            },
+          };
+        },
         async evaluate(...args) { return page.evaluate(...args); },
         async emulateMediaType(mediaType) { state.print = mediaType === 'print'; return page.emulateMediaType(mediaType); },
         async pdf(options) { state.pdfOptions = options; return page.pdf(options); },
@@ -97,7 +112,8 @@ const puppeteerMock = {
 const route = loadTypeScriptModule('src/app/api/export-class-zip/route.ts', {
   '@/lib/utils': reportUtils,
   '@/lib/server/pdf-browser': { launchPdfBrowser: puppeteerMock.launch },
-  '@/lib/result-pdf-layout': { RESULT_PDF_LAYOUT: { margin: { top: '5mm', right: '5mm', bottom: '5mm', left: '5mm' } } },
+  '@/lib/result-pdf-layout': { RESULT_PDF_LAYOUT: pdfLayout },
+  '@/lib/result-pdf': resultPdf,
 });
 
 const str = stringValue => ({ stringValue });
@@ -205,14 +221,12 @@ global.fetch = async (input) => {
         assert.ok(mediaBox);
         const dimensions = mediaBox.trim().split(/\s+/).map(Number);
         assert.ok(Math.abs(dimensions[2] - 595) < 1 && Math.abs(dimensions[3] - 842) < 1, `PDF page is not A4: ${mediaBox}`);
-        assert.deepEqual(pageState.pdfOptions.margin, { top: '5mm', right: '5mm', bottom: '5mm', left: '5mm' });
+        assert.deepEqual(pageState.screenshotOptions, { type: 'png', captureBeyondViewport: false, omitBackground: false });
       }
       const renderState = renderedPages.at(-1);
       assert.match(renderState.url, /\/admin\/results\/s[12]\?session=session1&term=term1/);
-      assert.equal(renderState.print, true, 'Puppeteer must use the existing report print styles.');
+      assert.equal(renderState.print, false, 'Batch export must capture the same screen report layout as individual export.');
       assert.ok(renderState.waits >= 2, 'Puppeteer must wait for actual page and stylesheet readiness markers.');
-      assert.equal(renderState.pdfOptions.printBackground, true);
-      assert.equal(renderState.pdfOptions.format, 'A4');
       assert.equal(renderState.authStorage.serializedUser.stsTokenManager.accessToken, 'refreshed-id-token');
       const summary = await zip.file('Export_Summary.txt').async('string');
       assert.match(summary, /Generated PDFs: 2/);
